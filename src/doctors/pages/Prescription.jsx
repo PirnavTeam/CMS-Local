@@ -375,6 +375,10 @@ function Prescription() {
         body: JSON.stringify({
           appointmentId,
           patientId,
+          doctorId: appointment?.doctorId || routeState.doctorId || undefined,
+          patientCode: appointment?.patientCode || routeState.patient?.patientCode || undefined,
+          patientName: appointment?.patientName || routeState.patient?.name || undefined,
+          appointmentDate: appointment?.date || undefined,
           diagnosis: diagnosis.trim(),
           instructions: instructions.trim(),
           followUpDate: new Date(`${followUp}T10:00:00`).toISOString(),

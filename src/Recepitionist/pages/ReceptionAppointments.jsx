@@ -20,11 +20,15 @@ const slots = [
   "16:30 - 17:00",
 ];
 
+const getSlotStart = (slot) => String(slot || "").split(" - ")[0].trim();
+
 function ReceptionAppointments() {
   const navigate = useNavigate();
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotLoading, setSlotLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [message, setMessage] = useState("");
   const [form, setForm] = useState({
@@ -63,6 +67,22 @@ function ReceptionAppointments() {
     refresh();
   }, []);
 
+  const parseSlots = (data) => {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.slots)) return data.slots;
+    if (Array.isArray(data?.data)) return data.data;
+    return [];
+  };
+
+  const parseSlotLabel = (slot) => {
+    if (!slot) return "";
+    if (typeof slot === "string") return slot;
+    if (slot.start && slot.end)
+      return `${String(slot.start).slice(0, 5)} - ${String(slot.end).slice(0, 5)}`;
+    if (slot.slot) return String(slot.slot);
+    return String(slot);
+  };
+
   const bookedSlots = useMemo(() => {
     return new Set(
       appointments
@@ -70,9 +90,30 @@ function ReceptionAppointments() {
         .filter(
           (item) => String(item.doctorId || item.doctor?.id || "") === String(form.doctorId)
         )
-        .map((item) => item.time || item.slot)
+        .map((item) => getSlotStart(item.slot || item.startTime || item.time || ""))
+        .filter(Boolean)
     );
   }, [appointments, form.date, form.doctorId]);
+
+  useEffect(() => {
+    if (!form.doctorId || !form.date) {
+      setAvailableSlots([]);
+      setSelectedSlot("");
+      return;
+    }
+
+    setSlotLoading(true);
+    requestJson(`Schedule/day-slots?doctorId=${form.doctorId}&date=${form.date}`)
+      .then((data) => {
+        const slots = parseSlots(data);
+        setAvailableSlots(slots);
+        setSelectedSlot("");
+      })
+      .catch(() => {
+        setAvailableSlots([]);
+      })
+      .finally(() => setSlotLoading(false));
+  }, [form.doctorId, form.date]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -81,15 +122,14 @@ function ReceptionAppointments() {
       return;
     }
 
-    const selectedPatient = patients.find((item) => String(item.id) === String(form.patientId));
-    const selectedDoctor = doctors.find((item) => String(item.id) === String(form.doctorId));
+    const selectedSlotStart = getSlotStart(selectedSlot);
     const body = {
-      patientId: Number(form.patientId),
       doctorId: Number(form.doctorId),
-      patientName: selectedPatient?.name,
-      doctorName: selectedDoctor?.name,
+      patientId: Number(form.patientId),
       date: form.date,
       appointmentDate: form.date,
+      slot: selectedSlot,
+      startTime: selectedSlotStart ? `${selectedSlotStart}:00` : "",
       time: selectedSlot,
       status: "Scheduled",
       chiefComplaints: form.chiefComplaints,
@@ -178,20 +218,29 @@ function ReceptionAppointments() {
             <span>Available&nbsp;&nbsp; Booked</span>
           </div>
           <div className="rc-slots">
-            {slots.map((slot) => {
-              const booked = bookedSlots.has(slot);
-              return (
-                <button
-                  type="button"
-                  key={slot}
-                  disabled={booked}
-                  className={`${selectedSlot === slot ? "selected" : ""}${booked ? " booked" : ""}`}
-                  onClick={() => setSelectedSlot(slot)}
-                >
-                  {slot} - {booked ? "BOOKED" : "AVAILABLE"}
-                </button>
-              );
-            })}
+            {slotLoading ? (
+              <div className="rc-slot-loading">Loading slots...</div>
+            ) : availableSlots.length > 0 ? (
+              availableSlots.map((slot) => {
+                const label = parseSlotLabel(slot);
+                const slotStart = getSlotStart(label);
+                const isBooked = Boolean(slot?.isBooked || bookedSlots.has(slotStart));
+                const isSelected = selectedSlot && getSlotStart(selectedSlot) === slotStart;
+                return (
+                  <button
+                    type="button"
+                    key={label}
+                    disabled={isBooked}
+                    className={`${isSelected ? "selected" : ""}${isBooked ? " booked" : ""}`}
+                    onClick={() => setSelectedSlot(label)}
+                  >
+                    {label} - {isBooked ? "BOOKED" : "AVAILABLE"}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="rc-slot-empty">No slots available for this doctor on the selected date.</div>
+            )}
           </div>
           <button type="submit" className="rc-confirm">
             <CheckCircle size={16} /> Confirm Booking

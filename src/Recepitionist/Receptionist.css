@@ -587,6 +587,71 @@
   color: #34435a;
 }
 
+.rc-invoice-meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.rc-invoice-meta > div:last-child {
+  flex: 1;
+}
+
+.rc-invoice-file {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.rc-icon-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d9e1ec;
+  border-radius: 8px;
+  background: #fff;
+  color: #071120;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.rc-icon-btn:disabled {
+  color: #8a95a6;
+  background: #f1f4f7;
+  cursor: not-allowed;
+}
+
+.rc-invoice-menu {
+  position: absolute;
+  z-index: 2;
+  top: 40px;
+  left: 0;
+  min-width: 166px;
+  padding: 6px;
+  border: 1px solid #d9e1ec;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(12, 23, 38, 0.14);
+}
+
+.rc-invoice-menu button {
+  width: 100%;
+  height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #071120;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.rc-invoice-menu button:hover {
+  background: #eef5f8;
+}
+
 .rc-modal-actions {
   display: flex;
   justify-content: flex-end;

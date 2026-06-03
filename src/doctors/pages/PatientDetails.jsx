@@ -15,6 +15,7 @@ import {
 const OVERVIEW_API = apiUrl("Overview/patient");
 const APPOINTMENTS_API = apiUrl("Appointment");
 const PRESCRIPTIONS_API = apiUrl("Prescription");
+const MEDICAL_HISTORY_API = apiUrl("MedicalHistory");
 
 const TABS = [
   "Overview",
@@ -296,6 +297,7 @@ function PatientDetails() {
 
   const [activeTab, setActiveTab] = useState("Overview");
   const [patient, setPatient] = useState(null);
+  const [medicalHistory, setMedicalHistory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -327,7 +329,21 @@ function PatientDetails() {
         }
 
         const data = await response.json();
-        const overviewPatient = normalizePatient(data);
+        let historyData = null;
+        const historyResponse = await fetch(`${MEDICAL_HISTORY_API}/${selectedPatientId}`, {
+          headers,
+        }).catch(() => null);
+
+        if (historyResponse?.ok) {
+          historyData = await historyResponse.json().catch(() => null);
+        }
+
+        const overviewPatient = normalizePatient({
+          ...data,
+          ...historyData,
+        });
+
+        setMedicalHistory(historyData);
 
         const appointmentsResponse = await fetch(APPOINTMENTS_API, {
           headers,
@@ -558,7 +574,13 @@ function PatientDetails() {
 
       {activeTab === "Medical History" && (
         <div className="pd-overview-grid">
-          {overview.slice(0, 4).map(({ label, value }) => (
+          {[
+            ["Allergies", patient.allergies],
+            ["Chronic Diseases", patient.chronicDiseases],
+            ["Current Medications", patient.currentMedications],
+            ["Surgeries", patient.surgeries],
+            ["Last Updated", medicalHistory?.createdAt || emptyValue],
+          ].map(([label, value]) => (
             <div key={label} className="pd-overview-card">
               <p className="pd-card-label">{label}</p>
               <p className="pd-card-value">{value || emptyValue}</p>

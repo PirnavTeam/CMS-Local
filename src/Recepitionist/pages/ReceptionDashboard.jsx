@@ -13,33 +13,56 @@ import { formatToday, parseList, requestJson } from "../receptionApi";
 function ReceptionDashboard() {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
+  const [stats, setStats] = useState({ today: 0, waiting: 0, completed: 0 });
 
   useEffect(() => {
-    requestJson("Appointment")
-      .then((data) => setAppointments(parseList(data)))
-      .catch(() => setAppointments([]));
+    const loadDashboard = async () => {
+      try {
+        const [dashboardData, appointmentData] = await Promise.all([
+          requestJson("ReceptionistDashboard"),
+          requestJson("Appointment"),
+        ]);
+
+        setStats({
+          today: Number(dashboardData?.totalTodayAppointments) || 0,
+          waiting: Number(dashboardData?.waitingAppointments) || 0,
+          completed: Number(dashboardData?.completedAppointments) || 0,
+        });
+        setAppointments(parseList(appointmentData));
+      } catch (dashboardError) {
+        requestJson("Appointment")
+          .then((data) => {
+            const appointmentList = parseList(data);
+            const todayDate = formatToday();
+            const todays = appointmentList.filter((item) =>
+              String(item.date || item.appointmentDate || "").startsWith(todayDate)
+            );
+            setStats({
+              today: todays.length,
+              waiting: appointmentList.filter((item) =>
+                ["waiting", "scheduled", "booked"].includes(
+                  String(item.status || "").toLowerCase()
+                )
+              ).length,
+              completed: appointmentList.filter((item) =>
+                ["completed", "consulted"].includes(String(item.status || "").toLowerCase())
+              ).length,
+            });
+            setAppointments(appointmentList);
+          })
+          .catch(() => {
+            setStats({ today: 0, waiting: 0, completed: 0 });
+            setAppointments([]);
+          });
+      }
+    };
+
+    loadDashboard();
   }, []);
 
-  const today = formatToday();
-  const stats = useMemo(() => {
-    const todays = appointments.filter((item) =>
-      String(item.date || item.appointmentDate || "").startsWith(today)
-    );
-    return {
-      today: todays.length,
-      waiting: appointments.filter((item) =>
-        ["waiting", "scheduled", "booked"].includes(
-          String(item.status || "").toLowerCase()
-        )
-      ).length,
-      completed: appointments.filter((item) =>
-        ["completed", "consulted"].includes(String(item.status || "").toLowerCase())
-      ).length,
-    };
-  }, [appointments, today]);
-
+  const todayDate = formatToday();
   const latest = appointments.filter((item) =>
-    String(item.date || item.appointmentDate || "").startsWith(today)
+    String(item.date || item.appointmentDate || "").startsWith(todayDate)
   );
 
   return (
@@ -111,7 +134,7 @@ function ReceptionDashboard() {
         <div className="rc-card-head">
           <div>
             <h3>Appointment List</h3>
-            <p>{today}</p>
+            <p>{todayDate}</p>
           </div>
           <button className="rc-btn small" onClick={() => navigate("/reception/appointments")}>
             Manage

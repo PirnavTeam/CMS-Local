@@ -320,6 +320,7 @@ function Consultation() {
         body: JSON.stringify({
           appointmentId: Number(appointment.appointmentId),
           patientId: Number(appointment.patientId),
+          doctorId: appointment.doctorId || appointment.doctor?.id || undefined,
           diagnosis: form.diagnosis.trim(),
           clinicalNotes: form.notes.trim(),
         }),

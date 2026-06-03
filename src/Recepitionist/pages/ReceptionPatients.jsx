@@ -8,6 +8,9 @@ const emptyForm = {
   email: "",
   phone: "",
   age: "",
+  dateOfBirth: "",
+  bloodGroup: "",
+  emergencyContactName: "",
   gender: "Female",
   address: "",
 };
@@ -46,6 +49,9 @@ function ReceptionPatients() {
       email: patient.email || "",
       phone: patient.phone || "",
       age: patient.age || "",
+      dateOfBirth: patient.dateOfBirth || "",
+      bloodGroup: patient.bloodGroup || "",
+      emergencyContactName: patient.emergencyContactName || "",
       gender: patient.gender || "Female",
       address: patient.address || "",
     });
@@ -60,6 +66,9 @@ function ReceptionPatients() {
       email: form.email.trim(),
       phone: form.phone.trim(),
       age: Number(form.age) || 0,
+      dateOfBirth: form.dateOfBirth || "",
+      bloodGroup: form.bloodGroup.trim(),
+      emergencyContactName: form.emergencyContactName.trim(),
       gender: form.gender,
       address: form.address.trim(),
     };
@@ -173,12 +182,31 @@ function ReceptionPatients() {
                   : "Add Patient"}
             </h3>
             <div className="rc-form-grid">
-              {["name", "email", "phone", "age", "address"].map((field) => (
+              {[
+                "name",
+                "email",
+                "phone",
+                "age",
+                "dateOfBirth",
+                "bloodGroup",
+                "emergencyContactName",
+                "address",
+              ].map((field) => (
                 <label key={field}>
-                  <span>{field.charAt(0).toUpperCase() + field.slice(1)}</span>
+                  <span>
+                    {field
+                      .replace(/([A-Z])/g, " $1")
+                      .replace(/^./, (s) => s.toUpperCase())}
+                  </span>
                   <input
                     name={field}
-                    type={field === "age" ? "number" : "text"}
+                    type={
+                      field === "age"
+                        ? "number"
+                        : field === "dateOfBirth"
+                        ? "date"
+                        : "text"
+                    }
                     value={form[field] || ""}
                     disabled={modal === "view"}
                     onChange={(event) =>
