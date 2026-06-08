@@ -3,6 +3,9 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import clinicBg from '../assests/clinic-bg.jpg';
 import './styles/Auth.css';
 import { apiUrl } from '../config/api';
+import { recordAuditLog } from '../pages/SUPERADMIN/superAdminApi';
+import { useToast } from '../components/ToastProvider';
+import { validateGmail } from '../utils/validation';
 
 const EyeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -29,6 +32,29 @@ const LogoIcon = () => (
 
 const LOGIN_API = apiUrl('Auth/login');
 
+const getAuthPayload = (data) => {
+  if (!data || typeof data !== 'object') {
+    return {};
+  }
+
+  if (data.data && typeof data.data === 'object') {
+    return {
+      ...data,
+      ...data.data,
+    };
+  }
+
+  return data;
+};
+
+const getAuthToken = (data) =>
+  data?.token ||
+  data?.accessToken ||
+  data?.jwtToken ||
+  data?.bearerToken ||
+  data?.result?.token ||
+  '';
+
 const decodeJwtPayload = (token) => {
   try {
     const payload = token.split('.')[1];
@@ -54,6 +80,34 @@ const getClaim = (claims, ...keys) => {
   return '';
 };
 
+const normalizeRole = (role) =>
+  String(role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
+
+const readJson = async (response) =>
+  response.json().catch(() => ({}));
+
+const loginRequestBodies = (email, password) => [
+  {
+    email,
+    password,
+  },
+  {
+    Email: email,
+    Password: password,
+  },
+  {
+    adminEmail: email,
+    adminPassword: password,
+  },
+  {
+    AdminEmail: email,
+    AdminPassword: password,
+  },
+];
+
 const clearStoredSession = () => {
   [
     'token',
@@ -76,6 +130,7 @@ const clearStoredSession = () => {
 };
 
 const AdminLogin = () => {
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -112,11 +167,8 @@ const AdminLogin = () => {
 
   const validate = () => {
     const newErrors = {};
-    if (!email) {
-      newErrors.email = 'Email ID is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Email ID is invalid';
-    }
+    const emailError = validateGmail(email, 'Email ID');
+    if (emailError) newErrors.email = emailError;
 
     if (!password) {
       newErrors.password = 'Password is required';
@@ -129,6 +181,7 @@ const AdminLogin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!validate()) {
+      toast.error('Please fix the highlighted fields.');
       return;
     }
 
@@ -138,44 +191,66 @@ const AdminLogin = () => {
     try {
       const trimmedEmail = email.trim();
 
-      const response = await fetch(LOGIN_API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: trimmedEmail,
-          password,
-        }),
-      });
+      let response = null;
+      let data = {};
 
-      const data = await response.json().catch(() => ({}));
+      for (const body of loginRequestBodies(trimmedEmail, password)) {
+        response = await fetch(LOGIN_API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+
+        data = await readJson(response);
+
+        if (response.ok) {
+          break;
+        }
+      }
+
       if (!response.ok) {
         setErrors({
-          api: data.message || 'Login failed. Please check your credentials.',
+          api:
+            data.message ||
+            data.error ||
+            'Invalid email or password. Please use the password set for this admin account.',
         });
+        toast.error(
+          data.message ||
+            data.error ||
+            'Invalid email or password. Please use the password set for this admin account.'
+        );
         return;
       }
 
-      if (!data?.token) {
+      const authData = getAuthPayload(data);
+      const token = getAuthToken(authData);
+
+      if (!token) {
         setErrors({ api: 'Login failed. Token not received from server.' });
+        toast.error('Login failed. Token not received from server.');
         return;
       }
 
-      const claims = decodeJwtPayload(data.token);
+      const claims = decodeJwtPayload(token);
       const role =
-        data.role ||
+        authData.role ||
+        authData.roleName ||
+        authData.userRole ||
         getClaim(
           claims,
           'role',
           'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
         );
-      const normalizedRole = String(role || '').toLowerCase();
+      const normalizedRole = normalizeRole(role);
 
-      if (!['superadmin', 'super_admin', 'admin', 'doctor', 'receptionist'].includes(normalizedRole)) {
+      if (!['superadmin', 'admin', 'clinicadmin', 'doctor', 'receptionist'].includes(normalizedRole)) {
         setErrors({
           api: 'Access denied. This account does not have Super Admin, Admin, Doctor, or Receptionist role.',
         });
+        toast.error('Access denied. This account does not have an allowed role.');
         return;
       }
 
@@ -185,55 +260,77 @@ const AdminLogin = () => {
           'name',
           'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'
         ) ||
-        data.name ||
+        authData.name ||
+        authData.fullName ||
+        authData.adminName ||
         email.trim();
       const hospitalId =
-        data.hospitalId ||
+        authData.hospitalId ||
+        authData.clinicId ||
         getClaim(claims, 'HospitalId', 'hospitalId') ||
+        '';
+      const clinicName =
+        authData.hospitalName ||
+        authData.clinicName ||
+        authData.assignedClinic ||
+        authData.clinic ||
+        getClaim(claims, 'HospitalName', 'hospitalName', 'ClinicName', 'clinicName', 'AssignedClinic', 'assignedClinic') ||
         '';
 
       clearStoredSession();
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('token', token);
       localStorage.setItem('userRole', role);
       localStorage.setItem('hospitalId', String(hospitalId));
-      localStorage.setItem('hospitalName', data.hospitalName || '');
+      localStorage.setItem('hospitalName', clinicName);
+      localStorage.setItem('clinicName', clinicName);
+      recordAuditLog({
+        user: authData.email || trimmedEmail,
+        action: `${displayName} logged in`,
+        module: 'Login',
+        role,
+      });
 
-      if (normalizedRole === 'superadmin' || normalizedRole === 'super_admin') {
-        localStorage.setItem('adminToken', data.token);
+      if (normalizedRole === 'superadmin') {
+        localStorage.setItem('adminToken', token);
         localStorage.setItem('adminRole', 'superadmin');
-        localStorage.setItem('adminEmail', data.email || trimmedEmail);
+        localStorage.setItem('adminEmail', authData.email || trimmedEmail);
         localStorage.setItem('adminName', displayName);
+        toast.success('Login successful');
         navigate('/superadmin/dashboard', { replace: true });
         return;
       }
 
       if (normalizedRole === 'doctor') {
-        localStorage.setItem('doctorToken', data.token);
+        localStorage.setItem('doctorToken', token);
         localStorage.setItem('doctorRole', role);
-        localStorage.setItem('doctorEmail', data.email || email.trim());
+        localStorage.setItem('doctorEmail', authData.email || email.trim());
         localStorage.setItem('doctorName', displayName);
-        localStorage.setItem('doctorId', String(data.doctorId || getClaim(claims, 'DoctorId') || ''));
+        localStorage.setItem('doctorId', String(authData.doctorId || getClaim(claims, 'DoctorId') || ''));
+        toast.success('Login successful');
         navigate('/doctor/dashboard', { replace: true });
         return;
       }
 
       if (normalizedRole === 'receptionist') {
-        localStorage.setItem('receptionistToken', data.token);
+        localStorage.setItem('receptionistToken', token);
         localStorage.setItem('receptionistRole', role);
-        localStorage.setItem('receptionistEmail', data.email || email.trim());
+        localStorage.setItem('receptionistEmail', authData.email || email.trim());
         localStorage.setItem('receptionistName', displayName);
+        toast.success('Login successful');
         navigate('/reception/dashboard', { replace: true });
         return;
       }
 
-      localStorage.setItem('adminToken', data.token);
+      localStorage.setItem('adminToken', token);
       localStorage.setItem('adminRole', role);
-      localStorage.setItem('adminEmail', data.email || email.trim());
+      localStorage.setItem('adminEmail', authData.email || email.trim());
+      toast.success('Login successful');
       navigate('/dashboard', { replace: true });
     } catch {
       setErrors({
         api: 'Unable to reach server. Please try again.',
       });
+      toast.error('Unable to reach server. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -263,7 +360,7 @@ const AdminLogin = () => {
             <input
               id="email"
               type="email"
-              placeholder="admin@clinic.com"
+              placeholder="admin@gmail.com"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);

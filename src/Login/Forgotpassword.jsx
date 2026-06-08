@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import clinicBg from '../assests/clinic-bg.jpg';
 import './styles/Auth.css';
 import { apiUrl } from '../config/api';
+import { useToast } from '../components/ToastProvider';
+import { validateGmail } from '../utils/validation';
 
 const LogoIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -15,6 +17,7 @@ const FORGOT_PASSWORD_API =
   apiUrl('Auth/forgot-password');
 
 const ForgotPassword = () => {
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -29,11 +32,10 @@ const ForgotPassword = () => {
 
   const handleNext = async (e) => {
     e.preventDefault();
-    if (!email) {
-      setError('Email ID is required');
-      return;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      setError('Email ID is invalid');
+    const emailError = validateGmail(email, 'Email ID');
+    if (emailError) {
+      setError(emailError);
+      toast.error(emailError);
       return;
     }
 
@@ -54,10 +56,12 @@ const ForgotPassword = () => {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         setError(data.message || 'Failed to send OTP. Please try again.');
+        toast.error(data.message || 'Failed to send OTP. Please try again.');
         return;
       }
 
       sessionStorage.setItem('resetEmail', email.trim());
+      toast.success('OTP sent successfully');
       navigate('/VerifyOTP', {
         state: {
           email: email.trim(),
@@ -65,6 +69,7 @@ const ForgotPassword = () => {
       });
     } catch {
       setError('Unable to reach server. Please try again.');
+      toast.error('Unable to reach server. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +98,7 @@ const ForgotPassword = () => {
             <input
               id="email"
               type="email"
-              placeholder="admin@clinic.com"
+              placeholder="admin@gmail.com"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);

@@ -37,8 +37,18 @@ export const requestJson = async (path, options = {}) => {
   }
 
   if (!response.ok) {
+    const validationMessage =
+      data?.errors && typeof data.errors === "object"
+        ? Object.entries(data.errors)
+            .flatMap(([key, messages]) => {
+              const list = Array.isArray(messages) ? messages : [messages];
+              return list.filter(Boolean).map((message) => `${key}: ${message}`);
+            })
+            .join(" ")
+        : "";
     const message =
       data?.message ||
+      validationMessage ||
       data?.title ||
       (typeof data === "string" ? data : "") ||
       `Request failed with status ${response.status}`;

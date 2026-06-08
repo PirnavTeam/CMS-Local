@@ -5,6 +5,7 @@ export const clearAllSessions = () => {
     "doctorToken",
     "receptionistToken",
     "adminEmail",
+    "adminName",
     "doctorEmail",
     "receptionistEmail",
     "adminRole",
@@ -16,6 +17,8 @@ export const clearAllSessions = () => {
     "receptionistName",
     "hospitalId",
     "hospitalName",
+    "clinicName",
+    "assignedClinic",
   ].forEach((key) => localStorage.removeItem(key));
 };
 
@@ -46,10 +49,16 @@ export const getRoleProfile = (roleType = "admin") => {
 
   const email = localStorage.getItem("adminEmail") || "";
   const role = localStorage.getItem("adminRole") || "Admin";
+  const normalizedRole = String(role).toLowerCase();
+  const roleLabel =
+    normalizedRole === "superadmin" || normalizedRole === "super_admin"
+      ? "Super Admin"
+      : "Admin";
+
   return {
     roleType: "admin",
-    roleLabel: "Administrator",
-    name: role || "Admin",
+    roleLabel,
+    name: localStorage.getItem("adminName") || email || roleLabel,
     email: email || "admin account",
     profilePath: "/profile",
     passwordPath: "/profile?tab=password",

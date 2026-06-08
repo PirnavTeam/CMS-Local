@@ -41,12 +41,14 @@ import DailyReport from "./pages/REPORTS/DailyReport";
 import RevenueReport from "./pages/REPORTS/RevenueReport";
 import DoctorWiseReport from "./pages/REPORTS/DoctorWiseReport";
 import "./pages/SUPERADMIN/SuperAdmin.css";
+import { ToastProvider } from "./components/ToastProvider";
 
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
 
         {/* DEFAULT */}
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -117,8 +119,9 @@ function App() {
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/login" replace />} />
 
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

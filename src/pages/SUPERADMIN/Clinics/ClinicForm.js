@@ -3,6 +3,16 @@ import { Save } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "../../../components/superadmin/Header";
 import { fetchClinic, saveClinic } from "../superAdminApi";
+import { useToast } from "../../../components/ToastProvider";
+import {
+  onlyAlpha,
+  onlyDigits,
+  validateAlpha,
+  validateGmail,
+  validateMobile,
+  validateRequired,
+  validateSelected,
+} from "../../../utils/validation";
 
 const emptyClinic = {
   name: "",
@@ -14,11 +24,13 @@ const emptyClinic = {
 
 function ClinicForm({ mode }) {
   const navigate = useNavigate();
+  const toast = useToast();
   const { id } = useParams();
   const [form, setForm] = useState(emptyClinic);
   const [loading, setLoading] = useState(mode === "edit");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     let active = true;
@@ -48,19 +60,57 @@ function ClinicForm({ mode }) {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    let nextValue = value;
+
+    if (name === "name") {
+      nextValue = onlyAlpha(value);
+    }
+
+    if (name === "contactNumber") {
+      nextValue = onlyDigits(value).slice(0, 10);
+    }
+
+    setForm((current) => ({ ...current, [name]: nextValue }));
+    setFieldErrors((current) => ({ ...current, [name]: "" }));
+    setError("");
+  };
+
+  const validateForm = () => {
+    const nextErrors = {
+      name: validateAlpha(form.name, "Clinic name"),
+      contactNumber: validateMobile(form.contactNumber, "Contact number"),
+      email: validateGmail(form.email),
+      status: validateSelected(form.status, "a status"),
+      address: validateRequired(form.address, "Address"),
+    };
+
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key]) delete nextErrors[key];
+    });
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!validateForm()) {
+      setError("Please fix the highlighted fields.");
+      toast.error("Please fix the highlighted fields.");
+      return;
+    }
+
     setSaving(true);
     setError("");
 
     try {
       await saveClinic(form, mode === "edit" ? id : undefined);
+      toast.success(mode === "edit" ? "Clinic updated successfully" : "Clinic created successfully");
       navigate("/superadmin/clinics");
     } catch (requestError) {
-      setError(requestError.message || "Unable to save clinic.");
+      const message = requestError.message || "Unable to save clinic.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -83,26 +133,63 @@ function ClinicForm({ mode }) {
         <div className="sa-form-grid">
           <div className="sa-form-field">
             <label>Clinic Name</label>
-            <input name="name" value={form.name} onChange={handleChange} required />
+            <input
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              className={fieldErrors.name ? "is-invalid" : ""}
+              required
+            />
+            {fieldErrors.name ? <span className="sa-field-error">{fieldErrors.name}</span> : null}
           </div>
           <div className="sa-form-field">
             <label>Contact Number</label>
-            <input name="contactNumber" value={form.contactNumber} onChange={handleChange} required />
+            <input
+              name="contactNumber"
+              value={form.contactNumber}
+              onChange={handleChange}
+              inputMode="numeric"
+              maxLength={10}
+              className={fieldErrors.contactNumber ? "is-invalid" : ""}
+              required
+            />
+            {fieldErrors.contactNumber ? <span className="sa-field-error">{fieldErrors.contactNumber}</span> : null}
           </div>
           <div className="sa-form-field">
             <label>Email</label>
-            <input type="email" name="email" value={form.email} onChange={handleChange} required />
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              className={fieldErrors.email ? "is-invalid" : ""}
+              required
+            />
+            {fieldErrors.email ? <span className="sa-field-error">{fieldErrors.email}</span> : null}
           </div>
           <div className="sa-form-field">
             <label>Status</label>
-            <select name="status" value={form.status} onChange={handleChange}>
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              className={fieldErrors.status ? "is-invalid" : ""}
+            >
               <option>Active</option>
               <option>Inactive</option>
             </select>
+            {fieldErrors.status ? <span className="sa-field-error">{fieldErrors.status}</span> : null}
           </div>
           <div className="sa-form-field sa-form-field-full">
             <label>Address</label>
-            <textarea name="address" value={form.address} onChange={handleChange} required />
+            <textarea
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+              className={fieldErrors.address ? "is-invalid" : ""}
+              required
+            />
+            {fieldErrors.address ? <span className="sa-field-error">{fieldErrors.address}</span> : null}
           </div>
         </div>
 

@@ -107,7 +107,6 @@ const items = [
   { to: "/appointments", label: "Appointments", icon: CalendarDays },
   { to: "/DoctorSchedule/schedule", label: "Schedule Settings", icon: Settings2 },
   { to: "/reports", label: "Reports", icon: FileBarChart2 },
-  { to: "/superadmin/dashboard", label: "Super Admin", icon: ShieldCheck },
 ];
 
 const superAdminItems = [
@@ -120,7 +119,6 @@ const superAdminItems = [
   { to: "/superadmin/reports", label: "Reports", icon: FileBarChart2 },
   { to: "/superadmin/audit-logs", label: "Audit Logs", icon: ListChecks },
   { to: "/superadmin/notifications", label: "Notifications", icon: Bell },
-  { to: "/superadmin/profile", label: "Profile", icon: UserRound },
 ];
 
 function Sidebar() {
@@ -128,8 +126,8 @@ function Sidebar() {
   const isSuperAdmin = location.pathname.startsWith("/superadmin");
   const navItems = isSuperAdmin ? superAdminItems : items;
   const profile = getRoleProfile("admin");
-  const profileName = isSuperAdmin ? "Super Admin" : profile.name;
-  const profileSub = isSuperAdmin ? profile.email || "super admin account" : profile.email;
+  const profileName = profile.name;
+  const profileSub = isSuperAdmin ? "Super Admin" : profile.roleLabel;
 
   return (
     <aside className="sidebar">

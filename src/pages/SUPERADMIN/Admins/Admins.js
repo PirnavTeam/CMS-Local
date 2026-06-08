@@ -4,6 +4,15 @@ import Header from "../../../components/superadmin/Header";
 import DataTable from "../../../components/superadmin/DataTable";
 import SearchFilter from "../../../components/superadmin/SearchFilter";
 import { createClinicAdmin, fetchAdmins, fetchClinics } from "../superAdminApi";
+import { useToast } from "../../../components/ToastProvider";
+import {
+  onlyAlpha,
+  onlyDigits,
+  validateAlpha,
+  validateGmail,
+  validateMobile,
+  validateStrongPassword,
+} from "../../../utils/validation";
 
 const emptyAdmin = {
   fullName: "",
@@ -19,6 +28,7 @@ const emptyAdmin = {
 
 
 function Admins() {
+  const toast = useToast();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [showForm, setShowForm] = useState(false);
@@ -29,6 +39,7 @@ function Admins() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const loadAdmins = async () => {
     setLoading(true);
@@ -61,11 +72,53 @@ function Admins() {
 
   const handleChange = (event) => {
     const { checked, name, type, value } = event.target;
-    setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+    let nextValue = value;
+
+    if (["fullName", "role"].includes(name)) {
+      nextValue = onlyAlpha(value);
+    }
+
+    if (name === "phone") {
+      nextValue = onlyDigits(value).slice(0, 10);
+    }
+
+    setForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : nextValue,
+    }));
+    setFieldErrors((current) => ({ ...current, [name]: "" }));
+    setError("");
+  };
+
+  const validateForm = () => {
+    const nextErrors = {
+      fullName: validateAlpha(form.fullName, "Full name"),
+      email: validateGmail(form.email),
+      phone: validateMobile(form.phone, "Phone"),
+      temporaryPassword: validateStrongPassword(
+        form.temporaryPassword,
+        "Temporary password"
+      ),
+      role: validateAlpha(form.role, "Role"),
+      assignedClinicId: form.assignedClinicId ? "" : "Assigned clinic is required.",
+    };
+
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key]) delete nextErrors[key];
+    });
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleCreateAdmin = async (event) => {
     event.preventDefault();
+    if (!validateForm()) {
+      setError("Please fix the highlighted fields.");
+      toast.error("Please fix the highlighted fields.");
+      return;
+    }
+
     setSaving(true);
     setError("");
 
@@ -103,9 +156,12 @@ function Admins() {
       });
       setForm(emptyAdmin);
       setShowForm(false);
+      toast.success("Admin created successfully");
       await loadAdmins();
     } catch (requestError) {
-      setError(requestError.message || "Unable to create admin.");
+      const message = requestError.message || "Unable to create admin.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -191,9 +247,13 @@ function Admins() {
                 name="fullName"
                 value={form.fullName}
                 onChange={handleChange}
+                className={fieldErrors.fullName ? "is-invalid" : ""}
                 placeholder="Jane Smith"
                 required
               />
+              {fieldErrors.fullName ? (
+                <span className="sa-field-error">{fieldErrors.fullName}</span>
+              ) : null}
             </div>
             <div className="sa-form-field">
               <label htmlFor="admin-email">Email</label>
@@ -203,9 +263,13 @@ function Admins() {
                 type="email"
                 value={form.email}
                 onChange={handleChange}
+                className={fieldErrors.email ? "is-invalid" : ""}
                 placeholder="superadmin@gmail.com"
                 required
               />
+              {fieldErrors.email ? (
+                <span className="sa-field-error">{fieldErrors.email}</span>
+              ) : null}
             </div>
             <div className="sa-form-field">
               <label htmlFor="admin-phone">Phone</label>
@@ -214,9 +278,15 @@ function Admins() {
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
+                inputMode="numeric"
+                maxLength={10}
+                className={fieldErrors.phone ? "is-invalid" : ""}
                 placeholder="9876543210"
                 required
               />
+              {fieldErrors.phone ? (
+                <span className="sa-field-error">{fieldErrors.phone}</span>
+              ) : null}
             </div>
             <div className="sa-form-field">
               <label htmlFor="admin-temporary-password">Temporary password</label>
@@ -226,17 +296,33 @@ function Admins() {
                 type="password"
                 value={form.temporaryPassword}
                 onChange={handleChange}
+                className={fieldErrors.temporaryPassword ? "is-invalid" : ""}
                 placeholder="Enter temporary password"
                 autoComplete="new-password"
                 required
               />
+              {fieldErrors.temporaryPassword ? (
+                <span className="sa-field-error">
+                  {fieldErrors.temporaryPassword}
+                </span>
+              ) : null}
             </div>
             <div className="sa-form-field">
               <label htmlFor="admin-role">Role</label>
-              <select id="admin-role" name="role" value={form.role} onChange={handleChange} required>
+              <select
+                id="admin-role"
+                name="role"
+                value={form.role}
+                onChange={handleChange}
+                className={fieldErrors.role ? "is-invalid" : ""}
+                required
+              >
                 <option>Clinic Admin</option>
                 <option>Admin</option>
               </select>
+              {fieldErrors.role ? (
+                <span className="sa-field-error">{fieldErrors.role}</span>
+              ) : null}
             </div>
             <div className="sa-form-field sa-form-field-full">
               <label htmlFor="admin-assigned-clinic">Assigned clinic</label>
@@ -245,6 +331,7 @@ function Admins() {
                 name="assignedClinicId"
                 value={form.assignedClinicId}
                 onChange={handleChange}
+                className={fieldErrors.assignedClinicId ? "is-invalid" : ""}
                 required
               >
                 <option value="">Select clinic</option>
@@ -254,6 +341,11 @@ function Admins() {
                   </option>
                 ))}
               </select>
+              {fieldErrors.assignedClinicId ? (
+                <span className="sa-field-error">
+                  {fieldErrors.assignedClinicId}
+                </span>
+              ) : null}
             </div>
             <label className="sa-toggle-row sa-form-field-full">
               <span>

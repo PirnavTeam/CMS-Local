@@ -49,6 +49,11 @@
   color: #ffffff;
 }
 
+.sa-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .sa-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -71,6 +76,19 @@
   align-items: center;
   gap: 14px;
   padding: 16px;
+  width: 100%;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sa-stat-card:disabled {
+  cursor: default;
+}
+
+.sa-stat-card:not(:disabled):hover {
+  border-color: #99f6e4;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.08);
 }
 
 .sa-stat-icon {
@@ -347,6 +365,20 @@
   color: #111827;
   outline: none;
   box-sizing: border-box;
+}
+
+.sa-form-field input.is-invalid,
+.sa-form-field select.is-invalid,
+.sa-form-field textarea.is-invalid {
+  border-color: #dc2626;
+  background: #fff7f7;
+}
+
+.sa-field-error {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .sa-form-field textarea {

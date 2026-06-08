@@ -110,6 +110,18 @@
   box-shadow: 0 0 0 3px rgba(20, 156, 164, 0.24);
 }
 
+.add-doctor-input-group input.is-invalid {
+  border-color: #dc2626;
+  background: #fff7f7;
+}
+
+.add-doctor-field-error {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .add-doctor-input-group input[type="file"] {
   display: flex;
   align-items: center;

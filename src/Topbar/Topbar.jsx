@@ -66,18 +66,72 @@
 
 
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 
 import {
   Bell,
   Menu,
   Search,
 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import "./Topbar.css";
 import UserProfileMenu from "../profile/UserProfileMenu";
 
+const adminSearchItems = [
+  { label: "Dashboard", keywords: "home stats overview", path: "/dashboard" },
+  { label: "Doctors", keywords: "doctor physicians schedule register", path: "/doctors" },
+  { label: "Staff", keywords: "staff nurse employees", path: "/staff" },
+  { label: "Receptionists", keywords: "front desk receptionist", path: "/receptionists" },
+  { label: "Patients", keywords: "patient records medical", path: "/patients" },
+  { label: "Appointments", keywords: "booking appointment token", path: "/appointments" },
+  { label: "Schedule Settings", keywords: "doctor schedule slots timing", path: "/DoctorSchedule/schedule" },
+  { label: "Reports", keywords: "analysis revenue export", path: "/reports" },
+];
+
+const superAdminSearchItems = [
+  { label: "Super Admin Dashboard", keywords: "overview stats analytics", path: "/superadmin/dashboard" },
+  { label: "Clinics", keywords: "clinic hospital branch", path: "/superadmin/clinics" },
+  { label: "Admins", keywords: "clinic admins management", path: "/superadmin/admins" },
+  { label: "Users", keywords: "users accounts active", path: "/superadmin/users" },
+  { label: "Roles & Permissions", keywords: "roles permissions access", path: "/superadmin/roles" },
+  { label: "Settings", keywords: "configuration email sms payment", path: "/superadmin/settings" },
+  { label: "Reports", keywords: "analysis revenue export pdf csv", path: "/superadmin/reports" },
+  { label: "Audit Logs", keywords: "login audit history activity", path: "/superadmin/audit-logs" },
+  { label: "Notifications", keywords: "send notification message", path: "/superadmin/notifications" },
+];
+
 function Topbar({ onMenu }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [query, setQuery] = useState("");
+  const [showResults, setShowResults] = useState(false);
+  const isSuperAdmin = location.pathname.startsWith("/superadmin");
+  const searchItems = isSuperAdmin ? superAdminSearchItems : adminSearchItems;
+  const placeholder = isSuperAdmin
+    ? "Search dashboard, clinics, admins, reports..."
+    : "Search patients, doctors, appointments...";
+
+  const results = useMemo(() => {
+    const value = query.trim().toLowerCase();
+    if (!value) return searchItems;
+
+    return searchItems.filter((item) =>
+      `${item.label} ${item.keywords}`.toLowerCase().includes(value)
+    );
+  }, [query, searchItems]);
+
+  const goTo = (path) => {
+    setQuery("");
+    setShowResults(false);
+    navigate(path);
+  };
+
+  const submitSearch = (event) => {
+    event.preventDefault();
+    if (results[0]) goTo(results[0].path);
+  };
+
   return (
 
     <header className="topbar">
@@ -93,7 +147,11 @@ function Topbar({ onMenu }) {
           <Menu size={20} />
         </button>
 
-        <div className="topbar-search-box">
+        <form
+          className="topbar-search-box"
+          onSubmit={submitSearch}
+          onBlur={() => window.setTimeout(() => setShowResults(false), 120)}
+        >
 
           <Search
             size={16}
@@ -102,10 +160,35 @@ function Topbar({ onMenu }) {
 
           <input
             type="text"
-            placeholder="Search patients, doctors, appointments..."
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setShowResults(true);
+            }}
+            onFocus={() => setShowResults(true)}
+            placeholder={placeholder}
           />
 
-        </div>
+          {showResults ? (
+            <div className="topbar-search-results">
+              {results.length ? (
+                results.slice(0, 7).map((item) => (
+                  <button
+                    type="button"
+                    key={item.path}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => goTo(item.path)}
+                  >
+                    {item.label}
+                  </button>
+                ))
+              ) : (
+                <span>No matching module</span>
+              )}
+            </div>
+          ) : null}
+
+        </form>
 
       </div>
 
@@ -115,13 +198,18 @@ function Topbar({ onMenu }) {
 
         {/* NOTIFICATION */}
 
-        <div className="topbar-notification">
+        <button
+          type="button"
+          className="topbar-notification"
+          onClick={() => navigate(isSuperAdmin ? "/superadmin/notifications" : "/profile")}
+          title="Notifications"
+        >
 
           <Bell size={18} />
 
           <span className="topbar-dot"></span>
 
-        </div>
+        </button>
 
         {/* PROFILE */}
 

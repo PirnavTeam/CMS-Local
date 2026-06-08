@@ -547,6 +547,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { apiUrl } from "../../config/api";
+import { useToast } from "../../components/ToastProvider";
 
 /* ================= API ================= */
 
@@ -556,6 +557,7 @@ const API =
 /* ================= COMPONENT ================= */
 
 function Doctorschedulepage() {
+  const toast = useToast();
 
   /* SETTINGS */
 
@@ -716,13 +718,16 @@ function Doctorschedulepage() {
         }),
       });
 
-      alert(
-        "Settings saved successfully"
+      toast.success(
+        "Schedule settings saved successfully"
       );
 
     } catch (error) {
 
       console.log(error);
+      toast.error(
+        "Unable to save schedule settings."
+      );
 
     }
   };

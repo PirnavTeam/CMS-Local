@@ -37,6 +37,11 @@ export const getReceptionistProfile = () => {
       "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"
     ) ||
     email;
+  const hospitalName =
+    localStorage.getItem("hospitalName") ||
+    localStorage.getItem("clinicName") ||
+    getClaim(claims, "HospitalName", "hospitalName", "ClinicName", "clinicName") ||
+    "";
 
   return {
     token,
@@ -44,7 +49,7 @@ export const getReceptionistProfile = () => {
     name,
     role: localStorage.getItem("receptionistRole") || "Receptionist",
     hospitalId: localStorage.getItem("hospitalId") || "",
-    hospitalName: localStorage.getItem("hospitalName") || "",
+    hospitalName,
   };
 };
 

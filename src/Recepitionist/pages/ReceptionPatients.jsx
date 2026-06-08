@@ -2,6 +2,19 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Eye, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { parseList, requestJson } from "../receptionApi";
+import { useToast } from "../../components/ToastProvider";
+import {
+  onlyAlpha,
+  onlyDigits,
+  onlyNumberValue,
+  validateAlpha,
+  validateDate,
+  validateGmail,
+  validateMobile,
+  validateNumeric,
+  validateRequired,
+  validateSelected,
+} from "../../utils/validation";
 
 const emptyForm = {
   name: "",
@@ -11,16 +24,19 @@ const emptyForm = {
   dateOfBirth: "",
   bloodGroup: "",
   emergencyContactName: "",
+  emergencyContactPhone: "",
   gender: "Female",
   address: "",
 };
 
 function ReceptionPatients() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [patients, setPatients] = useState([]);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [message, setMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const fetchPatients = () =>
     requestJson("Patient")
@@ -28,7 +44,10 @@ function ReceptionPatients() {
         setPatients(parseList(data));
         setMessage("");
       })
-      .catch((error) => setMessage(error.message));
+      .catch((error) => {
+        setMessage(error.message);
+        toast.error(error.message || "Unable to load patients.");
+      });
 
   useEffect(() => {
     fetchPatients();
@@ -38,6 +57,7 @@ function ReceptionPatients() {
 
   const openAdd = () => {
     setForm(emptyForm);
+    setFieldErrors({});
     setModal("add");
     setMessage("");
   };
@@ -52,15 +72,72 @@ function ReceptionPatients() {
       dateOfBirth: patient.dateOfBirth || "",
       bloodGroup: patient.bloodGroup || "",
       emergencyContactName: patient.emergencyContactName || "",
+      emergencyContactPhone: patient.emergencyContactPhone || "",
       gender: patient.gender || "Female",
       address: patient.address || "",
     });
+    setFieldErrors({});
     setModal("edit");
     setMessage("");
   };
 
+  const updateField = (name, value) => {
+    let nextValue = value;
+
+    if (["name", "emergencyContactName"].includes(name)) {
+      nextValue = onlyAlpha(value);
+    }
+
+    if (["phone", "emergencyContactPhone"].includes(name)) {
+      nextValue = onlyDigits(value).slice(0, 10);
+    }
+
+    if (name === "age") {
+      nextValue = onlyNumberValue(value);
+    }
+
+    setForm((prev) => ({ ...prev, [name]: nextValue }));
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    setMessage("");
+  };
+
+  const validateForm = () => {
+    const nextErrors = {
+      name: validateAlpha(form.name, "Name"),
+      email: validateGmail(form.email),
+      phone: validateMobile(form.phone, "Phone"),
+      age: validateNumeric(form.age, "Age", { integer: true }),
+      dateOfBirth: validateDate(form.dateOfBirth, "Date of birth"),
+      bloodGroup: validateRequired(form.bloodGroup, "Blood group"),
+      emergencyContactName: validateAlpha(
+        form.emergencyContactName,
+        "Emergency contact name"
+      ),
+      emergencyContactPhone: validateMobile(
+        form.emergencyContactPhone,
+        "Emergency contact phone"
+      ),
+      gender: validateSelected(form.gender, "gender"),
+      address: validateRequired(form.address, "Address"),
+    };
+
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key]) delete nextErrors[key];
+    });
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const savePatient = async (event) => {
     event.preventDefault();
+    if (!validateForm()) {
+      const text = "Please fix the highlighted fields.";
+      setMessage(text);
+      toast.error(text);
+      return;
+    }
+
     const body = {
       name: form.name.trim(),
       email: form.email.trim(),
@@ -69,6 +146,7 @@ function ReceptionPatients() {
       dateOfBirth: form.dateOfBirth || "",
       bloodGroup: form.bloodGroup.trim(),
       emergencyContactName: form.emergencyContactName.trim(),
+      emergencyContactPhone: form.emergencyContactPhone.trim(),
       gender: form.gender,
       address: form.address.trim(),
     };
@@ -84,8 +162,10 @@ function ReceptionPatients() {
       }
       setModal(null);
       await fetchPatients();
+      toast.success(modal === "edit" ? "Patient updated successfully" : "Patient added successfully");
     } catch (error) {
       setMessage(error.message);
+      toast.error(error.message || "Unable to save patient.");
     }
   };
 
@@ -94,8 +174,10 @@ function ReceptionPatients() {
     try {
       await requestJson(`Patient/${id}`, { method: "DELETE" });
       await fetchPatients();
+      toast.success("Patient deleted successfully");
     } catch (error) {
       setMessage(error.message);
+      toast.error(error.message || "Unable to delete patient.");
     }
   };
 
@@ -190,6 +272,7 @@ function ReceptionPatients() {
                 "dateOfBirth",
                 "bloodGroup",
                 "emergencyContactName",
+                "emergencyContactPhone",
                 "address",
               ].map((field) => (
                 <label key={field}>
@@ -209,10 +292,12 @@ function ReceptionPatients() {
                     }
                     value={form[field] || ""}
                     disabled={modal === "view"}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, [field]: event.target.value }))
-                    }
+                    className={fieldErrors[field] ? "is-invalid" : ""}
+                    onChange={(event) => updateField(field, event.target.value)}
                   />
+                  {fieldErrors[field] ? (
+                    <small className="rc-field-error">{fieldErrors[field]}</small>
+                  ) : null}
                 </label>
               ))}
               <label>
@@ -220,14 +305,16 @@ function ReceptionPatients() {
                 <select
                   value={form.gender || "Female"}
                   disabled={modal === "view"}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, gender: event.target.value }))
-                  }
+                  className={fieldErrors.gender ? "is-invalid" : ""}
+                  onChange={(event) => updateField("gender", event.target.value)}
                 >
                   <option>Female</option>
                   <option>Male</option>
                   <option>Other</option>
                 </select>
+                {fieldErrors.gender ? (
+                  <small className="rc-field-error">{fieldErrors.gender}</small>
+                ) : null}
               </label>
             </div>
             <div className="rc-modal-actions">

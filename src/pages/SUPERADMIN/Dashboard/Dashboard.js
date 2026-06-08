@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Building2, IndianRupee, ShieldCheck, UserCheck, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Header from "../../../components/superadmin/Header";
 import DashboardCards from "../../../components/superadmin/DashboardCards";
 import Charts from "../../../components/superadmin/Charts";
@@ -13,6 +14,7 @@ const formatCurrency = (value) =>
   }).format(value);
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dashboard, setDashboard] = useState({});
@@ -61,33 +63,38 @@ function Dashboard() {
         value: getDashboardMetric(metrics, ["totalClinics", "clinics", "clinicCount"]),
         icon: Building2,
         tone: "teal",
+        onClick: () => navigate("/superadmin/clinics"),
       },
       {
         label: "Total Admins",
         value: getDashboardMetric(metrics, ["totalAdmins", "admins", "adminCount"]),
         icon: ShieldCheck,
         tone: "blue",
+        onClick: () => navigate("/superadmin/admins"),
       },
       {
         label: "Total Users",
         value: getDashboardMetric(metrics, ["totalUsers", "users", "userCount"]),
         icon: Users,
         tone: "amber",
+        onClick: () => navigate("/superadmin/users"),
       },
       {
         label: "Active Users",
         value: getDashboardMetric(metrics, ["activeUsers", "activeUserCount"]),
         icon: UserCheck,
         tone: "green",
+        onClick: () => navigate("/superadmin/users"),
       },
       {
         label: "Revenue Summary",
         value: formatCurrency(getDashboardMetric(metrics, ["totalRevenue", "revenue", "revenueSummary"])),
         icon: IndianRupee,
         tone: "teal",
+        onClick: () => navigate("/superadmin/reports"),
       },
     ];
-  }, [dashboard, summary]);
+  }, [dashboard, navigate, summary]);
 
   if (loading) {
     return <div className="sa-state">Loading Super Admin dashboard...</div>;
