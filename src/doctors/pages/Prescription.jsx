@@ -12,6 +12,9 @@ import {
   fetchDiagnosisOptions,
   mergeDiagnosisOption,
 } from "../utils/diagnosisOptions";
+import { getClinicDisplayName } from "../../utils/clinicDisplay";
+import { useToast } from "../../components/ToastProvider";
+import { validateDate, validateRequired } from "../../utils/validation";
 
 const STEPS = [
   "Waiting",
@@ -126,6 +129,7 @@ const toPositiveId = (value) => {
 function Prescription() {
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   const routeState = location.state || {};
 
   const [appointment, setAppointment] = useState(null);
@@ -140,6 +144,7 @@ function Prescription() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [diagnosisOptions, setDiagnosisOptions] = useState([]);
 
   useEffect(() => {
@@ -289,7 +294,7 @@ function Prescription() {
     loadPrescription();
   }, [routeState.appointmentId, routeState.patientId]);
 
-  const hospitalName = localStorage.getItem("hospitalName") || "MediCare";
+  const hospitalName = getClinicDisplayName({}, "MediCare");
   const doctorName = localStorage.getItem("doctorName") || appointment?.doctorName || "Doctor";
 
   const validMedicines = useMemo(
@@ -322,26 +327,37 @@ function Prescription() {
     setMedicines((prev) => [...prev, createMedicine()]);
 
   const submitPrescription = async () => {
+    setFieldErrors({});
     const appointmentId = toPositiveId(appointment?.appointmentId);
     const patientId = toPositiveId(appointment?.patientId);
 
     if (!appointmentId || !patientId) {
-      setError("Appointment id or patient id is missing.");
+      const text = "Appointment id or patient id is missing.";
+      setError(text);
+      toast.error(text);
       return;
     }
 
-    if (!diagnosis.trim()) {
-      setError("Diagnosis is required.");
+    const nextErrors = {
+      diagnosis: validateRequired(diagnosis, "Diagnosis"),
+      followUp: validateDate(followUp, "Follow up date", { allowPast: false }),
+    };
+
+    if (nextErrors.diagnosis || nextErrors.followUp) {
+      Object.keys(nextErrors).forEach((key) => {
+        if (!nextErrors[key]) delete nextErrors[key];
+      });
+      setFieldErrors(nextErrors);
+      const text = "Please fix the highlighted fields.";
+      setError(text);
+      toast.error(text);
       return;
     }
 
     if (validMedicines.length === 0) {
-      setError("Add at least one medicine.");
-      return;
-    }
-
-    if (!followUp) {
-      setError("Follow up date is required.");
+      const text = "Add at least one medicine.";
+      setError(text);
+      toast.error(text);
       return;
     }
 
@@ -353,7 +369,9 @@ function Prescription() {
     );
 
     if (incompleteMedicine) {
-      setError("Dosage, frequency, and duration are required for each medicine.");
+      const text = "Dosage, frequency, and duration are required for each medicine.";
+      setError(text);
+      toast.error(text);
       return;
     }
 
@@ -400,7 +418,9 @@ function Prescription() {
         );
       }
 
-      setMessage(data.message || "Prescription submitted.");
+      const text = data.message || "Prescription submitted.";
+      setMessage(text);
+      toast.success(text);
       navigate("/doctor/completion", {
         state: {
           message: data.message,
@@ -411,7 +431,9 @@ function Prescription() {
       });
     } catch (err) {
       console.error(err);
-      setError(err.message || "Unable to submit prescription.");
+      const text = err.message || "Unable to submit prescription.";
+      setError(text);
+      toast.error(text);
     } finally {
       setSubmitting(false);
     }
@@ -467,10 +489,17 @@ function Prescription() {
               className="rx-input"
               list="prescription-diagnosis-options"
               value={diagnosis}
-              onChange={(event) => setDiagnosis(event.target.value)}
+              onChange={(event) => {
+                setDiagnosis(event.target.value);
+                setFieldErrors((prev) => ({ ...prev, diagnosis: "" }));
+                setError("");
+              }}
               placeholder="Diagnosis from consultation"
               autoComplete="off"
             />
+            {fieldErrors.diagnosis ? (
+              <small className="rx-field-error">{fieldErrors.diagnosis}</small>
+            ) : null}
             <datalist id="prescription-diagnosis-options">
               {diagnosisOptions.map((item) => (
                 <option value={item} key={item} />
@@ -570,8 +599,15 @@ function Prescription() {
               className="rx-input"
               type="date"
               value={followUp}
-              onChange={(event) => setFollowUp(event.target.value)}
+              onChange={(event) => {
+                setFollowUp(event.target.value);
+                setFieldErrors((prev) => ({ ...prev, followUp: "" }));
+                setError("");
+              }}
             />
+            {fieldErrors.followUp ? (
+              <small className="rx-field-error">{fieldErrors.followUp}</small>
+            ) : null}
           </div>
 
           <div className="rx-actions">

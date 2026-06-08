@@ -31,6 +31,7 @@
 
 /* SEARCH */
 .topbar-search-box {
+  position: relative;
   display: flex;
   align-items: center;
   background: #f1f5f9;
@@ -39,6 +40,7 @@
   border-radius: 12px;
   width: min(680px, 100%);
   gap: 10px;
+  border: 0;
 }
 
 .topbar-search-icon {
@@ -52,6 +54,47 @@
   width: 100%;
   font-size: 16px;
   color: #334155;
+}
+
+.topbar-search-results {
+  position: absolute;
+  z-index: 20;
+  top: 58px;
+  left: 0;
+  right: 0;
+  padding: 6px;
+  border: 1px solid #dbe3ed;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+}
+
+.topbar-search-results button,
+.topbar-search-results span {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.topbar-search-results button {
+  cursor: pointer;
+}
+
+.topbar-search-results button:hover {
+  background: #eef6f6;
+  color: #0f766e;
+}
+
+.topbar-search-results span {
+  color: #64748b;
 }
 
 /* RIGHT */
@@ -68,6 +111,12 @@
   position: relative;
   cursor: pointer;
   color: #0f172a;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
 }
 
 .topbar-dot {

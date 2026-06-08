@@ -3,6 +3,8 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import clinicBg from '../assests/clinic-bg.jpg';
 import './styles/Auth.css';
 import { apiUrl } from '../config/api';
+import { useToast } from '../components/ToastProvider';
+import { validateStrongPassword } from '../utils/validation';
 
 const EyeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -30,6 +32,7 @@ const LogoIcon = () => (
 const RESET_PASSWORD_API = apiUrl('Auth/reset-password');
 
 const ResetPassword = () => {
+  const toast = useToast();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -58,11 +61,8 @@ const ResetPassword = () => {
 
   const validate = () => {
     const newErrors = {};
-    if (!newPassword) {
-      newErrors.newPassword = 'New Password is required';
-    } else if (newPassword.length < 3) {
-      newErrors.newPassword = 'Password must be at least 3 characters';
-    }
+    const passwordError = validateStrongPassword(newPassword, 'New Password');
+    if (passwordError) newErrors.newPassword = passwordError;
 
     if (!confirmPassword) {
       newErrors.confirmPassword = 'Confirm Password is required';
@@ -81,6 +81,7 @@ const ResetPassword = () => {
   const handleReset = async (e) => {
     e.preventDefault();
     if (!validate()) {
+      toast.error('Please fix the highlighted fields.');
       return;
     }
 
@@ -104,12 +105,14 @@ const ResetPassword = () => {
         setErrors({
           api: data.message || 'Unable to reset password. Please try again.',
         });
+        toast.error(data.message || 'Unable to reset password. Please try again.');
         return;
       }
 
       sessionStorage.removeItem('resetToken');
       sessionStorage.removeItem('resetEmail');
 
+      toast.success(data.message || 'Password reset successful. Please login.');
       navigate('/login', {
         replace: true,
         state: {
@@ -120,6 +123,7 @@ const ResetPassword = () => {
       setErrors({
         api: 'Unable to reach server. Please try again.',
       });
+      toast.error('Unable to reach server. Please try again.');
     } finally {
       setIsLoading(false);
     }

@@ -3,6 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, RefreshCw, ShieldCheck, UserPlus } from "lucide-react";
 import "./RegisterDoctor.css";
 import { apiUrl } from "../../config/api";
+import { useToast } from "../../components/ToastProvider";
+import {
+  onlyAlpha,
+  onlyDigits,
+  validateAlpha,
+  validateGmail,
+  validateMobile,
+  validateSelected,
+  validateStrongPassword,
+} from "../../utils/validation";
+import { getClinicDisplayName } from "../../utils/clinicDisplay";
 
 const DOCTORS_API = apiUrl("Doctor");
 const REGISTER_DOCTOR_API = apiUrl("Auth/register-doctor");
@@ -59,6 +70,7 @@ const parseErrorMessage = async (response, fallback) => {
 
 function RegisterDoctor() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
   const [doctorError, setDoctorError] = useState("");
@@ -75,6 +87,8 @@ function RegisterDoctor() {
       ) || null,
     [doctors, form.doctorId]
   );
+  const hospitalId = localStorage.getItem("hospitalId") || "";
+  const clinicName = getClinicDisplayName({ ...selectedDoctor, hospitalId }, "");
 
   const fetchDoctors = useCallback(async () => {
     setLoadingDoctors(true);
@@ -112,9 +126,19 @@ function RegisterDoctor() {
   }, [fetchDoctors]);
 
   const updateField = (name, value) => {
+    let nextValue = value;
+
+    if (name === "name") {
+      nextValue = onlyAlpha(value);
+    }
+
+    if (name === "mobileNumber") {
+      nextValue = onlyDigits(value).slice(0, 10);
+    }
+
     setForm((previous) => ({
       ...previous,
-      [name]: value,
+      [name]: nextValue,
     }));
 
     setFieldErrors((previous) => ({
@@ -146,29 +170,20 @@ function RegisterDoctor() {
 
   const validateForm = () => {
     const nextErrors = {};
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!form.doctorId) {
       nextErrors.doctorId = "Select a doctor.";
     }
 
-    if (!form.name.trim()) {
-      nextErrors.name = "Name is required.";
-    }
+    nextErrors.name = validateAlpha(form.name, "Name");
+    nextErrors.mobileNumber = validateMobile(form.mobileNumber, "Mobile number");
+    nextErrors.email = validateGmail(form.email);
+    nextErrors.password = validateStrongPassword(form.password);
+    nextErrors.role = validateSelected(form.role, "a role");
 
-    if (!form.mobileNumber.trim()) {
-      nextErrors.mobileNumber = "Mobile number is required.";
-    }
-
-    if (!form.email.trim()) {
-      nextErrors.email = "Email is required.";
-    } else if (!emailPattern.test(form.email.trim())) {
-      nextErrors.email = "Enter a valid email address.";
-    }
-
-    if (!form.password.trim()) {
-      nextErrors.password = "Password is required.";
-    }
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key]) delete nextErrors[key];
+    });
 
     setFieldErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -179,6 +194,7 @@ function RegisterDoctor() {
 
     if (!validateForm()) {
       setError("Please fix the highlighted fields.");
+      toast.error("Please fix the highlighted fields.");
       return;
     }
 
@@ -190,6 +206,7 @@ function RegisterDoctor() {
     if (!token) {
       setSaving(false);
       setError("Admin session missing. Please login again.");
+      toast.error("Admin session missing. Please login again.");
       return;
     }
 
@@ -200,6 +217,10 @@ function RegisterDoctor() {
       email: form.email.trim(),
       password: form.password,
       role: "Doctor",
+      hospitalId: hospitalId ? Number(hospitalId) || hospitalId : undefined,
+      clinicId: hospitalId ? Number(hospitalId) || hospitalId : undefined,
+      hospitalName: clinicName || undefined,
+      clinicName: clinicName || undefined,
     };
 
     try {
@@ -228,15 +249,18 @@ function RegisterDoctor() {
       }
 
       const data = await response.json().catch(() => ({}));
-      setSuccess(data?.message || "Doctor registered successfully");
+      const message = data?.message || "Doctor registered successfully";
+      setSuccess(message);
+      toast.success(message);
       setForm((previous) => ({
         ...previous,
         password: "",
       }));
     } catch (submitError) {
-      setError(
-        submitError.message || "Unable to register doctor login right now."
-      );
+      const message =
+        submitError.message || "Unable to register doctor login right now.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -338,6 +362,8 @@ function RegisterDoctor() {
                 onChange={(event) =>
                   updateField("mobileNumber", event.target.value)
                 }
+                inputMode="numeric"
+                maxLength={10}
                 className={fieldErrors.mobileNumber ? "is-invalid" : ""}
                 disabled={saving}
               />
@@ -387,7 +413,18 @@ function RegisterDoctor() {
 
             <div className="register-doctor-field register-doctor-role-field">
               <label htmlFor="role">Role</label>
-              <input id="role" name="role" value={form.role} readOnly />
+              <input
+                id="role"
+                name="role"
+                value={form.role}
+                readOnly
+                className={fieldErrors.role ? "is-invalid" : ""}
+              />
+              {fieldErrors.role ? (
+                <span className="register-doctor-field-error">
+                  {fieldErrors.role}
+                </span>
+              ) : null}
             </div>
 
             {success ? (

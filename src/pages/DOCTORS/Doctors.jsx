@@ -15,6 +15,20 @@ import AuthImage, {
   resolveApiImageUrl,
 } from "../../utils/AuthImage";
 import { apiUrl } from "../../config/api";
+import { useToast } from "../../components/ToastProvider";
+import {
+  onlyAlpha,
+  onlyDigits,
+  onlyNumberValue,
+  validateAlpha,
+  validateGmail,
+  validateImageFile,
+  validateMobile,
+  validateNumeric,
+  validateSelected,
+  validateStrongPassword,
+} from "../../utils/validation";
+import { getClinicDisplayName } from "../../utils/clinicDisplay";
 
 const DOCTORS_API_URL =
   apiUrl("Doctor");
@@ -106,42 +120,22 @@ const getValidationMessages = (data) => {
 
 const validateEditForm = (form) => {
   const errors = getEmptyEditErrors();
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phonePattern = /^[0-9+\-\s()]{7,15}$/;
-  const experienceValue = Number(form.experience);
-  const feesValue = Number(form.fees);
+  errors.name = validateAlpha(form.name, "Name");
+  errors.specialization = validateAlpha(form.specialization, "Specialization");
+  errors.experience = validateNumeric(form.experience, "Experience", {
+    integer: true,
+  });
+  errors.fees = validateNumeric(form.fees, "Fees");
+  errors.email = validateGmail(form.email);
+  errors.phone = validateMobile(form.phone, "Phone");
+  errors.password = validateStrongPassword(form.password, "Password", {
+    required: false,
+  });
+  errors.isActive = validateSelected(String(form.isActive), "a status");
 
-  if (!form.name.trim()) {
-    errors.name = "Name is required.";
-  }
-
-  if (!form.specialization.trim()) {
-    errors.specialization = "Specialization is required.";
-  }
-
-  if (form.experience === "" || Number.isNaN(experienceValue) || experienceValue < 0) {
-    errors.experience = "Experience must be 0 or more.";
-  }
-
-  if (!Number.isInteger(experienceValue)) {
-    errors.experience = "Experience must be a whole number.";
-  }
-
-  if (form.fees === "" || Number.isNaN(feesValue) || feesValue < 0) {
-    errors.fees = "Fees must be 0 or more.";
-  }
-
-  if (!form.email.trim()) {
-    errors.email = "Email is required.";
-  } else if (!emailPattern.test(form.email.trim())) {
-    errors.email = "Enter a valid email address.";
-  }
-
-  if (!form.phone.trim()) {
-    errors.phone = "Phone is required.";
-  } else if (!phonePattern.test(form.phone.trim())) {
-    errors.phone = "Enter a valid phone number.";
-  }
+  Object.keys(errors).forEach((key) => {
+    if (!errors[key]) delete errors[key];
+  });
 
   return errors;
 };
@@ -174,6 +168,16 @@ const buildDoctorUpdateBody = ({
   body.append("Phone", cleanFormValue(form.phone ?? doctor.phone));
   body.append("Password", String(form.password ?? "").trim());
   body.append("IsActive", String(nextIsActive));
+  const hospitalId = localStorage.getItem("hospitalId") || "";
+  const clinicName = getClinicDisplayName({ ...doctor, hospitalId }, "");
+  if (hospitalId) {
+    body.append("HospitalId", hospitalId);
+    body.append("ClinicId", hospitalId);
+  }
+  if (clinicName) {
+    body.append("HospitalName", clinicName);
+    body.append("ClinicName", clinicName);
+  }
 
   if (imageFile) {
     body.append("Image", imageFile);
@@ -184,6 +188,7 @@ const buildDoctorUpdateBody = ({
 
 function Doctors() {
   const navigate = useNavigate();
+  const toast = useToast();
   const editImageInputRef = useRef(null);
 
   const [searchText, setSearchText] = useState("");
@@ -372,10 +377,23 @@ function Doctors() {
 
   const handleEditFieldChange = (event) => {
     const { name, value } = event.target;
+    let nextValue = value;
+
+    if (["name", "specialization"].includes(name)) {
+      nextValue = onlyAlpha(value);
+    }
+
+    if (name === "phone") {
+      nextValue = onlyDigits(value).slice(0, 10);
+    }
+
+    if (["experience", "fees"].includes(name)) {
+      nextValue = onlyNumberValue(value);
+    }
 
     setEditForm((previous) => ({
       ...previous,
-      [name]: name === "isActive" ? value === "true" : value,
+      [name]: name === "isActive" ? value === "true" : nextValue,
     }));
 
     setEditFieldErrors((previous) => ({
@@ -389,6 +407,18 @@ function Doctors() {
   const handleEditImageChange = (event) => {
     const nextFile = event.target.files?.[0];
     if (!nextFile) return;
+
+    const imageError = validateImageFile(nextFile);
+    if (imageError) {
+      setEditFieldErrors((previous) => ({
+        ...previous,
+        image: imageError,
+        form: "",
+      }));
+      setEditError("");
+      toast.error(imageError);
+      return;
+    }
 
     if (editImagePreview.startsWith("blob:")) {
       URL.revokeObjectURL(editImagePreview);
@@ -408,10 +438,17 @@ function Doctors() {
 
     if (!editingDoctor?.id) return;
 
-    const validationErrors = validateEditForm(editForm);
+    const validationErrors = {
+      ...validateEditForm(editForm),
+      image: validateImageFile(editImageFile),
+    };
+    Object.keys(validationErrors).forEach((key) => {
+      if (!validationErrors[key]) delete validationErrors[key];
+    });
     if (Object.keys(validationErrors).length > 0) {
       setEditFieldErrors(validationErrors);
       setEditError("Please fix the highlighted fields.");
+      toast.error("Please fix the highlighted fields.");
       return;
     }
 
@@ -443,9 +480,12 @@ function Doctors() {
       }
 
       await fetchDoctors();
+      toast.success("Doctor updated successfully");
       closeEditDoctor();
     } catch (updateError) {
-      setEditError(updateError.message || "Unable to update doctor right now.");
+      const message = updateError.message || "Unable to update doctor right now.";
+      setEditError(message);
+      toast.error(message);
     } finally {
       setSavingEdit(false);
     }
@@ -486,10 +526,12 @@ function Doctors() {
             : item
         )
       );
+      toast.success(nextIsActive ? "Doctor activated successfully" : "Doctor disabled successfully");
     } catch (toggleError) {
-      setError(
-        toggleError.message || "Unable to toggle doctor status right now."
-      );
+      const message =
+        toggleError.message || "Unable to toggle doctor status right now.";
+      setError(message);
+      toast.error(message);
     } finally {
       setToggleLoadingId(null);
     }
@@ -523,8 +565,11 @@ function Doctors() {
       setDoctors((previousDoctors) =>
         previousDoctors.filter((doctor) => doctor.id !== doctorId)
       );
+      toast.success("Doctor deleted successfully");
     } catch (deleteError) {
-      setError(deleteError.message || "Unable to delete doctor right now.");
+      const message = deleteError.message || "Unable to delete doctor right now.";
+      setError(message);
+      toast.error(message);
     } finally {
       setDeleteLoadingId(null);
     }
@@ -837,6 +882,8 @@ function Doctors() {
                     name="phone"
                     value={editForm.phone}
                     onChange={handleEditFieldChange}
+                    inputMode="numeric"
+                    maxLength={10}
                     className={editFieldErrors.phone ? "is-invalid" : ""}
                     aria-invalid={Boolean(editFieldErrors.phone)}
                   />

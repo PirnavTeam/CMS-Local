@@ -12,6 +12,7 @@ import {
   MapPin,
   Pill,
   Phone,
+  UserRound,
 } from "lucide-react";
 
 import {
@@ -88,6 +89,12 @@ const normalizePatient = (patient) => {
     bloodGroup:
       patient.bloodGroup ||
       patient.bloodgroup ||
+      emptyValue,
+    emergencyContactName:
+      patient.emergencyContactName ||
+      emptyValue,
+    emergencyContactPhone:
+      patient.emergencyContactPhone ||
       emptyValue,
     lastVisit:
       patient.lastVisit ||
@@ -628,6 +635,22 @@ function PatientDetails() {
 
               <span>
                 {patient.address || "-"}
+              </span>
+
+            </div>
+
+            {/* EMERGENCY CONTACT */}
+
+            <div className="patient-info-row">
+
+              <UserRound size={22} />
+
+              <span>
+                Emergency contact: {patient.emergencyContactName || "-"}
+                {patient.emergencyContactPhone &&
+                  patient.emergencyContactPhone !== "-"
+                  ? `, ${patient.emergencyContactPhone}`
+                  : ""}
               </span>
 
             </div>

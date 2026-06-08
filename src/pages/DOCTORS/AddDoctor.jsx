@@ -218,12 +218,28 @@ import "./Modal.css";
 import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { apiUrl } from "../../config/api";
+import { useToast } from "../../components/ToastProvider";
+import {
+  onlyAlpha,
+  onlyDigits,
+  onlyNumberValue,
+  validateAlpha,
+  validateGmail,
+  validateMobile,
+  validateNumeric,
+  validateImageFile,
+  validateStrongPassword,
+} from "../../utils/validation";
+import { getClinicDisplayName } from "../../utils/clinicDisplay";
 
 const DOCTORS_API_URL =
   apiUrl("Doctor");
 
 function AddDoctor() {
   const navigate = useNavigate();
+  const toast = useToast();
+  const hospitalId = localStorage.getItem("hospitalId") || "";
+  const clinicName = getClinicDisplayName({ hospitalId }, "");
 
   const [form, setForm] = useState({
     name: "",
@@ -238,18 +254,39 @@ function AddDoctor() {
   const [image, setImage] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
+    const { name } = event.target;
+    let { value } = event.target;
+
+    if (["name", "specialization"].includes(name)) {
+      value = onlyAlpha(value);
+    }
+
+    if (name === "phone") {
+      value = onlyDigits(value).slice(0, 10);
+    }
+
+    if (["experience", "fees"].includes(name)) {
+      value = onlyNumberValue(value);
+    }
 
     setForm((previous) => ({
       ...previous,
       [name]: value,
     }));
+    setFieldErrors((previous) => ({ ...previous, [name]: "" }));
+    setError("");
   };
 
   const handleImageChange = (event) => {
-    setImage(event.target.files?.[0] || null);
+    const file = event.target.files?.[0] || null;
+    setImage(file);
+    setFieldErrors((previous) => ({
+      ...previous,
+      image: validateImageFile(file),
+    }));
   };
 
   const parseErrorMessage = async (response) => {
@@ -271,8 +308,36 @@ function AddDoctor() {
     }
   };
 
+  const validateForm = () => {
+    const nextErrors = {
+      name: validateAlpha(form.name, "Doctor name"),
+      specialization: validateAlpha(form.specialization, "Specialization"),
+      experience: validateNumeric(form.experience, "Experience", {
+        integer: true,
+      }),
+      fees: validateNumeric(form.fees, "Fees"),
+      email: validateGmail(form.email),
+      phone: validateMobile(form.phone, "Phone"),
+      password: validateStrongPassword(form.password),
+      image: validateImageFile(image),
+    };
+
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key]) delete nextErrors[key];
+    });
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (!validateForm()) {
+      setError("Please fix the highlighted fields.");
+      toast.error("Please fix the highlighted fields.");
+      return;
+    }
 
     setSaving(true);
     setError("");
@@ -287,6 +352,14 @@ function AddDoctor() {
     body.append("Phone", form.phone.trim());
     body.append("Password", form.password); // added
     body.append("IsActive", "true");
+    if (hospitalId) {
+      body.append("HospitalId", hospitalId);
+      body.append("ClinicId", hospitalId);
+    }
+    if (clinicName) {
+      body.append("HospitalName", clinicName);
+      body.append("ClinicName", clinicName);
+    }
 
     if (image) {
       body.append("Image", image);
@@ -305,11 +378,13 @@ function AddDoctor() {
         throw new Error(await parseErrorMessage(response));
       }
 
-      alert("Doctor added successfully");
+      toast.success("Doctor added successfully");
 
       navigate("/doctors");
     } catch (submitError) {
-      setError(submitError.message || "Unable to add doctor right now.");
+      const message = submitError.message || "Unable to add doctor right now.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -342,8 +417,12 @@ function AddDoctor() {
                 name="name"
                 value={form.name}
                 onChange={handleChange}
+                className={fieldErrors.name ? "is-invalid" : ""}
                 required
               />
+              {fieldErrors.name ? (
+                <span className="add-doctor-field-error">{fieldErrors.name}</span>
+              ) : null}
             </div>
 
             <div className="add-doctor-input-group">
@@ -352,8 +431,14 @@ function AddDoctor() {
                 name="specialization"
                 value={form.specialization}
                 onChange={handleChange}
+                className={fieldErrors.specialization ? "is-invalid" : ""}
                 required
               />
+              {fieldErrors.specialization ? (
+                <span className="add-doctor-field-error">
+                  {fieldErrors.specialization}
+                </span>
+              ) : null}
             </div>
 
             <div className="add-doctor-input-group">
@@ -364,8 +449,14 @@ function AddDoctor() {
                 min="0"
                 value={form.experience}
                 onChange={handleChange}
+                className={fieldErrors.experience ? "is-invalid" : ""}
                 required
               />
+              {fieldErrors.experience ? (
+                <span className="add-doctor-field-error">
+                  {fieldErrors.experience}
+                </span>
+              ) : null}
             </div>
 
             <div className="add-doctor-input-group">
@@ -377,8 +468,12 @@ function AddDoctor() {
                 step="0.01"
                 value={form.fees}
                 onChange={handleChange}
+                className={fieldErrors.fees ? "is-invalid" : ""}
                 required
               />
+              {fieldErrors.fees ? (
+                <span className="add-doctor-field-error">{fieldErrors.fees}</span>
+              ) : null}
             </div>
 
             <div className="add-doctor-input-group">
@@ -388,8 +483,12 @@ function AddDoctor() {
                 type="email"
                 value={form.email}
                 onChange={handleChange}
+                className={fieldErrors.email ? "is-invalid" : ""}
                 required
               />
+              {fieldErrors.email ? (
+                <span className="add-doctor-field-error">{fieldErrors.email}</span>
+              ) : null}
             </div>
 
             <div className="add-doctor-input-group">
@@ -398,8 +497,14 @@ function AddDoctor() {
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
+                inputMode="numeric"
+                maxLength={10}
+                className={fieldErrors.phone ? "is-invalid" : ""}
                 required
               />
+              {fieldErrors.phone ? (
+                <span className="add-doctor-field-error">{fieldErrors.phone}</span>
+              ) : null}
             </div>
 
             {/* Added Password Field */}
@@ -410,8 +515,14 @@ function AddDoctor() {
                 type="password"
                 value={form.password}
                 onChange={handleChange}
+                className={fieldErrors.password ? "is-invalid" : ""}
                 required
               />
+              {fieldErrors.password ? (
+                <span className="add-doctor-field-error">
+                  {fieldErrors.password}
+                </span>
+              ) : null}
             </div>
 
             <div className="add-doctor-input-group add-doctor-input-group-half">
@@ -421,7 +532,11 @@ function AddDoctor() {
                 name="Image"
                 accept="image/*"
                 onChange={handleImageChange}
+                className={fieldErrors.image ? "is-invalid" : ""}
               />
+              {fieldErrors.image ? (
+                <span className="add-doctor-field-error">{fieldErrors.image}</span>
+              ) : null}
             </div>
 
           </div>

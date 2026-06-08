@@ -7,8 +7,14 @@ function DashboardCards({ cards = [] }) {
 
   return (
     <div className="sa-card-grid">
-      {cards.map(({ label, value, icon: Icon, tone }) => (
-        <div className="sa-stat-card" key={label}>
+      {cards.map(({ label, value, icon: Icon, tone, onClick }) => (
+        <button
+          type="button"
+          className="sa-stat-card"
+          key={label}
+          onClick={onClick}
+          disabled={!onClick}
+        >
           <div className={`sa-stat-icon sa-stat-icon--${tone || "teal"}`}>
             {Icon ? <Icon size={18} /> : null}
           </div>
@@ -16,7 +22,7 @@ function DashboardCards({ cards = [] }) {
             <h2>{value}</h2>
             <p>{label}</p>
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );

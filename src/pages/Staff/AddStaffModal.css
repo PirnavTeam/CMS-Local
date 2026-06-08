@@ -60,6 +60,18 @@
   background: #ffffff;
 }
 
+.add-staff-input.is-invalid {
+  border-color: #dc2626;
+  background: #fff7f7;
+}
+
+.add-staff-field-error {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .add-staff-actions {
   display: flex;
   justify-content: flex-end;

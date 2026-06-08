@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import clinicBg from '../assests/clinic-bg.jpg';
 import './styles/Auth.css';
 import { apiUrl } from '../config/api';
+import { useToast } from '../components/ToastProvider';
 
 const LogoIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -14,6 +15,7 @@ const LogoIcon = () => (
 const VERIFY_OTP_API = apiUrl('Auth/verify-otp');
 
 const VerifyOTP = () => {
+  const toast = useToast();
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,9 +51,11 @@ const VerifyOTP = () => {
     e.preventDefault();
     if (!otp) {
       setError('OTP is required');
+      toast.error('OTP is required');
       return;
     } else if (otp.length < 4 || !/^\d+$/.test(otp)) {
       setError('Enter a valid numeric OTP');
+      toast.error('Enter a valid numeric OTP');
       return;
     }
 
@@ -70,15 +74,18 @@ const VerifyOTP = () => {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         setError(data.message || 'OTP verification failed. Please try again.');
+        toast.error(data.message || 'OTP verification failed. Please try again.');
         return;
       }
 
       if (!data?.resetToken) {
         setError('OTP verified, but reset token not received. Please retry.');
+        toast.error('OTP verified, but reset token not received. Please retry.');
         return;
       }
 
       sessionStorage.setItem('resetToken', data.resetToken);
+      toast.success('OTP verified successfully');
       navigate('/ResetPassword', {
         state: {
           resetToken: data.resetToken,
@@ -86,6 +93,7 @@ const VerifyOTP = () => {
       });
     } catch {
       setError('Unable to reach server. Please try again.');
+      toast.error('Unable to reach server. Please try again.');
     } finally {
       setIsLoading(false);
     }

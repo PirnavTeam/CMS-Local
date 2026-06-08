@@ -7,6 +7,16 @@ import React, {
 
 import "./AddStaffModal.css";
 import { apiUrl } from "../../config/api";
+import { useToast } from "../../components/ToastProvider";
+import {
+  onlyAlpha,
+  onlyDigits,
+  validateAlpha,
+  validateGmail,
+  validateImageFile,
+  validateMobile,
+  validateStrongPassword,
+} from "../../utils/validation";
 
 const API_URL =
   apiUrl("Staff");
@@ -16,11 +26,34 @@ const cleanFormValue = (value) => {
   return text.toLowerCase() === "string" ? "" : text;
 };
 
+const parseApiError = async (response) => {
+  const text = await response.text().catch(() => "");
+  if (!text) return "Unable to save staff.";
+
+  try {
+    const data = JSON.parse(text);
+    const validationMessage =
+      data?.errors && typeof data.errors === "object"
+        ? Object.entries(data.errors)
+            .flatMap(([key, messages]) => {
+              const list = Array.isArray(messages) ? messages : [messages];
+              return list.filter(Boolean).map((message) => `${key}: ${message}`);
+            })
+            .join(" ")
+        : "";
+
+    return data?.message || validationMessage || data?.title || text;
+  } catch {
+    return text;
+  }
+};
+
 function AddStaffModal({
   onClose,
   fetchStaff,
   editData,
 }) {
+  const toast = useToast();
   const [loading, setLoading] =
     useState(false);
 
@@ -36,6 +69,8 @@ function AddStaffModal({
       password: "",
       isActive: true,
     });
+  const [fieldErrors, setFieldErrors] =
+    useState({});
 
   // ================= EDIT DATA =================
   useEffect(() => {
@@ -54,8 +89,17 @@ function AddStaffModal({
 
   // ================= CHANGE =================
   const handleChange = (e) => {
-    const { name, value } =
+    const { name } =
       e.target;
+    let { value } = e.target;
+
+    if (["name", "role"].includes(name)) {
+      value = onlyAlpha(value);
+    }
+
+    if (name === "phone") {
+      value = onlyDigits(value).slice(0, 10);
+    }
 
     setFormData((prev) => ({
       ...prev,
@@ -64,6 +108,7 @@ function AddStaffModal({
           ? value === "true"
           : value,
     }));
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   // ================= IMAGE =================
@@ -73,7 +118,31 @@ function AddStaffModal({
 
     if (file) {
       setImage(file);
+      setFieldErrors((prev) => ({
+        ...prev,
+        image: validateImageFile(file),
+      }));
     }
+  };
+
+  const validateForm = () => {
+    const nextErrors = {
+      name: validateAlpha(formData.name, "Name"),
+      email: validateGmail(formData.email),
+      phone: validateMobile(formData.phone, "Phone"),
+      role: validateAlpha(formData.role, "Role"),
+      password: validateStrongPassword(formData.password, "Password", {
+        required: !editData,
+      }),
+      image: validateImageFile(image),
+    };
+
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key]) delete nextErrors[key];
+    });
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   // ================= SUBMIT =================
@@ -81,6 +150,11 @@ function AddStaffModal({
     e
   ) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      toast.error("Please fix the highlighted fields.");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -164,19 +238,19 @@ function AddStaffModal({
 
       if (!response.ok) {
         const errorText =
-          await response.text();
+          await parseApiError(response);
 
         console.log(
           "API ERROR:",
           errorText
         );
 
-        alert(errorText);
+        toast.error(errorText || "Unable to save staff.");
 
         return;
       }
 
-      alert(
+      toast.success(
         editData
           ? "Staff updated successfully"
           : "Staff added successfully"
@@ -190,6 +264,7 @@ function AddStaffModal({
         "SUBMIT ERROR:",
         error
       );
+      toast.error(error.message || "Unable to save staff.");
     } finally {
       setLoading(false);
     }
@@ -237,13 +312,16 @@ function AddStaffModal({
               <input
                 type="text"
                 name="name"
-                className="add-staff-input"
                 value={formData.name}
                 onChange={
                   handleChange
                 }
+                className={`add-staff-input ${fieldErrors.name ? "is-invalid" : ""}`}
                 required
               />
+              {fieldErrors.name ? (
+                <span className="add-staff-field-error">{fieldErrors.name}</span>
+              ) : null}
 
             </div>
 
@@ -257,13 +335,16 @@ function AddStaffModal({
               <input
                 type="email"
                 name="email"
-                className="add-staff-input"
                 value={formData.email}
                 onChange={
                   handleChange
                 }
+                className={`add-staff-input ${fieldErrors.email ? "is-invalid" : ""}`}
                 required
               />
+              {fieldErrors.email ? (
+                <span className="add-staff-field-error">{fieldErrors.email}</span>
+              ) : null}
 
             </div>
 
@@ -277,13 +358,18 @@ function AddStaffModal({
               <input
                 type="text"
                 name="phone"
-                className="add-staff-input"
                 value={formData.phone}
                 onChange={
                   handleChange
                 }
+                inputMode="numeric"
+                maxLength={10}
+                className={`add-staff-input ${fieldErrors.phone ? "is-invalid" : ""}`}
                 required
               />
+              {fieldErrors.phone ? (
+                <span className="add-staff-field-error">{fieldErrors.phone}</span>
+              ) : null}
 
             </div>
 
@@ -297,15 +383,20 @@ function AddStaffModal({
               <input
                 type="password"
                 name="password"
-                className="add-staff-input"
                 value={
                   formData.password
                 }
                 onChange={
                   handleChange
                 }
-                required
+                className={`add-staff-input ${fieldErrors.password ? "is-invalid" : ""}`}
+                required={!editData}
               />
+              {fieldErrors.password ? (
+                <span className="add-staff-field-error">
+                  {fieldErrors.password}
+                </span>
+              ) : null}
 
             </div>
 
@@ -319,13 +410,16 @@ function AddStaffModal({
               <input
                 type="text"
                 name="role"
-                className="add-staff-input"
                 value={formData.role}
                 onChange={
                   handleChange
                 }
+                className={`add-staff-input ${fieldErrors.role ? "is-invalid" : ""}`}
                 required
               />
+              {fieldErrors.role ? (
+                <span className="add-staff-field-error">{fieldErrors.role}</span>
+              ) : null}
 
             </div>
 
@@ -367,11 +461,14 @@ function AddStaffModal({
               <input
                 type="file"
                 accept="image/*"
-                className="add-staff-input"
+                className={`add-staff-input ${fieldErrors.image ? "is-invalid" : ""}`}
                 onChange={
                   handleImageChange
                 }
               />
+              {fieldErrors.image ? (
+                <span className="add-staff-field-error">{fieldErrors.image}</span>
+              ) : null}
 
             </div>
 

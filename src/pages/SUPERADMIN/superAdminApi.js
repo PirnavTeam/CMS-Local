@@ -27,6 +27,28 @@ export const SUPER_ADMIN_API = {
   settingsPayment: "settings/payment",
 };
 
+const LOCAL_NOTIFICATIONS_KEY = "superadmin_notifications";
+const LOCAL_AUDIT_LOGS_KEY = "superadmin_audit_logs";
+
+const readLocalList = (key) => {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeLocalList = (key, items) => {
+  localStorage.setItem(key, JSON.stringify(items));
+};
+
+const prependLocalItem = (key, item) => {
+  const nextItems = [item, ...readLocalList(key)].slice(0, 100);
+  writeLocalList(key, nextItems);
+  return item;
+};
+
 const asArray = (value) => {
   if (Array.isArray(value)) return value;
   if (!value || typeof value !== "object") return [];
@@ -192,6 +214,16 @@ export const normalizeAuditLog = (log = {}) => ({
   module: pick(log, ["module", "moduleName", "category"], "Audit"),
 });
 
+export const normalizeLoginLog = (log = {}, index = 0) => ({
+  id: pick(log, ["id", "logId", "_id"], `login-${index}`),
+  user: pick(log, ["user", "userName", "name", "email", "emailAddress"], "Unknown user"),
+  action: pick(log, ["action", "activity", "message", "description"], "Logged in"),
+  timestamp: formatDateTime(pick(log, ["timestamp", "createdAt", "date", "loginTime", "time"])),
+  module: "Login",
+  ipAddress: pick(log, ["ipAddress", "ip", "clientIp"], ""),
+  role: pick(log, ["role", "roleName", "userRole"], ""),
+});
+
 export const normalizeNotification = (notification = {}) => ({
   id: pick(notification, ["id", "notificationId", "_id"]),
   title: pick(notification, ["title", "subject"], "Notification"),
@@ -299,17 +331,77 @@ export const createClinicAdmin = async (admin) =>
     body: admin,
   });
 
-export const fetchNotifications = async () =>
-  asArray(await superAdminRequest(SUPER_ADMIN_API.notifications)).map(normalizeNotification);
+export const fetchNotifications = async () => {
+  const localNotifications = readLocalList(LOCAL_NOTIFICATIONS_KEY).map(normalizeNotification);
 
-export const createNotification = async (notification) =>
+  try {
+    const remoteNotifications = asArray(
+      await superAdminRequest(SUPER_ADMIN_API.notifications)
+    ).map(normalizeNotification);
+
+    return [...localNotifications, ...remoteNotifications];
+  } catch (error) {
+    if (localNotifications.length) return localNotifications;
+    throw error;
+  }
+};
+
+export const createNotification = async (notification) => {
+  const createdAt = new Date().toISOString();
+  const localNotification = normalizeNotification({
+    ...notification,
+    id: `local-notification-${Date.now()}`,
+    createdAt,
+  });
+
+  prependLocalItem(LOCAL_NOTIFICATIONS_KEY, localNotification);
+
+  try {
+    return await superAdminRequest(SUPER_ADMIN_API.notifications, {
+      method: "POST",
+      body: notification,
+    });
+  } catch (error) {
+    return localNotification;
+  }
+};
+
+export const recordAuditLog = (log) =>
+  prependLocalItem(LOCAL_AUDIT_LOGS_KEY, {
+    id: `local-audit-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    ...log,
+  });
+
+export const createNotificationRemote = async (notification) =>
   superAdminRequest(SUPER_ADMIN_API.notifications, {
     method: "POST",
     body: notification,
   });
 
-export const fetchAuditLogs = async () =>
-  asArray(await superAdminRequest(SUPER_ADMIN_API.auditLogs)).map(normalizeAuditLog);
+export const fetchAuditLogs = async () => {
+  const [auditResult, loginResult] = await Promise.allSettled([
+    superAdminRequest(SUPER_ADMIN_API.auditLogs),
+    superAdminRequest(SUPER_ADMIN_API.loginHistory),
+  ]);
+
+  const auditLogs =
+    auditResult.status === "fulfilled"
+      ? asArray(auditResult.value).map(normalizeAuditLog)
+      : [];
+  const loginLogs =
+    loginResult.status === "fulfilled"
+      ? asArray(loginResult.value).map(normalizeLoginLog)
+      : [];
+  const localLogs = readLocalList(LOCAL_AUDIT_LOGS_KEY).map(normalizeAuditLog);
+  const logs = [...localLogs, ...loginLogs, ...auditLogs];
+
+  if (!logs.length && auditResult.status === "rejected" && loginResult.status === "rejected") {
+    throw auditResult.reason;
+  }
+
+  return logs;
+};
 
 export const fetchRoles = async () =>
   asArray(await superAdminRequest(SUPER_ADMIN_API.roles)).map(normalizeRole);
