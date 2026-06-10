@@ -62,7 +62,6 @@ function DoctorAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState(null);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
 
@@ -91,41 +90,6 @@ function DoctorAppointments() {
     } finally {
       setLoading(false);
       setRefreshing(false);
-      setUpdatingStatus(null);
-    }
-  };
-
-  const updateAppointmentStatus = async (appointmentId, status) => {
-    try {
-      setRefreshing(true);
-      setUpdatingStatus(appointmentId);
-      setError("");
-
-      const token = getAuthToken();
-      const headers = {
-        "ngrok-skip-browser-warning": "true",
-        "Content-Type": "application/json",
-      };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const response = await fetch(`${APPOINTMENTS_API}/${appointmentId}/status`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ status }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Unable to update appointment status.");
-      }
-
-      await fetchAppointments({ silent: true });
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Unable to update appointment status.");
-    } finally {
-      setRefreshing(false);
-      setUpdatingStatus(null);
     }
   };
 
@@ -240,17 +204,6 @@ function DoctorAppointments() {
                   <button className="da-act-btn" type="button" title="View notes">
                     <FileText size={16} />
                   </button>
-                  {String(patient.status || "").toLowerCase() !== "completed" && (
-                    <button
-                      className="da-act-btn da-act-btn--secondary"
-                      type="button"
-                      title="Mark completed"
-                      disabled={updatingStatus === patient.appointmentId}
-                      onClick={() => updateAppointmentStatus(patient.appointmentId, "Completed")}
-                    >
-                      {updatingStatus === patient.appointmentId ? "Updating..." : "Complete"}
-                    </button>
-                  )}
                   <button
                     className="da-act-btn da-act-btn--primary"
                     type="button"

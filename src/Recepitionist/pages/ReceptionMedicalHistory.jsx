@@ -1,0 +1,342 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  Eye,
+  FilePlus2,
+  HeartPulse,
+  Pencil,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { parseList, requestJson } from "../receptionApi";
+
+const emptyForm = {
+  id: "",
+  patientId: "",
+  allergies: "",
+  chronicDiseases: "",
+  currentMedications: "",
+  surgeries: "",
+};
+
+const getHistoryId = (record) =>
+  record?.id || record?.medicalHistoryId || record?.historyId || "";
+
+const getPatientId = (record) => record?.patientId || record?.patient?.id || "";
+
+const getPatientName = (record, patientsById) => {
+  const patientId = String(getPatientId(record));
+  return (
+    record?.patientName ||
+    record?.patient?.name ||
+    patientsById.get(patientId)?.name ||
+    ""
+  );
+};
+
+function ReceptionMedicalHistory() {
+  const navigate = useNavigate();
+  const [histories, setHistories] = useState([]);
+  const [patients, setPatients] = useState([]);
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const patientsById = useMemo(
+    () => new Map(patients.map((patient) => [String(patient.id), patient])),
+    [patients]
+  );
+
+  const rows = useMemo(() => [...histories].reverse(), [histories]);
+
+  const loadPatients = useCallback(async () => {
+    const data = await requestJson("Patient");
+    return parseList(data);
+  }, []);
+
+  const fetchHistories = useCallback(async (patientList) => {
+    try {
+      setLoading(true);
+      const nextPatients = patientList?.length ? patientList : await loadPatients();
+      setPatients(nextPatients);
+
+      const historyResults = await Promise.all(
+        nextPatients.map((patient) =>
+          requestJson(`MedicalHistory/${patient.id}`)
+            .then((data) => ({ ...data, patientId: data?.patientId || patient.id }))
+            .catch(() => null)
+        )
+      );
+
+      setHistories(
+        historyResults.filter(
+          (record) =>
+            record &&
+            (record.patientId ||
+              record.allergies ||
+              record.chronicDiseases ||
+              record.currentMedications ||
+              record.surgeries)
+        )
+      );
+      setMessage("");
+    } catch (error) {
+      setMessage(error.message || "Unable to load medical history.");
+    } finally {
+      setLoading(false);
+    }
+  }, [loadPatients]);
+
+  const fetchPatients = useCallback(async () => {
+    try {
+      const nextPatients = await loadPatients();
+      setPatients(nextPatients);
+      return nextPatients;
+    } catch {
+      setPatients([]);
+      return [];
+    }
+  }, [loadPatients]);
+
+  useEffect(() => {
+    fetchPatients().then((nextPatients) => fetchHistories(nextPatients));
+  }, [fetchHistories, fetchPatients]);
+
+  const openAdd = () => {
+    setForm(emptyForm);
+    setModal("add");
+    setMessage("");
+  };
+
+  const openEdit = (record) => {
+    setForm({
+      id: getHistoryId(record),
+      patientId: getPatientId(record),
+      allergies: record?.allergies || "",
+      chronicDiseases: record?.chronicDiseases || "",
+      currentMedications: record?.currentMedications || "",
+      surgeries: record?.surgeries || "",
+    });
+    setModal("edit");
+    setMessage("");
+  };
+
+  const openView = (record) => {
+    setForm({
+      id: getHistoryId(record),
+      patientId: getPatientId(record),
+      allergies: record?.allergies || "",
+      chronicDiseases: record?.chronicDiseases || "",
+      currentMedications: record?.currentMedications || "",
+      surgeries: record?.surgeries || "",
+    });
+    setModal("view");
+    setMessage("");
+  };
+
+  const saveHistory = async (event) => {
+    event.preventDefault();
+    const patientId = Number(form.patientId);
+
+    if (!patientId) {
+      setMessage("Patient ID is required.");
+      return;
+    }
+
+    const body = {
+      patientId,
+      allergies: form.allergies.trim(),
+      chronicDiseases: form.chronicDiseases.trim(),
+      currentMedications: form.currentMedications.trim(),
+      surgeries: form.surgeries.trim(),
+    };
+
+    try {
+      await requestJson("MedicalHistory", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      setModal(null);
+      await fetchHistories();
+    } catch (error) {
+      setMessage(error.message || "Unable to save medical history.");
+    }
+  };
+
+  const deleteHistory = async (record) => {
+    const historyId = getHistoryId(record) || getPatientId(record);
+    if (!historyId) {
+      setMessage("Patient ID is missing.");
+      return;
+    }
+
+    if (!window.confirm("Delete this medical history record?")) return;
+
+    try {
+      await requestJson(`MedicalHistory/${historyId}`, { method: "DELETE" });
+      await fetchHistories();
+    } catch (error) {
+      setMessage(error.message || "Unable to delete medical history.");
+    }
+  };
+
+  return (
+    <section className="rc-page">
+      <div className="rc-page-head">
+        <div>
+          <h2>Medical History</h2>
+          <p>
+            Add, review, update, and remove patient allergy, disease, medication,
+            and surgery history.
+          </p>
+        </div>
+        <div className="rc-head-actions">
+          <button className="rc-btn primary" onClick={openAdd}>
+            <FilePlus2 size={16} /> Add History
+          </button>
+          <button
+            className="rc-btn ghost"
+            onClick={() => fetchHistories(patients)}
+            disabled={loading}
+          >
+            <RefreshCw size={16} /> Refresh
+          </button>
+          <button className="rc-btn" onClick={() => navigate("/reception/dashboard")}>
+            <ArrowLeft size={16} /> Dashboard
+          </button>
+        </div>
+      </div>
+
+      {message ? <div className="rc-alert">{message}</div> : null}
+
+      <div className="rc-card">
+        <div className="rc-card-head">
+          <div>
+            <h3>History Records</h3>
+            <p>{loading ? "Loading records..." : `${rows.length} records found`}</p>
+          </div>
+        </div>
+
+        <div className="rc-table">
+          <div className="rc-table-head six">
+            <span>Patient</span>
+            <span>Allergies</span>
+            <span>Chronic Diseases</span>
+            <span>Medications</span>
+            <span>Surgeries</span>
+            <span>Actions</span>
+          </div>
+          {rows.map((record, index) => {
+            const historyId = getHistoryId(record) || `${getPatientId(record)}-${index}`;
+            const patientName = getPatientName(record, patientsById);
+            return (
+              <div className="rc-table-row six" key={historyId}>
+                <span>
+                  <strong>{patientName || `Patient ${getPatientId(record) || "-"}`}</strong>
+                  <small>PID: {getPatientId(record) || "-"}</small>
+                </span>
+                <span>{record.allergies || "-"}</span>
+                <span>{record.chronicDiseases || "-"}</span>
+                <span>{record.currentMedications || "-"}</span>
+                <span>{record.surgeries || "-"}</span>
+                <span className="rc-row-actions">
+                  <button onClick={() => openView(record)}>
+                    <Eye size={15} /> View
+                  </button>
+                  <button onClick={() => openEdit(record)}>
+                    <Pencil size={15} /> Edit
+                  </button>
+                  <button className="danger" onClick={() => deleteHistory(record)}>
+                    <Trash2 size={15} /> Delete
+                  </button>
+                </span>
+              </div>
+            );
+          })}
+          {!rows.length ? <div className="rc-empty">No medical history found.</div> : null}
+        </div>
+      </div>
+
+      {modal ? (
+        <div className="rc-modal-backdrop" onClick={() => setModal(null)}>
+          <form
+            className="rc-modal"
+            onSubmit={saveHistory}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3>
+              {modal === "view"
+                ? "Medical History Details"
+                : modal === "edit"
+                  ? "Edit Medical History"
+                  : "Add Medical History"}
+            </h3>
+            <div className="rc-form-grid">
+              <label>
+                <span>Patient</span>
+                <select
+                  value={form.patientId || ""}
+                  disabled={modal === "view"}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, patientId: event.target.value }))
+                  }
+                >
+                  <option value="">Select patient</option>
+                  {patients.map((patient) => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.name || `Patient ${patient.id}`} (PID: {patient.id})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Patient ID</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.patientId || ""}
+                  disabled={modal === "view"}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, patientId: event.target.value }))
+                  }
+                />
+              </label>
+              {[
+                ["allergies", "Allergies"],
+                ["chronicDiseases", "Chronic Diseases"],
+                ["currentMedications", "Current Medications"],
+                ["surgeries", "Surgeries"],
+              ].map(([field, label]) => (
+                <label key={field}>
+                  <span>{label}</span>
+                  <textarea
+                    value={form[field] || ""}
+                    disabled={modal === "view"}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, [field]: event.target.value }))
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="rc-modal-actions">
+              <button type="button" className="rc-btn ghost" onClick={() => setModal(null)}>
+                Close
+              </button>
+              {modal !== "view" ? (
+                <button type="submit" className="rc-btn primary">
+                  <HeartPulse size={16} /> Save
+                </button>
+              ) : null}
+            </div>
+          </form>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+export default ReceptionMedicalHistory;

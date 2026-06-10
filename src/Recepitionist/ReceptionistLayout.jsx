@@ -8,6 +8,7 @@ import "./Receptionist.css";
 const TITLES = {
   "/reception/dashboard": "Reception Dashboard",
   "/reception/patients": "Patients",
+  "/reception/medical-history": "Medical History",
   "/reception/appointments": "Appointment Booking",
   "/reception/billing": "Billing",
 };

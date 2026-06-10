@@ -5,6 +5,7 @@ import ReceptionDashboard from "./pages/ReceptionDashboard";
 import ReceptionPatients from "./pages/ReceptionPatients";
 import ReceptionAppointments from "./pages/ReceptionAppointments";
 import ReceptionBilling from "./pages/ReceptionBilling";
+import ReceptionMedicalHistory from "./pages/ReceptionMedicalHistory";
 import UserProfilePage from "../profile/UserProfilePage";
 
 function ReceptionistApp() {
@@ -14,6 +15,7 @@ function ReceptionistApp() {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<ReceptionDashboard />} />
         <Route path="patients" element={<ReceptionPatients />} />
+        <Route path="medical-history" element={<ReceptionMedicalHistory />} />
         <Route path="appointments" element={<ReceptionAppointments />} />
         <Route path="billing" element={<ReceptionBilling />} />
         <Route path="profile" element={<UserProfilePage roleType="receptionist" />} />
