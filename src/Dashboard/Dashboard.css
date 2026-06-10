@@ -259,6 +259,7 @@
 .dashboard-panel--activity {
   display: flex;
   flex-direction: column;
+  scroll-margin-top: 96px;
 }
 
 .dashboard-activity-list {

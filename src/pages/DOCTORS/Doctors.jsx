@@ -33,6 +33,37 @@ import { getClinicDisplayName } from "../../utils/clinicDisplay";
 const DOCTORS_API_URL =
   apiUrl("Doctor");
 
+const DOCTOR_DELETE_CONFLICT_MESSAGE =
+  "This doctor has linked appointments and cannot be deleted. Set the doctor to Inactive instead.";
+
+const getSafeApiErrorMessage = (message, fallbackMessage) => {
+  const text = String(message || "").trim();
+  if (!text) return fallbackMessage;
+
+  const isAppointmentConstraint =
+    /FK_Appointments_Doctors_DoctorId/i.test(text) ||
+    (
+      /DELETE statement conflicted with the REFERENCE constraint/i.test(text) &&
+      /Appointments/i.test(text) &&
+      /DoctorId/i.test(text)
+    );
+
+  if (isAppointmentConstraint) {
+    return DOCTOR_DELETE_CONFLICT_MESSAGE;
+  }
+
+  const containsServerInternals =
+    /Microsoft\.EntityFrameworkCore|Microsoft\.Data\.SqlClient|SqlException|DbUpdateException|HEADERS\s*=+|stack trace/i.test(
+      text
+    );
+
+  if (containsServerInternals || text.length > 500) {
+    return fallbackMessage;
+  }
+
+  return text;
+};
+
 const parseDoctorsResponse = (data) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.data)) return data.data;
@@ -242,14 +273,15 @@ function Doctors() {
       try {
         const errorBody = JSON.parse(text);
         const validationMessages = getValidationMessages(errorBody);
-        return (
+        return getSafeApiErrorMessage(
           errorBody?.message ||
           validationMessages.join(" ") ||
           errorBody?.title ||
-          text
+          text,
+          fallbackMessage
         );
       } catch {
-        return text;
+        return getSafeApiErrorMessage(text, fallbackMessage);
       }
     } catch {
       return fallbackMessage;

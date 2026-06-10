@@ -37,14 +37,16 @@ const getAuthPayload = (data) => {
     return {};
   }
 
-  if (data.data && typeof data.data === 'object') {
-    return {
-      ...data,
-      ...data.data,
-    };
-  }
+  const nestedPayloads = [
+    data.data,
+    data.result,
+    data.user,
+    data.profile,
+    data.data?.user,
+    data.result?.user,
+  ].filter((value) => value && typeof value === 'object' && !Array.isArray(value));
 
-  return data;
+  return Object.assign({}, data, ...nestedPayloads);
 };
 
 const getAuthToken = (data) =>
@@ -78,6 +80,45 @@ const getClaim = (claims, ...keys) => {
   }
 
   return '';
+};
+
+const getFirstText = (...values) => {
+  for (const value of values) {
+    const text = String(value || '').trim();
+    if (text) return text;
+  }
+
+  return '';
+};
+
+const getDisplayName = (authData, claims, email, role) => {
+  const candidates = [
+    authData.name,
+    authData.fullName,
+    authData.displayName,
+    authData.userName,
+    authData.adminName,
+    authData.doctorName,
+    authData.receptionistName,
+    getClaim(
+      claims,
+      'name',
+      'unique_name',
+      'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'
+    ),
+  ]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const name = candidates.find((value) => value.toLowerCase() !== normalizedEmail);
+
+  if (name) return name;
+
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === 'doctor') return 'Doctor';
+  if (normalizedRole === 'receptionist') return 'Receptionist';
+  if (normalizedRole === 'superadmin') return 'Super Admin';
+  return 'Admin';
 };
 
 const normalizeRole = (role) =>
@@ -119,6 +160,7 @@ const clearStoredSession = () => {
     'receptionistRole',
     'userRole',
     'adminEmail',
+    'adminName',
     'doctorEmail',
     'receptionistEmail',
     'receptionistName',
@@ -254,16 +296,17 @@ const AdminLogin = () => {
         return;
       }
 
-      const displayName =
+      const loginEmail = getFirstText(
+        authData.email,
+        authData.emailAddress,
         getClaim(
           claims,
-          'name',
-          'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'
-        ) ||
-        authData.name ||
-        authData.fullName ||
-        authData.adminName ||
-        email.trim();
+          'email',
+          'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'
+        ),
+        trimmedEmail
+      );
+      const displayName = getDisplayName(authData, claims, loginEmail, role);
       const hospitalId =
         authData.hospitalId ||
         authData.clinicId ||
@@ -284,7 +327,7 @@ const AdminLogin = () => {
       localStorage.setItem('hospitalName', clinicName);
       localStorage.setItem('clinicName', clinicName);
       recordAuditLog({
-        user: authData.email || trimmedEmail,
+        user: loginEmail,
         action: `${displayName} logged in`,
         module: 'Login',
         role,
@@ -293,7 +336,7 @@ const AdminLogin = () => {
       if (normalizedRole === 'superadmin') {
         localStorage.setItem('adminToken', token);
         localStorage.setItem('adminRole', 'superadmin');
-        localStorage.setItem('adminEmail', authData.email || trimmedEmail);
+        localStorage.setItem('adminEmail', loginEmail);
         localStorage.setItem('adminName', displayName);
         toast.success('Login successful');
         navigate('/superadmin/dashboard', { replace: true });
@@ -303,7 +346,7 @@ const AdminLogin = () => {
       if (normalizedRole === 'doctor') {
         localStorage.setItem('doctorToken', token);
         localStorage.setItem('doctorRole', role);
-        localStorage.setItem('doctorEmail', authData.email || email.trim());
+        localStorage.setItem('doctorEmail', loginEmail);
         localStorage.setItem('doctorName', displayName);
         localStorage.setItem('doctorId', String(authData.doctorId || getClaim(claims, 'DoctorId') || ''));
         toast.success('Login successful');
@@ -314,7 +357,7 @@ const AdminLogin = () => {
       if (normalizedRole === 'receptionist') {
         localStorage.setItem('receptionistToken', token);
         localStorage.setItem('receptionistRole', role);
-        localStorage.setItem('receptionistEmail', authData.email || email.trim());
+        localStorage.setItem('receptionistEmail', loginEmail);
         localStorage.setItem('receptionistName', displayName);
         toast.success('Login successful');
         navigate('/reception/dashboard', { replace: true });
@@ -323,7 +366,8 @@ const AdminLogin = () => {
 
       localStorage.setItem('adminToken', token);
       localStorage.setItem('adminRole', role);
-      localStorage.setItem('adminEmail', authData.email || email.trim());
+      localStorage.setItem('adminEmail', loginEmail);
+      localStorage.setItem('adminName', displayName);
       toast.success('Login successful');
       navigate('/dashboard', { replace: true });
     } catch {
@@ -369,6 +413,7 @@ const AdminLogin = () => {
               }}
               className={errors.email ? 'input-error' : ''}
               autoComplete="email"
+              autoFocus
             />
             {errors.email && <span className="error-message">{errors.email}</span>}
           </div>

@@ -66,7 +66,7 @@
 
 
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import {
   Bell,
@@ -77,6 +77,29 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import "./Topbar.css";
 import UserProfileMenu from "../profile/UserProfileMenu";
+import { apiUrl } from "../config/api";
+
+const DASHBOARD_API = apiUrl("Dashboard");
+
+const getAdminToken = () =>
+  localStorage.getItem("adminToken") ||
+  localStorage.getItem("token");
+
+const getActivityCount = (data) => {
+  const activities =
+    data?.recentActivities ||
+    data?.data?.recentActivities ||
+    data?.result?.recentActivities;
+
+  if (Array.isArray(activities)) return activities.length;
+
+  return Number(
+    data?.recentActivityCount ||
+    data?.data?.recentActivityCount ||
+    data?.result?.recentActivityCount ||
+    0
+  );
+};
 
 const adminSearchItems = [
   { label: "Dashboard", keywords: "home stats overview", path: "/dashboard" },
@@ -106,6 +129,7 @@ function Topbar({ onMenu }) {
   const location = useLocation();
   const [query, setQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
+  const [activityCount, setActivityCount] = useState(0);
   const isSuperAdmin = location.pathname.startsWith("/superadmin");
   const searchItems = isSuperAdmin ? superAdminSearchItems : adminSearchItems;
   const placeholder = isSuperAdmin
@@ -130,6 +154,52 @@ function Topbar({ onMenu }) {
   const submitSearch = (event) => {
     event.preventDefault();
     if (results[0]) goTo(results[0].path);
+  };
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      setActivityCount(0);
+      return undefined;
+    }
+
+    let active = true;
+
+    const loadActivityCount = async () => {
+      try {
+        const token = getAdminToken();
+        const response = await fetch(DASHBOARD_API, {
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (active) setActivityCount(getActivityCount(data));
+      } catch {
+        // Keep the last successful count when a background refresh fails.
+      }
+    };
+
+    loadActivityCount();
+    const intervalId = window.setInterval(loadActivityCount, 30000);
+    window.addEventListener("focus", loadActivityCount);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", loadActivityCount);
+    };
+  }, [isSuperAdmin]);
+
+  const openNotifications = () => {
+    navigate(
+      isSuperAdmin
+        ? "/superadmin/notifications"
+        : "/dashboard#recent-activity"
+    );
   };
 
   return (
@@ -201,13 +271,22 @@ function Topbar({ onMenu }) {
         <button
           type="button"
           className="topbar-notification"
-          onClick={() => navigate(isSuperAdmin ? "/superadmin/notifications" : "/profile")}
-          title="Notifications"
+          onClick={openNotifications}
+          title={isSuperAdmin ? "Notifications" : "Recent Activity"}
+          aria-label={
+            isSuperAdmin
+              ? "Open notifications"
+              : `Open recent activity. ${activityCount} events.`
+          }
         >
 
           <Bell size={18} />
 
-          <span className="topbar-dot"></span>
+          {!isSuperAdmin && activityCount > 0 ? (
+            <span className="topbar-notification-count">
+              {activityCount > 99 ? "99+" : activityCount}
+            </span>
+          ) : null}
 
         </button>
 

@@ -227,10 +227,7 @@ import {
   validateGmail,
   validateMobile,
   validateNumeric,
-  validateImageFile,
-  validateStrongPassword,
 } from "../../utils/validation";
-import { getClinicDisplayName } from "../../utils/clinicDisplay";
 
 const DOCTORS_API_URL =
   apiUrl("Doctor");
@@ -238,8 +235,6 @@ const DOCTORS_API_URL =
 function AddDoctor() {
   const navigate = useNavigate();
   const toast = useToast();
-  const hospitalId = localStorage.getItem("hospitalId") || "";
-  const clinicName = getClinicDisplayName({ hospitalId }, "");
 
   const [form, setForm] = useState({
     name: "",
@@ -248,10 +243,9 @@ function AddDoctor() {
     fees: "0",
     email: "",
     phone: "",
-    password: "", // added
+    isActive: "true",
   });
 
-  const [image, setImage] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -278,15 +272,6 @@ function AddDoctor() {
     }));
     setFieldErrors((previous) => ({ ...previous, [name]: "" }));
     setError("");
-  };
-
-  const handleImageChange = (event) => {
-    const file = event.target.files?.[0] || null;
-    setImage(file);
-    setFieldErrors((previous) => ({
-      ...previous,
-      image: validateImageFile(file),
-    }));
   };
 
   const parseErrorMessage = async (response) => {
@@ -318,8 +303,6 @@ function AddDoctor() {
       fees: validateNumeric(form.fees, "Fees"),
       email: validateGmail(form.email),
       phone: validateMobile(form.phone, "Phone"),
-      password: validateStrongPassword(form.password),
-      image: validateImageFile(image),
     };
 
     Object.keys(nextErrors).forEach((key) => {
@@ -350,20 +333,7 @@ function AddDoctor() {
     body.append("Fees", String(Number(form.fees) || 0));
     body.append("Email", form.email.trim());
     body.append("Phone", form.phone.trim());
-    body.append("Password", form.password); // added
-    body.append("IsActive", "true");
-    if (hospitalId) {
-      body.append("HospitalId", hospitalId);
-      body.append("ClinicId", hospitalId);
-    }
-    if (clinicName) {
-      body.append("HospitalName", clinicName);
-      body.append("ClinicName", clinicName);
-    }
-
-    if (image) {
-      body.append("Image", image);
-    }
+    body.append("IsActive", form.isActive);
 
     try {
       const response = await fetch(DOCTORS_API_URL, {
@@ -463,9 +433,8 @@ function AddDoctor() {
               <label>Fees</label>
               <input
                 name="fees"
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={form.fees}
                 onChange={handleChange}
                 className={fieldErrors.fees ? "is-invalid" : ""}
@@ -507,36 +476,17 @@ function AddDoctor() {
               ) : null}
             </div>
 
-            {/* Added Password Field */}
-            <div className="add-doctor-input-group">
-              <label>Password</label>
-              <input
-                name="password"
-                type="password"
-                value={form.password}
+            <div className="add-doctor-input-group add-doctor-status-group">
+              <label htmlFor="add-doctor-is-active">Is Active</label>
+              <select
+                id="add-doctor-is-active"
+                name="isActive"
+                value={form.isActive}
                 onChange={handleChange}
-                className={fieldErrors.password ? "is-invalid" : ""}
-                required
-              />
-              {fieldErrors.password ? (
-                <span className="add-doctor-field-error">
-                  {fieldErrors.password}
-                </span>
-              ) : null}
-            </div>
-
-            <div className="add-doctor-input-group add-doctor-input-group-half">
-              <label>Image</label>
-              <input
-                type="file"
-                name="Image"
-                accept="image/*"
-                onChange={handleImageChange}
-                className={fieldErrors.image ? "is-invalid" : ""}
-              />
-              {fieldErrors.image ? (
-                <span className="add-doctor-field-error">{fieldErrors.image}</span>
-              ) : null}
+              >
+                <option value="true">True</option>
+                <option value="false">False</option>
+              </select>
             </div>
 
           </div>

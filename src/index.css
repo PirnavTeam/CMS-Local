@@ -3,6 +3,7 @@ body {
   font-family: "Inter", "Segoe UI", Arial, sans-serif;
   font-size: 14px;
   color: #071120;
+  caret-color: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -26,6 +27,12 @@ input,
 select,
 textarea {
   font-family: inherit;
+}
+
+input,
+textarea,
+[contenteditable]:not([contenteditable="false"]) {
+  caret-color: auto;
 }
 
 .content h1,
