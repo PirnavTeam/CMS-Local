@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../../components/ToastProvider";
 import { formatToday, parseList, requestJson } from "../receptionApi";
 
 const slots = [
@@ -24,6 +25,7 @@ const getSlotStart = (slot) => String(slot || "").split(" - ")[0].trim();
 
 function ReceptionAppointments() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [appointments, setAppointments] = useState([]);
@@ -119,6 +121,7 @@ function ReceptionAppointments() {
     event.preventDefault();
     if (!form.patientId || !form.doctorId || !selectedSlot) {
       setMessage("Please select patient, doctor, date, and time slot.");
+      toast.error("Please select patient, doctor, date, and time slot.");
       return;
     }
 
@@ -144,10 +147,13 @@ function ReceptionAppointments() {
     try {
       await requestJson("Appointment", { method: "POST", body: JSON.stringify(body) });
       setMessage("Appointment booked successfully.");
+      toast.success("Appointment booked successfully");
       setSelectedSlot("");
       refresh();
     } catch (error) {
-      setMessage(error.message);
+      const text = error.message || "Unable to book appointment.";
+      setMessage(text);
+      toast.error(text);
     }
   };
 

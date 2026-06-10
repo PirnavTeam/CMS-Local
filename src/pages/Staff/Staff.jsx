@@ -140,6 +140,7 @@ import {
 import AddStaffModal from "./AddStaffModal";
 import AuthImage from "../../utils/AuthImage";
 import { apiUrl } from "../../config/api";
+import { useToast } from "../../components/ToastProvider";
 
 const STAFF_API_URL =
   apiUrl("Staff");
@@ -190,6 +191,7 @@ const parseStaffResponse = (data) => {
 };
 
 function Staff() {
+  const toast = useToast();
   const [open, setOpen] =
     useState(false);
 
@@ -315,12 +317,14 @@ function Staff() {
         );
 
         await fetchStaff();
+        toast.success(nextIsActive ? "Staff activated successfully" : "Staff disabled successfully");
       } catch (error) {
         console.error(error);
-        setError(
+        const message =
           error.message ||
-          "Unable to update status."
-        );
+          "Unable to update status.";
+        setError(message);
+        toast.error(message);
       } finally {
         setToggleLoadingId(null);
       }

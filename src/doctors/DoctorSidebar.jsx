@@ -7,6 +7,7 @@ import {
   Settings,
 } from "lucide-react";
 import "./DoctorSidebar.css";
+import { getClinicDisplayName } from "../utils/clinicDisplay";
 
 /* ── Navigation items ── */
 const NAV_ITEMS = [
@@ -28,7 +29,7 @@ const getInitials = (name) =>
 
 function DoctorSidebar() {
   const doctorName = localStorage.getItem("doctorName") || "Doctor";
-  const hospitalName = localStorage.getItem("hospitalName") || "Hospital System";
+  const hospitalName = getClinicDisplayName({}, "Hospital System");
   const displayName = `Dr. ${doctorName}`.replace(/^Dr\.\s*Dr\./i, "Dr.");
 
   return (

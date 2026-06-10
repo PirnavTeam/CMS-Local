@@ -2,6 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Download, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { parseList, requestJson } from "../receptionApi";
+import { useToast } from "../../components/ToastProvider";
+import {
+  onlyNumberValue,
+  validateNumeric,
+  validateSelected,
+} from "../../utils/validation";
 
 const escapeHtml = (value) =>
   String(value ?? "")
@@ -32,6 +38,9 @@ const getInvoiceStatus = (invoice) =>
   firstValue(invoice?.paymentStatus, invoice?.invoiceStatus, invoice?.billingStatus, invoice?.status) ||
   "Paid";
 
+const getAppointmentId = (appointment) =>
+  appointment?.appointmentId ?? appointment?.id ?? "";
+
 const getLatestInvoice = (data) => {
   const invoices = parseList(data);
   return invoices.sort((a, b) => {
@@ -44,8 +53,10 @@ const getLatestInvoice = (data) => {
 
 function ReceptionBilling() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [appointments, setAppointments] = useState([]);
   const [message, setMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [invoice, setInvoice] = useState(null);
   const [showInvoiceActions, setShowInvoiceActions] = useState(false);
   const [form, setForm] = useState({
@@ -63,16 +74,19 @@ function ReceptionBilling() {
         setAppointments(list);
         setForm((prev) => ({
           ...prev,
-          appointmentId: String(list[0]?.appointmentId || list[0]?.id || ""),
+          appointmentId: String(getAppointmentId(list[0])),
         }));
         setInvoice(getLatestInvoice(invoicesData));
       })
-      .catch((error) => setMessage(error.message));
+      .catch((error) => {
+        setMessage(error.message);
+        toast.error(error.message || "Unable to load billing details.");
+      });
   }, []);
 
   const selectedAppointment = useMemo(() => {
     return appointments.find(
-      (item) => String(item.id || item.appointmentId) === String(form.appointmentId)
+      (item) => String(getAppointmentId(item)) === String(form.appointmentId)
     );
   }, [appointments, form.appointmentId]);
 
@@ -82,13 +96,37 @@ function ReceptionBilling() {
     Number(form.medicineCharges || 0) +
     Number(form.labCharges || 0);
 
+  const validateForm = () => {
+    const nextErrors = {
+      appointmentId: validateSelected(form.appointmentId, "an appointment"),
+      paymentMode: validateSelected(form.paymentMode, "a payment mode"),
+      medicineCharges: validateNumeric(form.medicineCharges, "Medicine charges"),
+      labCharges: validateNumeric(form.labCharges, "Lab charges"),
+    };
+
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key]) delete nextErrors[key];
+    });
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
   const generate = async (event) => {
     event.preventDefault();
+    if (!validateForm()) {
+      const text = "Please fix the highlighted fields.";
+      setMessage(text);
+      toast.error(text);
+      return;
+    }
+
     const body = {
       appointmentId: Number(form.appointmentId),
       medicineCharge: Number(form.medicineCharges || 0),
       labCharge: Number(form.labCharges || 0),
-      paymentMode: String(form.paymentMode || "").toLowerCase(),
+      paymentMode: String(form.paymentMode || ""),
+      PaymentMode: String(form.paymentMode || ""),
     };
 
     try {
@@ -114,15 +152,25 @@ function ReceptionBilling() {
           "-",
       });
       setShowInvoiceActions(false);
-      setMessage(invoiceData?.message || "Invoice generated successfully.");
+      const text = invoiceData?.message || "Invoice generated successfully.";
+      setMessage(text);
+      toast.success(text);
     } catch (error) {
       setMessage(error.message);
+      toast.error(error.message || "Unable to generate invoice.");
       setInvoice(null);
       setShowInvoiceActions(false);
     }
   };
 
-  const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
+  const setField = (name, value) => {
+    const nextValue = ["medicineCharges", "labCharges"].includes(name)
+      ? onlyNumberValue(value)
+      : value;
+    setForm((prev) => ({ ...prev, [name]: nextValue }));
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    setMessage("");
+  };
 
   const downloadInvoicePdf = () => {
     if (!invoice) return;
@@ -140,7 +188,9 @@ function ReceptionBilling() {
 
     const printWindow = window.open("", "_blank", "width=760,height=920");
     if (!printWindow) {
-      setMessage("Please allow popups to download the invoice PDF.");
+      const text = "Please allow popups to download the invoice PDF.";
+      setMessage(text);
+      toast.error(text);
       return;
     }
 
@@ -263,7 +313,7 @@ function ReceptionBilling() {
         </button>
       </div>
 
-      {message ? <div className="rc-alert error">{message}</div> : null}
+      {message ? <div className={`rc-alert ${invoice ? "" : "error"}`}>{message}</div> : null}
 
       <form className="rc-card rc-billing-form" onSubmit={generate}>
         <h3>Generate Bill</h3>
@@ -278,23 +328,33 @@ function ReceptionBilling() {
         </div>
         <label>
           <span>Appointment</span>
-          <select value={form.appointmentId} onChange={(e) => setField("appointmentId", e.target.value)}>
+          <select
+            value={form.appointmentId}
+            onChange={(e) => setField("appointmentId", e.target.value)}
+            className={fieldErrors.appointmentId ? "is-invalid" : ""}
+          >
             {appointments.map((a) => (
-              <option value={a.id || a.appointmentId} key={a.id || a.appointmentId}>
+              <option value={getAppointmentId(a)} key={getAppointmentId(a)}>
                 {a.patientName || a.patient?.name || "-"} - {a.time || "-"} -{" "}
                 {a.status || "-"}
               </option>
             ))}
           </select>
+          {fieldErrors.appointmentId ? <small className="rc-field-error">{fieldErrors.appointmentId}</small> : null}
         </label>
         <label>
           <span>Payment Mode</span>
-          <select value={form.paymentMode} onChange={(e) => setField("paymentMode", e.target.value)}>
+          <select
+            value={form.paymentMode}
+            onChange={(e) => setField("paymentMode", e.target.value)}
+            className={fieldErrors.paymentMode ? "is-invalid" : ""}
+          >
             <option value="UPI">UPI</option>
             <option value="Cash">Cash</option>
             <option value="Card">Card</option>
             <option value="Insurance">Insurance</option>
           </select>
+          {fieldErrors.paymentMode ? <small className="rc-field-error">{fieldErrors.paymentMode}</small> : null}
         </label>
         <label>
           <span>Consultation Charge</span>
@@ -310,11 +370,19 @@ function ReceptionBilling() {
             type="number"
             value={form.medicineCharges}
             onChange={(e) => setField("medicineCharges", e.target.value)}
+            className={fieldErrors.medicineCharges ? "is-invalid" : ""}
           />
+          {fieldErrors.medicineCharges ? <small className="rc-field-error">{fieldErrors.medicineCharges}</small> : null}
         </label>
         <label>
           <span>Lab Charges</span>
-          <input type="number" value={form.labCharges} onChange={(e) => setField("labCharges", e.target.value)} />
+          <input
+            type="number"
+            value={form.labCharges}
+            onChange={(e) => setField("labCharges", e.target.value)}
+            className={fieldErrors.labCharges ? "is-invalid" : ""}
+          />
+          {fieldErrors.labCharges ? <small className="rc-field-error">{fieldErrors.labCharges}</small> : null}
         </label>
         <div className="rc-total">
           <span>Total</span>

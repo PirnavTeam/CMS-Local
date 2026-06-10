@@ -30,7 +30,7 @@ import {
   UserPlus,
 } from "lucide-react";
 
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/api";
 
 /* ================= API ================= */
@@ -79,6 +79,8 @@ const getPaddedMax = (value) =>
 function Dashboard() {
   const navigate =
     useNavigate();
+  const location =
+    useLocation();
 
   const [dashboardData,
     setDashboardData] =
@@ -95,6 +97,37 @@ function Dashboard() {
     fetchDashboard();
 
   }, []);
+
+  useEffect(() => {
+    if (
+      loading ||
+      location.hash !== "#recent-activity"
+    ) {
+      return undefined;
+    }
+
+    const frameId =
+      window.requestAnimationFrame(
+        () => {
+          document
+            .getElementById(
+              "recent-activity"
+            )
+            ?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+        }
+      );
+
+    return () =>
+      window.cancelAnimationFrame(
+        frameId
+      );
+  }, [
+    loading,
+    location.hash,
+  ]);
 
   const fetchDashboard =
     async () => {
@@ -751,7 +784,10 @@ function Dashboard() {
 
         {/* RECENT ACTIVITY */}
 
-        <div className="dashboard-panel dashboard-panel--activity">
+        <div
+          id="recent-activity"
+          className="dashboard-panel dashboard-panel--activity"
+        >
 
           <div className="dashboard-panel-header">
 

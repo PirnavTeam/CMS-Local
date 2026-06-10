@@ -298,6 +298,89 @@ const REPORT_API =
 const DOCTOR_API =
   apiUrl("Doctor");
 
+const BILLING_API =
+  apiUrl("Billing");
+
+const parseList = (value) => {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== "object") return [];
+
+  for (const key of ["data", "items", "results", "records", "reports", "billing"]) {
+    if (Array.isArray(value[key])) return value[key];
+  }
+
+  return [];
+};
+
+const toNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+};
+
+const pick = (source, keys, fallback = "") => {
+  if (!source || typeof source !== "object") return fallback;
+
+  for (const key of keys) {
+    const value = source[key];
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+
+  return fallback;
+};
+
+const getRevenueAmount = (row = {}) =>
+  toNumber(
+    pick(
+      row,
+      [
+        "revenue",
+        "totalRevenue",
+        "amount",
+        "totalAmount",
+        "grandTotal",
+        "total",
+        "paidAmount",
+        "paymentAmount",
+        "consultationCharge",
+      ],
+      0
+    )
+  );
+
+const getRowDate = (row = {}) =>
+  pick(row, ["month", "date", "createdAt", "paidAt", "paymentDate", "invoiceDate", "appointmentDate"], "");
+
+const getMonthLabel = (value, index = 0) => {
+  if (!value) return `Item ${index + 1}`;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+
+  return parsed.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+};
+
+const normalizeRevenueRows = (value) =>
+  parseList(value)
+    .map((row, index) => ({
+      month: pick(row, ["month", "name", "date", "label"], getMonthLabel(getRowDate(row), index)),
+      revenue: getRevenueAmount(row),
+      growth: toNumber(pick(row, ["growth", "growthPercentage", "change"], 0)),
+    }))
+    .filter((row) => row.month || row.revenue);
+
+const buildRevenueFromBilling = (billingRows = []) => {
+  const byMonth = new Map();
+
+  billingRows.forEach((row) => {
+    const month = getMonthLabel(getRowDate(row));
+    const current = byMonth.get(month) || { month, revenue: 0, growth: 0 };
+    current.revenue += getRevenueAmount(row);
+    byMonth.set(month, current);
+  });
+
+  return Array.from(byMonth.values());
+};
+
 // ================= COMPONENT =================
 
 function RevenueReport() {
@@ -335,7 +418,7 @@ function RevenueReport() {
 
       const result = await response.json();
 
-      setDoctors(result);
+      setDoctors(parseList(result));
     } catch (error) {
       console.log(error);
     }
@@ -347,15 +430,22 @@ function RevenueReport() {
     try {
       setLoading(true);
 
-      let url = `${REPORT_API}?doctorId=${doctorId}`;
+      const params = new URLSearchParams();
+
+      if (doctorId) {
+        params.set("doctorId", String(doctorId));
+      }
 
       if (fromDate) {
-        url += `&fromDate=${fromDate}`;
+        params.set("fromDate", fromDate);
       }
 
       if (toDate) {
-        url += `&toDate=${toDate}`;
+        params.set("toDate", toDate);
       }
+
+      const query = params.toString();
+      const url = query ? `${REPORT_API}?${query}` : REPORT_API;
 
       const response = await fetch(url, {
         headers: {
@@ -364,12 +454,45 @@ function RevenueReport() {
       });
 
       const result = await response.json();
+      const reportRows = normalizeRevenueRows(result);
 
-      console.log("REVENUE:", result);
+      if (reportRows.length) {
+        setData(reportRows);
+        return;
+      }
 
-      setData(result);
+      const billingResponse = await fetch(BILLING_API, {
+        headers: {
+          "ngrok-skip-browser-warning": "true",
+        },
+      });
+
+      if (!billingResponse.ok) {
+        setData([]);
+        return;
+      }
+
+      const billingResult = await billingResponse.json();
+      const billingRows = parseList(billingResult).filter((row) => {
+        if (doctorId && String(pick(row, ["doctorId", "DoctorId"], "")) !== String(doctorId)) {
+          return false;
+        }
+
+        const value = getRowDate(row);
+        const date = value ? new Date(value) : null;
+
+        if (date && !Number.isNaN(date.getTime())) {
+          if (fromDate && date < new Date(fromDate)) return false;
+          if (toDate && date > new Date(toDate)) return false;
+        }
+
+        return true;
+      });
+
+      setData(buildRevenueFromBilling(billingRows));
     } catch (error) {
       console.log(error);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -499,7 +622,7 @@ function RevenueReport() {
                   borderRadius: "12px",
                   border: "1px solid #e5e7eb",
                 }}
-                formatter={(value) => [`₹${value}`, "Revenue"]}
+                formatter={(value) => [`Rs. ${value}`, "Revenue"]}
               />
 
               <Line
@@ -536,7 +659,7 @@ function RevenueReport() {
           <div className="row" key={i}>
             <span>{d.month}</span>
 
-            <span>₹{d.revenue?.toLocaleString()}</span>
+            <span>Rs. {d.revenue?.toLocaleString()}</span>
 
             <span className="growth">{d.growth}%</span>
           </div>

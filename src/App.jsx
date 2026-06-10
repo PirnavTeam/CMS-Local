@@ -15,7 +15,6 @@ import SuperAdminSettings from "./pages/SUPERADMIN/Settings/Settings";
 import SuperAdminReports from "./pages/SUPERADMIN/Reports/Reports";
 import SuperAdminAuditLogs from "./pages/SUPERADMIN/AuditLogs/AuditLogs";
 import SuperAdminNotifications from "./pages/SUPERADMIN/Notifications/Notifications";
-import SuperAdminProfile from "./pages/SUPERADMIN/Profile/Profile";
 
 // Pages
 import AdminLogin from "./Login/Adminlogin";
@@ -41,12 +40,14 @@ import DailyReport from "./pages/REPORTS/DailyReport";
 import RevenueReport from "./pages/REPORTS/RevenueReport";
 import DoctorWiseReport from "./pages/REPORTS/DoctorWiseReport";
 import "./pages/SUPERADMIN/SuperAdmin.css";
+import { ToastProvider } from "./components/ToastProvider";
 
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
 
         {/* DEFAULT */}
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -100,7 +101,6 @@ function App() {
           <Route path="superadmin/reports" element={<SuperAdminReports />} />
           <Route path="superadmin/audit-logs" element={<SuperAdminAuditLogs />} />
           <Route path="superadmin/notifications" element={<SuperAdminNotifications />} />
-          <Route path="superadmin/profile" element={<SuperAdminProfile />} />
 
 
 
@@ -117,8 +117,9 @@ function App() {
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/login" replace />} />
 
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

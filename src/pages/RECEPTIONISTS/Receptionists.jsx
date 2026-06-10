@@ -11,6 +11,20 @@ import {
 } from "lucide-react";
 import "./Receptionists.css";
 import { apiUrl } from "../../config/api";
+import PasswordField from "../../components/PasswordField";
+import { useToast } from "../../components/ToastProvider";
+import {
+  onlyAlpha,
+  onlyDigits,
+  validateAlpha,
+  validateGmail,
+  validateMobile,
+  validateStrongPassword,
+} from "../../utils/validation";
+import {
+  getClinicDisplayName,
+  getStoredClinicName,
+} from "../../utils/clinicDisplay";
 
 const RECEPTIONIST_API = apiUrl("Receptionist");
 
@@ -97,6 +111,7 @@ const parseErrorMessage = async (response, fallback) => {
 };
 
 function Receptionists() {
+  const toast = useToast();
   const [receptionists, setReceptionists] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -110,6 +125,8 @@ function Receptionists() {
   const [fieldErrors, setFieldErrors] = useState({});
 
   const hospitalId = getHospitalId();
+  const clinicDisplayName =
+    getStoredClinicName() || getClinicDisplayName({ hospitalId }, "Clinic");
 
   const fetchReceptionists = async () => {
     setLoading(true);
@@ -186,9 +203,19 @@ function Receptionists() {
   };
 
   const updateField = (name, value) => {
+    let nextValue = value;
+
+    if (name === "name") {
+      nextValue = onlyAlpha(value);
+    }
+
+    if (name === "phone") {
+      nextValue = onlyDigits(value).slice(0, 10);
+    }
+
     setForm((previous) => ({
       ...previous,
-      [name]: value,
+      [name]: nextValue,
     }));
 
     setFieldErrors((previous) => ({
@@ -201,32 +228,21 @@ function Receptionists() {
 
   const validateForm = () => {
     const nextErrors = {};
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phonePattern = /^[0-9+\-\s()]{7,15}$/;
 
-    if (!form.name.trim()) {
-      nextErrors.name = "Name is required.";
-    }
-
-    if (!form.email.trim()) {
-      nextErrors.email = "Email is required.";
-    } else if (!emailPattern.test(form.email.trim())) {
-      nextErrors.email = "Enter a valid email address.";
-    }
-
-    if (!form.phone.trim()) {
-      nextErrors.phone = "Phone is required.";
-    } else if (!phonePattern.test(form.phone.trim())) {
-      nextErrors.phone = "Enter a valid phone number.";
-    }
-
-    if (!editingReceptionist && !form.password.trim()) {
-      nextErrors.password = "Password is required.";
-    }
+    nextErrors.name = validateAlpha(form.name, "Name");
+    nextErrors.email = validateGmail(form.email);
+    nextErrors.phone = validateMobile(form.phone, "Phone");
+    nextErrors.password = validateStrongPassword(form.password, "Password", {
+      required: !editingReceptionist,
+    });
 
     if (!hospitalId) {
-      nextErrors.form = "Hospital ID not found. Please login again.";
+      nextErrors.form = "Clinic not found. Please login again.";
     }
+
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key]) delete nextErrors[key];
+    });
 
     setFieldErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -237,6 +253,7 @@ function Receptionists() {
 
     if (!validateForm()) {
       setError("Please fix the highlighted fields.");
+      toast.error("Please fix the highlighted fields.");
       return;
     }
 
@@ -250,6 +267,10 @@ function Receptionists() {
       phone: form.phone.trim(),
       password: form.password,
       hospitalId,
+      hospitalName: clinicDisplayName,
+      clinicName: clinicDisplayName,
+      adminEmail: localStorage.getItem("adminEmail") || "",
+      adminName: localStorage.getItem("adminName") || "",
     };
 
     try {
@@ -280,16 +301,19 @@ function Receptionists() {
       }
 
       const data = await response.json().catch(() => ({}));
-      setSuccess(
+      const message =
         data?.message ||
           (isEditing
             ? "Receptionist updated successfully"
-            : "Receptionist created successfully")
-      );
+            : "Receptionist created successfully");
+      setSuccess(message);
+      toast.success(message);
       await fetchReceptionists();
       closeModal({ force: true });
     } catch (submitError) {
-      setError(submitError.message || "Unable to save receptionist.");
+      const message = submitError.message || "Unable to save receptionist.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -325,8 +349,12 @@ function Receptionists() {
         previous.filter((item) => item.id !== receptionist.id)
       );
       setSuccess("Receptionist deleted successfully");
+      toast.success("Receptionist deleted successfully");
     } catch (deleteError) {
-      setError(deleteError.message || "Unable to delete receptionist.");
+      const message =
+        deleteError.message || "Unable to delete receptionist.";
+      setError(message);
+      toast.error(message);
     } finally {
       setDeletingId(null);
     }
@@ -404,6 +432,10 @@ function Receptionists() {
               .slice(0, 2)
               .toUpperCase() || "R";
           const isDeleting = deletingId === receptionist.id;
+          const receptionistClinicName = getClinicDisplayName(
+            { ...receptionist, hospitalId: receptionist.hospitalId || hospitalId },
+            clinicDisplayName
+          );
 
           return (
             <div className="receptionists-row" key={receptionist.id}>
@@ -411,7 +443,7 @@ function Receptionists() {
                 <div className="receptionists-avatar">{initials}</div>
                 <div>
                   <b>{receptionist.name || "-"}</b>
-                  <span>Hospital {receptionist.hospitalId || hospitalId || "-"}</span>
+                  <span>{receptionistClinicName}</span>
                 </div>
               </div>
 
@@ -475,7 +507,7 @@ function Receptionists() {
                   <h3>
                     {editingReceptionist ? "Edit Receptionist" : "Add Receptionist"}
                   </h3>
-                  <p>Hospital ID {hospitalId || "-"}</p>
+                  <p>{clinicDisplayName}</p>
                 </div>
               </div>
 
@@ -531,6 +563,8 @@ function Receptionists() {
                   id="receptionist-phone"
                   value={form.phone}
                   onChange={(event) => updateField("phone", event.target.value)}
+                  inputMode="numeric"
+                  maxLength={10}
                   className={fieldErrors.phone ? "is-invalid" : ""}
                   disabled={saving}
                 />
@@ -543,9 +577,8 @@ function Receptionists() {
 
               <div className="receptionists-field">
                 <label htmlFor="receptionist-password">Password</label>
-                <input
+                <PasswordField
                   id="receptionist-password"
-                  type="password"
                   value={form.password}
                   onChange={(event) => updateField("password", event.target.value)}
                   className={fieldErrors.password ? "is-invalid" : ""}

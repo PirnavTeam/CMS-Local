@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { getInitials } from "../profile/sessionProfile";
 import { getReceptionistProfile } from "./receptionSession";
+import { getClinicDisplayName } from "../utils/clinicDisplay";
 
 const items = [
   { to: "/reception/dashboard", label: "Reception Dashboard", icon: Gauge },
@@ -22,7 +23,7 @@ const items = [
 function ReceptionSidebar() {
   const profile = getReceptionistProfile();
   const profileName = profile.name || "Receptionist";
-  const hospitalName = profile.hospitalName || "MediSuite";
+  const hospitalName = getClinicDisplayName(profile, "MediSuite");
 
   return (
     <aside className="rc-sidebar">

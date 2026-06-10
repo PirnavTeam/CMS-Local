@@ -9,9 +9,16 @@ import {
   saveAppointments,
 } from "./appointmentsData";
 import { loadPatients } from "../PATIENTS/patientsData";
+import { useToast } from "../../components/ToastProvider";
+import {
+  validateDate,
+  validateRequired,
+  validateSelected,
+} from "../../utils/validation";
 
 function NewAppointment() {
   const navigate = useNavigate();
+  const toast = useToast();
   const patientOptions = useMemo(
     () => loadPatients().map((patient) => patient.name),
     []
@@ -25,6 +32,7 @@ function NewAppointment() {
     status: "Scheduled",
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -32,13 +40,33 @@ function NewAppointment() {
       ...previous,
       [name]: value,
     }));
+    setFieldErrors((previous) => ({ ...previous, [name]: "" }));
+    setError("");
+  };
+
+  const validateForm = () => {
+    const nextErrors = {
+      patient: validateSelected(form.patient, "a patient"),
+      doctor: validateSelected(form.doctor, "a doctor"),
+      date: validateDate(form.date, "Date", { allowPast: false }),
+      time: validateRequired(form.time, "Time"),
+      status: validateSelected(form.status, "a status"),
+    };
+
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key]) delete nextErrors[key];
+    });
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (!form.patient || !form.doctor || !form.date || !form.time) {
-      setError("Please complete all fields.");
+    if (!validateForm()) {
+      setError("Please fix the highlighted fields.");
+      toast.error("Please fix the highlighted fields.");
       return;
     }
 
@@ -54,6 +82,7 @@ function NewAppointment() {
     };
 
     saveAppointments([newAppointment, ...existingAppointments]);
+    toast.success("Appointment booked successfully");
     navigate("/appointments");
   };
 
@@ -78,6 +107,7 @@ function NewAppointment() {
               name="patient"
               value={form.patient}
               onChange={handleChange}
+              className={fieldErrors.patient ? "is-invalid" : ""}
             >
               <option value="">Select patient</option>
               {patientOptions.map((patient) => (
@@ -86,11 +116,19 @@ function NewAppointment() {
                 </option>
               ))}
             </select>
+            {fieldErrors.patient ? (
+              <span className="new-appointment-field-error">{fieldErrors.patient}</span>
+            ) : null}
           </div>
 
           <div className="new-appointment-field">
             <label>Doctor</label>
-            <select name="doctor" value={form.doctor} onChange={handleChange}>
+            <select
+              name="doctor"
+              value={form.doctor}
+              onChange={handleChange}
+              className={fieldErrors.doctor ? "is-invalid" : ""}
+            >
               <option value="">Select doctor</option>
               {DOCTOR_OPTIONS.map((doctor) => (
                 <option value={doctor} key={doctor}>
@@ -98,6 +136,9 @@ function NewAppointment() {
                 </option>
               ))}
             </select>
+            {fieldErrors.doctor ? (
+              <span className="new-appointment-field-error">{fieldErrors.doctor}</span>
+            ) : null}
           </div>
 
           <div className="new-appointment-field">
@@ -107,7 +148,11 @@ function NewAppointment() {
               type="date"
               value={form.date}
               onChange={handleChange}
+              className={fieldErrors.date ? "is-invalid" : ""}
             />
+            {fieldErrors.date ? (
+              <span className="new-appointment-field-error">{fieldErrors.date}</span>
+            ) : null}
           </div>
 
           <div className="new-appointment-field">
@@ -117,16 +162,28 @@ function NewAppointment() {
               type="time"
               value={form.time}
               onChange={handleChange}
+              className={fieldErrors.time ? "is-invalid" : ""}
             />
+            {fieldErrors.time ? (
+              <span className="new-appointment-field-error">{fieldErrors.time}</span>
+            ) : null}
           </div>
 
           <div className="new-appointment-field">
             <label>Status</label>
-            <select name="status" value={form.status} onChange={handleChange}>
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              className={fieldErrors.status ? "is-invalid" : ""}
+            >
               <option value="Scheduled">Scheduled</option>
               <option value="Completed">Completed</option>
               <option value="Cancelled">Cancelled</option>
             </select>
+            {fieldErrors.status ? (
+              <span className="new-appointment-field-error">{fieldErrors.status}</span>
+            ) : null}
           </div>
         </div>
 

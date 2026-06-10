@@ -8,7 +8,6 @@ import {
   fetchRole,
   fetchRoles,
   saveRole,
-  updateRolePermissions,
 } from "../superAdminApi";
 
 const permissionOptions = ["View", "Create", "Edit", "Delete"];
@@ -98,13 +97,7 @@ function RolesPermissions() {
     setError("");
 
     try {
-      const savedRole = await saveRole(form, editingRoleId || undefined);
-      const roleId = editingRoleId || savedRole?.id || savedRole?.roleId || savedRole?.data?.id || savedRole?.data?.roleId;
-
-      if (roleId) {
-        await updateRolePermissions(roleId, form.permissions);
-      }
-
+      await saveRole(form, editingRoleId || undefined);
       closeForm();
       await loadRoles();
     } catch (requestError) {
