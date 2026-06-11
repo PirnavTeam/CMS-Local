@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Banknote, CreditCard, Download, FileText, ReceiptText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { parseList, requestJson } from "../receptionApi";
@@ -20,6 +20,13 @@ const escapeHtml = (value) =>
 
 const firstValue = (...values) =>
   values.find((value) => value !== undefined && value !== null && value !== "" && value !== 0);
+
+const formatAmountInput = (value, { emptyValue = "0.00" } = {}) => {
+  if (value === "" || value === undefined || value === null) return emptyValue;
+
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount.toFixed(2) : emptyValue;
+};
 
 const formatCurrency = (value) => formatIndianCurrency(value);
 
@@ -57,6 +64,7 @@ const getLatestInvoice = (data) => {
 function ReceptionBilling() {
   const navigate = useNavigate();
   const toast = useToast();
+  const amountFormatTimers = useRef({});
   const [appointments, setAppointments] = useState([]);
   const [message, setMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -65,8 +73,8 @@ function ReceptionBilling() {
   const [form, setForm] = useState({
     appointmentId: "",
     paymentMode: "UPI",
-    medicineCharges: 0,
-    labCharges: 0,
+    medicineCharges: "",
+    labCharges: "",
   });
 
   useEffect(() => {
@@ -87,6 +95,16 @@ function ReceptionBilling() {
       });
   }, []);
 
+  useEffect(() => {
+    const timers = amountFormatTimers.current;
+
+    return () => {
+      Object.values(timers).forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+    };
+  }, []);
+
   const selectedAppointment = useMemo(() => {
     return appointments.find(
       (item) => String(getAppointmentId(item)) === String(form.appointmentId)
@@ -105,8 +123,8 @@ function ReceptionBilling() {
     const nextErrors = {
       appointmentId: validateSelected(form.appointmentId, "an appointment"),
       paymentMode: validateSelected(form.paymentMode, "a payment mode"),
-      medicineCharges: validateNumeric(form.medicineCharges, "Medicine charges"),
-      labCharges: validateNumeric(form.labCharges, "Lab charges"),
+      medicineCharges: validateNumeric(form.medicineCharges || 0, "Medicine charges"),
+      labCharges: validateNumeric(form.labCharges || 0, "Lab charges"),
     };
 
     Object.keys(nextErrors).forEach((key) => {
@@ -169,12 +187,35 @@ function ReceptionBilling() {
   };
 
   const setField = (name, value) => {
+    const isAmountField = ["medicineCharges", "labCharges"].includes(name);
     const nextValue = ["medicineCharges", "labCharges"].includes(name)
       ? onlyNumberValue(value)
       : value;
+
+    if (isAmountField && amountFormatTimers.current[name]) {
+      window.clearTimeout(amountFormatTimers.current[name]);
+    }
+
     setForm((prev) => ({ ...prev, [name]: nextValue }));
     setFieldErrors((prev) => ({ ...prev, [name]: "" }));
     setMessage("");
+
+    if (isAmountField && nextValue && !String(nextValue).endsWith(".")) {
+      amountFormatTimers.current[name] = window.setTimeout(() => {
+        formatAmountField(name);
+      }, 500);
+    }
+  };
+
+  const formatAmountField = (name) => {
+    if (amountFormatTimers.current[name]) {
+      window.clearTimeout(amountFormatTimers.current[name]);
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: formatAmountInput(prev[name], { emptyValue: "" }),
+    }));
   };
 
   const downloadInvoicePdf = () => {
@@ -390,36 +431,39 @@ function ReceptionBilling() {
         <label>
           <span>Consultation Charge</span>
           <input
-            type="number"
-            value={consultationCharge}
+            type="text"
+            inputMode="decimal"
+            value={formatAmountInput(consultationCharge)}
             readOnly
+            className="rc-amount-input"
           />
         </label>
         <label>
           <span>Medicine Charges</span>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.medicineCharges}
+            placeholder="0.00"
             onChange={(e) => setField("medicineCharges", e.target.value)}
-            className={fieldErrors.medicineCharges ? "is-invalid" : ""}
+            onBlur={() => formatAmountField("medicineCharges")}
+            className={`rc-amount-input ${fieldErrors.medicineCharges ? "is-invalid" : ""}`}
           />
           {fieldErrors.medicineCharges ? <small className="rc-field-error">{fieldErrors.medicineCharges}</small> : null}
         </label>
         <label>
           <span>Lab Charges</span>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.labCharges}
+            placeholder="0.00"
             onChange={(e) => setField("labCharges", e.target.value)}
-            className={fieldErrors.labCharges ? "is-invalid" : ""}
+            onBlur={() => formatAmountField("labCharges")}
+            className={`rc-amount-input ${fieldErrors.labCharges ? "is-invalid" : ""}`}
           />
           {fieldErrors.labCharges ? <small className="rc-field-error">{fieldErrors.labCharges}</small> : null}
         </label>
-        </div>
-        <div className="rc-charge-summary">
-          <div><span>Consultation</span><b>{formatCurrency(consultationCharge)}</b></div>
-          <div><span>Medicine</span><b>{formatCurrency(medicineCharges)}</b></div>
-          <div><span>Lab</span><b>{formatCurrency(labCharges)}</b></div>
         </div>
         <div className="rc-total">
           <span>Total</span>

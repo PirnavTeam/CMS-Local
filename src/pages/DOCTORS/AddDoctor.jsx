@@ -213,7 +213,7 @@
 
 
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./Modal.css";
 import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
@@ -233,6 +233,12 @@ import {
 const DOCTORS_API_URL =
   apiUrl("Doctor");
 
+const DOCTOR_SPECIALIZATIONS_API_URL =
+  apiUrl("Doctor/specializations");
+
+const DOCTOR_QUALIFICATIONS_API_URL =
+  apiUrl("Doctor/qualifications");
+
 const SPECIALIZATION_OPTIONS = [
   "Cardiology",
   "Dermatology",
@@ -248,16 +254,94 @@ const SPECIALIZATION_OPTIONS = [
 ];
 
 const QUALIFICATION_OPTIONS = [
-  "Bachelor of Medicine and Bachelor of Surgery (MBBS)",
-  "Bachelor of Dental Surgery (BDS)",
-  "Bachelor of Ayurvedic Medicine and Surgery (BAMS)",
-  "Bachelor of Homeopathic Medicine and Surgery (BHMS)",
-  "Doctor of Medicine (MD)",
-  "Master of Surgery (MS)",
-  "Diplomate of National Board (DNB)",
-  "Doctorate of Medicine (DM)",
-  "Master of Chirurgiae (MCh)",
+  { value: "MBBS", label: "Bachelor of Medicine and Bachelor of Surgery (MBBS)" },
+  { value: "BDS", label: "Bachelor of Dental Surgery (BDS)" },
+  { value: "BAMS", label: "Bachelor of Ayurvedic Medicine and Surgery (BAMS)" },
+  { value: "BHMS", label: "Bachelor of Homeopathic Medicine and Surgery (BHMS)" },
+  { value: "MD", label: "Doctor of Medicine (MD)" },
+  { value: "MS", label: "Master of Surgery (MS)" },
+  { value: "DNB", label: "Diplomate of National Board (DNB)" },
+  { value: "DM", label: "Doctorate of Medicine (DM)" },
+  { value: "MCh", label: "Master of Chirurgiae (MCh)" },
+  { value: "MCA", label: "Master of Computer Applications (MCA)" },
 ];
+
+const parseOptionList = (data) => {
+  if (Array.isArray(data)) return data;
+
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.results)) return data.results;
+
+  return [];
+};
+
+const normalizeTextOption = (item) => {
+  if (typeof item === "string") return item.trim();
+  if (!item || typeof item !== "object") return "";
+
+  return String(
+    item.name ||
+    item.specialization ||
+    item.title ||
+    item.label ||
+    item.value ||
+    ""
+  ).trim();
+};
+
+const normalizeQualificationOption = (item) => {
+  if (typeof item === "string") {
+    const valueMatch = item.match(/\(([^)]+)\)\s*$/);
+    const value = valueMatch?.[1] || item;
+    return {
+      value: value.trim(),
+      label: item.trim(),
+    };
+  }
+
+  if (!item || typeof item !== "object") return null;
+
+  const abbreviation = String(
+    item.abbreviation ||
+    item.code ||
+    item.value ||
+    item.qualification ||
+    item.name ||
+    ""
+  ).trim();
+
+  const name = String(
+    item.name ||
+    item.qualificationName ||
+    item.title ||
+    item.label ||
+    item.qualification ||
+    abbreviation
+  ).trim();
+
+  const label = abbreviation && !name.includes(`(${abbreviation})`)
+    ? `${name} (${abbreviation})`
+    : name;
+
+  return abbreviation && label
+    ? {
+      value: abbreviation,
+      label,
+    }
+    : null;
+};
+
+const uniqueByValue = (options) => {
+  const seen = new Set();
+
+  return options.filter((option) => {
+    const value = String(option?.value ?? option ?? "").trim().toLowerCase();
+    if (!value || seen.has(value)) return false;
+    seen.add(value);
+    return true;
+  });
+};
 
 function AddDoctor() {
   const navigate = useNavigate();
@@ -278,6 +362,81 @@ function AddDoctor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [specializationOptions, setSpecializationOptions] =
+    useState(SPECIALIZATION_OPTIONS);
+  const [qualificationOptions, setQualificationOptions] =
+    useState(QUALIFICATION_OPTIONS);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+  const [optionsWarning, setOptionsWarning] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    const loadDoctorOptions = async () => {
+      try {
+        setLoadingOptions(true);
+        setOptionsWarning("");
+
+        const [specializationsResponse, qualificationsResponse] =
+          await Promise.all([
+            fetch(DOCTOR_SPECIALIZATIONS_API_URL, {
+              headers: {
+                "ngrok-skip-browser-warning": "true",
+              },
+            }),
+            fetch(DOCTOR_QUALIFICATIONS_API_URL, {
+              headers: {
+                "ngrok-skip-browser-warning": "true",
+              },
+            }),
+          ]);
+
+        if (!active) return;
+
+        if (specializationsResponse.ok) {
+          const data = await specializationsResponse.json();
+          const options = parseOptionList(data)
+            .map(normalizeTextOption)
+            .filter(Boolean);
+
+          if (options.length) {
+            setSpecializationOptions(
+              uniqueByValue([...options, "Other"])
+            );
+          }
+        } else {
+          setOptionsWarning("Using saved dropdown options.");
+        }
+
+        if (qualificationsResponse.ok) {
+          const data = await qualificationsResponse.json();
+          const options = parseOptionList(data)
+            .map(normalizeQualificationOption)
+            .filter(Boolean);
+
+          if (options.length) {
+            setQualificationOptions(uniqueByValue(options));
+          }
+        } else {
+          setOptionsWarning("Using saved dropdown options.");
+        }
+      } catch {
+        if (active) {
+          setSpecializationOptions(SPECIALIZATION_OPTIONS);
+          setQualificationOptions(QUALIFICATION_OPTIONS);
+          setOptionsWarning("Using saved dropdown options.");
+        }
+      } finally {
+        if (active) setLoadingOptions(false);
+      }
+    };
+
+    loadDoctorOptions();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleChange = (event) => {
     const { name } = event.target;
@@ -360,24 +519,25 @@ function AddDoctor() {
     setSaving(true);
     setError("");
 
-    const body = new FormData();
-
-    body.append("Name", form.name.trim());
-    body.append("Specialization", getSpecializationValue());
-    body.append("Qualification", form.qualification);
-    body.append("Experience", String(Number(form.experience) || 0));
-    body.append("Fees", String(Number(form.fees) || 0));
-    body.append("Email", form.email.trim());
-    body.append("Phone", form.phone.trim());
-    body.append("IsActive", form.isActive);
+    const body = {
+      name: form.name.trim(),
+      specialization: getSpecializationValue(),
+      experience: String(Number(form.experience) || 0),
+      qualification: form.qualification,
+      consultationFee: Number(form.fees) || 0,
+      email: form.email.trim(),
+      phoneNumber: form.phone.trim(),
+      isActive: form.isActive === "true",
+    };
 
     try {
       const response = await fetch(DOCTORS_API_URL, {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "true",
         },
-        body,
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -418,7 +578,7 @@ function AddDoctor() {
           <div className="add-doctor-grid">
 
             <div className="add-doctor-input-group">
-              <label>Doctor Name</label>
+              <label>Name</label>
               <input
                 name="name"
                 value={form.name}
@@ -440,8 +600,10 @@ function AddDoctor() {
                 className={fieldErrors.specialization ? "is-invalid" : ""}
                 required
               >
-                <option value="">Select specialization</option>
-                {SPECIALIZATION_OPTIONS.map((specialization) => (
+                <option value="">
+                  {loadingOptions ? "Loading specializations..." : "Select specialization"}
+                </option>
+                {specializationOptions.map((specialization) => (
                   <option key={specialization} value={specialization}>
                     {specialization}
                   </option>
@@ -491,10 +653,12 @@ function AddDoctor() {
                 className={fieldErrors.qualification ? "is-invalid" : ""}
                 required
               >
-                <option value="">Select qualification</option>
-                {QUALIFICATION_OPTIONS.map((qualification) => (
-                  <option key={qualification} value={qualification}>
-                    {qualification}
+                <option value="">
+                  {loadingOptions ? "Loading qualifications..." : "Select qualification"}
+                </option>
+                {qualificationOptions.map((qualification) => (
+                  <option key={qualification.value} value={qualification.value}>
+                    {qualification.label}
                   </option>
                 ))}
               </select>
@@ -506,7 +670,7 @@ function AddDoctor() {
             </div>
 
             <div className="add-doctor-input-group">
-              <label>Fees</label>
+              <label>Consultation Fee</label>
               <input
                 name="fees"
                 type="text"
@@ -537,7 +701,7 @@ function AddDoctor() {
             </div>
 
             <div className="add-doctor-input-group">
-              <label>Phone</label>
+              <label>Phone Number</label>
               <input
                 name="phone"
                 value={form.phone}
@@ -566,6 +730,10 @@ function AddDoctor() {
             </div>
 
           </div>
+
+          {optionsWarning ? (
+            <p className="add-doctor-form-note">{optionsWarning}</p>
+          ) : null}
 
           {error ? (
             <p className="add-doctor-form-error">{error}</p>

@@ -685,13 +685,25 @@ const buildDoctorClinicUpdateBody = (doctor = {}, clinicId, clinicName, admin = 
   const owner = getAdminOwnerFields(admin);
   const fields = {
     Name: pick(doctor, ["name", "Name"], ""),
+    name: pick(doctor, ["name", "Name"], ""),
     Specialization: pick(doctor, ["specialization", "Specialization"], ""),
+    specialization: pick(doctor, ["specialization", "Specialization"], ""),
     Experience: pick(doctor, ["experience", "Experience"], 0),
-    Fees: pick(doctor, ["fees", "Fees"], 0),
+    experience: pick(doctor, ["experience", "Experience"], 0),
+    Fees: pick(doctor, ["fees", "Fees", "consultationFee"], 0),
+    consultationFee: pick(doctor, ["consultationFee", "fees", "Fees"], 0),
+    Qualification: pick(doctor, ["qualification", "Qualification"], ""),
+    qualification: pick(doctor, ["qualification", "Qualification"], ""),
     Email: pick(doctor, ["email", "Email"], ""),
-    Phone: pick(doctor, ["phone", "Phone"], ""),
+    email: pick(doctor, ["email", "Email"], ""),
+    Phone: pick(doctor, ["phone", "Phone", "phoneNumber"], ""),
+    phoneNumber: pick(doctor, ["phoneNumber", "phone", "Phone"], ""),
     Password: "",
     IsActive:
+      typeof doctor.isActive === "boolean"
+        ? String(doctor.isActive)
+        : String(pick(doctor, ["isActive", "status"], "true")).toLowerCase() !== "inactive",
+    isActive:
       typeof doctor.isActive === "boolean"
         ? String(doctor.isActive)
         : String(pick(doctor, ["isActive", "status"], "true")).toLowerCase() !== "inactive",

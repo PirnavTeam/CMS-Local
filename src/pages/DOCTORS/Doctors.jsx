@@ -88,6 +88,12 @@ const cleanDisplayText = (value) => {
 
 const getImageUrl = (entity = {}) => String(entity.imageUrl || "").trim();
 
+const getDoctorFee = (doctor = {}) =>
+  doctor.consultationFee ?? doctor.fees ?? doctor.Fees ?? "";
+
+const getDoctorPhone = (doctor = {}) =>
+  doctor.phoneNumber ?? doctor.phone ?? doctor.Phone ?? "";
+
 const getInitialEditForm = (doctor = {}) => ({
   name: cleanFormValue(doctor.name),
   specialization: cleanFormValue(doctor.specialization),
@@ -96,11 +102,11 @@ const getInitialEditForm = (doctor = {}) => ({
       ? String(doctor.experience)
       : "",
   fees:
-    doctor.fees !== undefined && doctor.fees !== null
-      ? String(doctor.fees)
+    getDoctorFee(doctor) !== undefined && getDoctorFee(doctor) !== null
+      ? String(getDoctorFee(doctor))
       : "",
   email: cleanFormValue(doctor.email),
-  phone: cleanFormValue(doctor.phone),
+  phone: cleanFormValue(getDoctorPhone(doctor)),
   password: "",
   isActive: getDoctorIsActive(doctor),
 });
@@ -175,10 +181,8 @@ const validateEditForm = (form) => {
 const buildDoctorUpdateBody = ({
   doctor = {},
   form = {},
-  imageFile = null,
   isActive,
 }) => {
-  const body = new FormData();
   const nextIsActive =
     typeof isActive === "boolean"
       ? isActive
@@ -186,33 +190,31 @@ const buildDoctorUpdateBody = ({
         ? form.isActive
         : getDoctorIsActive(doctor);
 
-  body.append("Name", cleanFormValue(form.name ?? doctor.name));
-  body.append(
-    "Specialization",
-    cleanFormValue(form.specialization ?? doctor.specialization)
-  );
-  body.append(
-    "Experience",
-    String(Number(form.experience ?? doctor.experience ?? 0) || 0)
-  );
-  body.append("Fees", String(Number(form.fees ?? doctor.fees ?? 0) || 0));
-  body.append("Email", cleanFormValue(form.email ?? doctor.email));
-  body.append("Phone", cleanFormValue(form.phone ?? doctor.phone));
-  body.append("Password", String(form.password ?? "").trim());
-  body.append("IsActive", String(nextIsActive));
+  const body = {
+    name: cleanFormValue(form.name ?? doctor.name),
+    specialization: cleanFormValue(form.specialization ?? doctor.specialization),
+    experience: String(Number(form.experience ?? doctor.experience ?? 0) || 0),
+    qualification: cleanFormValue(form.qualification ?? doctor.qualification),
+    consultationFee: Number(form.fees ?? getDoctorFee(doctor) ?? 0) || 0,
+    email: cleanFormValue(form.email ?? doctor.email),
+    phoneNumber: cleanFormValue(form.phone ?? getDoctorPhone(doctor)),
+    isActive: nextIsActive,
+  };
+
+  const password = String(form.password ?? "").trim();
+  if (password) {
+    body.password = password;
+  }
+
   const hospitalId = localStorage.getItem("hospitalId") || "";
   const clinicName = getClinicDisplayName({ ...doctor, hospitalId }, "");
   if (hospitalId) {
-    body.append("HospitalId", hospitalId);
-    body.append("ClinicId", hospitalId);
+    body.hospitalId = Number(hospitalId) || hospitalId;
+    body.clinicId = Number(hospitalId) || hospitalId;
   }
   if (clinicName) {
-    body.append("HospitalName", clinicName);
-    body.append("ClinicName", clinicName);
-  }
-
-  if (imageFile) {
-    body.append("Image", imageFile);
+    body.hospitalName = clinicName;
+    body.clinicName = clinicName;
   }
 
   return body;
@@ -492,16 +494,16 @@ function Doctors() {
     const requestBody = buildDoctorUpdateBody({
       doctor: editingDoctor,
       form: editForm,
-      imageFile: editImageFile,
     });
 
     try {
       const response = await fetch(`${DOCTORS_API_URL}/${editingDoctor.id}`, {
         method: "PUT",
         headers: {
+          "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "true",
         },
-        body: requestBody,
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -722,8 +724,8 @@ function Doctors() {
               </div>
 
               <div className="doctors-cell doctors-fee">
-                {doc.fees !== undefined && doc.fees !== null
-                  ? formatIndianCurrency(doc.fees)
+                {getDoctorFee(doc) !== undefined && getDoctorFee(doc) !== null && getDoctorFee(doc) !== ""
+                  ? formatIndianCurrency(getDoctorFee(doc))
                   : "-"}
               </div>
 

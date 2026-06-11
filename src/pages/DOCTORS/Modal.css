@@ -190,6 +190,13 @@
   font-weight: 700;
 }
 
+.add-doctor-form-note {
+  margin: 14px 0 0;
+  color: #5b6472;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .add-doctor-overlay {
   position: fixed;
   inset: 0;

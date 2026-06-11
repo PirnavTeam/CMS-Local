@@ -615,6 +615,11 @@
   grid-column: 1 / -1;
 }
 
+.rc-billing-form .rc-amount-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .rc-charge-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -642,6 +647,8 @@
   margin-top: 6px;
   color: #071120;
   font-size: 15px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .rc-modal-backdrop {
@@ -787,6 +794,7 @@
 
 .rc-total strong {
   font-size: 24px;
+  font-variant-numeric: tabular-nums;
 }
 
 .rc-invoice-box {
