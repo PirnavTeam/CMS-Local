@@ -139,7 +139,7 @@ function DoctorSettings() {
           </div>
         </aside>
 
-        <form className="doctor-settings-card" onSubmit={saveSettings}>
+        <form className="doctor-settings-card" onSubmit={saveSettings} noValidate>
           <div className="doctor-settings-section-head">
             <CalendarClock size={18} />
             <div>

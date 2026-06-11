@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, RefreshCw, ShieldCheck, UserPlus } from "lucide-react";
+import { RefreshCw, ShieldCheck, UserPlus } from "lucide-react";
 import "./RegisterDoctor.css";
 import { apiUrl } from "../../config/api";
 import PasswordField from "../../components/PasswordField";
 import { useToast } from "../../components/ToastProvider";
 import {
   onlyAlpha,
-  onlyDigits,
+  onlyIndianMobileValue,
   validateAlpha,
   validateGmail,
   validateMobile,
@@ -134,7 +134,7 @@ function RegisterDoctor() {
     }
 
     if (name === "mobileNumber") {
-      nextValue = onlyDigits(value).slice(0, 10);
+      nextValue = onlyIndianMobileValue(value);
     }
 
     setForm((previous) => ({
@@ -257,6 +257,7 @@ function RegisterDoctor() {
         ...previous,
         password: "",
       }));
+      navigate("/doctors");
     } catch (submitError) {
       const message =
         submitError.message || "Unable to register doctor login right now.";
@@ -270,15 +271,6 @@ function RegisterDoctor() {
   return (
     <div className="register-doctor-page">
       <div className="register-doctor-topbar">
-        <button
-          type="button"
-          className="register-doctor-back"
-          onClick={() => navigate(-1)}
-        >
-          <ChevronLeft size={18} />
-          Back
-        </button>
-
         <button
           type="button"
           className="register-doctor-refresh"
@@ -302,7 +294,7 @@ function RegisterDoctor() {
 
       <div className="register-doctor-layout">
         <section className="register-doctor-panel">
-          <form className="register-doctor-form" onSubmit={handleSubmit}>
+          <form className="register-doctor-form" onSubmit={handleSubmit} noValidate>
             <div className="register-doctor-field register-doctor-field-full">
               <label htmlFor="doctorId">Doctor</label>
               <select
@@ -434,14 +426,6 @@ function RegisterDoctor() {
             {error ? <div className="register-doctor-error">{error}</div> : null}
 
             <div className="register-doctor-actions">
-              <button
-                type="button"
-                className="register-doctor-cancel"
-                onClick={() => navigate("/doctors")}
-                disabled={saving}
-              >
-                Cancel
-              </button>
               <button
                 type="submit"
                 className="register-doctor-submit"

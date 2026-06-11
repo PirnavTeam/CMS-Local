@@ -26,7 +26,7 @@ const updateBySection = {
 
 const defaultSettings = {
   general: {
-    name: "MediCore Platform",
+    name: "CMS Platform",
     status: "Enabled",
     notes: "Update general settings used across all clinics.",
   },
@@ -125,7 +125,7 @@ function Settings() {
     <>
       <Header title="System Settings" subtitle="Configure global platform preferences." />
 
-      <form className="sa-panel" onSubmit={handleSave}>
+      <form className="sa-panel" onSubmit={handleSave} noValidate>
         <div className="sa-tabs">
           {tabs.map((tab) => (
             <button

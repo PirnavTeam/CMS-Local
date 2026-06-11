@@ -23,7 +23,7 @@ const items = [
 function ReceptionSidebar() {
   const profile = getReceptionistProfile();
   const profileName = profile.name || "Receptionist";
-  const hospitalName = getClinicDisplayName(profile, "MediSuite");
+  const hospitalName = getClinicDisplayName(profile, "CMS");
 
   return (
     <aside className="rc-sidebar">
@@ -32,7 +32,7 @@ function ReceptionSidebar() {
           <Stethoscope size={22} />
         </div>
         <div>
-          <strong>Medisuite</strong>
+          <strong>CMS</strong>
           <span>Reception Console</span>
         </div>
       </div>

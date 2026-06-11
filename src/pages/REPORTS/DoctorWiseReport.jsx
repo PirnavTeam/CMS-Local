@@ -135,7 +135,6 @@ import React,
 import "./DoctorWiseReport.css";
 
 import {
-  ArrowLeft,
   Download,
 } from "lucide-react";
 
@@ -149,10 +148,8 @@ import {
   CartesianGrid,
 } from "recharts";
 
-import {
-  useNavigate,
-} from "react-router-dom";
 import { apiUrl } from "../../config/api";
+import { formatIndianCurrency } from "../../utils/format";
 
 // ================= APIs =================
 
@@ -165,9 +162,6 @@ const DOCTOR_API =
 // ================= COMPONENT =================
 
 function DoctorWiseReport() {
-
-  const navigate =
-    useNavigate();
 
   const [data, setData] =
     useState([]);
@@ -321,19 +315,6 @@ function DoctorWiseReport() {
       <div className="report-header">
 
         <div>
-
-          <button
-            className="back"
-            onClick={() =>
-              navigate("/reports")
-            }
-          >
-
-            <ArrowLeft size={16} />
-
-            All reports
-
-          </button>
 
           <h2>
             Doctor-wise Report
@@ -568,8 +549,7 @@ function DoctorWiseReport() {
             </span>
 
             <span>
-              ₹
-              {d.revenue?.toLocaleString()}
+              {formatIndianCurrency(d.revenue)}
             </span>
 
           </div>

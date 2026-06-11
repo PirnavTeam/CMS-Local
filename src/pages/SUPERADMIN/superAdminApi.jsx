@@ -2,25 +2,31 @@ import { apiUrl } from "../../config/api";
 
 export const SUPER_ADMIN_API = {
   dashboard: "SuperAdmin/dashboard",
-  createClinicAdmin: "AdminManagement",
-  superAdminClinics: "SuperAdmin/clinics",
-  admins: "AdminManagement",
-  clinics: "Clinic",
+  dashboardCompat: "dashboard/dashboard",
+  createClinicAdmin: "admins",
+  superAdminClinics: "Clinics",
+  admins: "admins",
+  clinics: "Clinics",
   notifications: "notifications",
   auditLogs: "AuditLogs",
   loginHistory: "AuditLogs/login-history",
-  dashboardSummary: "dashboard/summary",
+  dashboardSummary: "SuperAdmin/summary",
+  dashboardSummaryCompat: "dashboard/summary",
   revenueOverview: "dashboard/revenue-overview",
   activities: "dashboard/activities",
   dailyAppointmentsReport: "Report/daily-appointments",
   revenueReport: "Report/revenue",
   doctorWiseReport: "Report/doctor-wise",
+  reportsSummary: "SuperAdminReports/summary",
+  reportsRevenueTrend: "SuperAdminReports/revenue-trend",
+  reportsTopClinics: "SuperAdminReports/top-clinics",
+  reportsUserActivity: "SuperAdminReports/user-activity",
   reportsRevenue: "reports/revenue",
   reportsActivity: "reports/activity",
   revenue: "revenue",
   billing: "Billing",
-  roleNames: "Roles/roles",
-  roles: "Roles",
+  roleNames: "roles/roles",
+  roles: "roles",
   users: "users",
   settings: "settings",
   settingsGeneral: "settings/general",
@@ -71,6 +77,10 @@ const asArray = (value) => {
     "reports",
     "users",
     "roles",
+    "topClinics",
+    "revenueTrend",
+    "userActivity",
+    "summary",
   ];
 
   for (const key of collectionKeys) {
@@ -162,10 +172,16 @@ const getValidationMessage = (payload) => {
 
 export const superAdminRequest = async (path, options = {}) => {
   const { body, headers, ...rest } = options;
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("adminToken") ||
+    localStorage.getItem("superAdminToken");
   const response = await fetch(apiUrl(path), {
     ...rest,
     headers: {
+      "ngrok-skip-browser-warning": "true",
       ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
@@ -181,6 +197,20 @@ export const superAdminRequest = async (path, options = {}) => {
   }
 
   return payload;
+};
+
+const superAdminRequestFirst = async (paths, options = {}) => {
+  const errors = [];
+
+  for (const path of paths) {
+    try {
+      return await superAdminRequest(path, options);
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+
+  throw errors[errors.length - 1] || new Error("Request failed.");
 };
 
 export const normalizeClinic = (clinic = {}) => ({
@@ -206,6 +236,42 @@ export const normalizeAdmin = (admin = {}) => ({
   status: normalizeStatus(pick(admin, ["status", "isActive", "active"], "Active")),
   raw: admin,
 });
+
+const buildAdminPayload = (admin = {}, { includeBlankPassword = true } = {}) => {
+  const fullName = String(
+    pick(admin, ["fullName", "name", "AdminName", "adminName"], "")
+  ).trim();
+  const password = pick(
+    admin,
+    ["password", "temporaryPassword", "Password", "TemporaryPassword", "AdminPassword"],
+    ""
+  );
+
+  const payload = {
+    name: String(pick(admin, ["name", "fullName", "AdminName", "adminName"], fullName)).trim(),
+    fullName,
+    phone: String(
+      pick(
+        admin,
+        ["phone", "phoneNumber", "mobile", "MobileNumber", "AdminMobileNumber", "adminMobileNumber"],
+        ""
+      )
+    ).trim(),
+    email: String(pick(admin, ["email", "AdminEmail", "adminEmail"], "")).trim(),
+    password,
+    temporaryPassword: pick(admin, ["temporaryPassword", "TemporaryPassword"], password),
+    role: pick(admin, ["role", "Role", "AdminRole"], "Admin"),
+    hospitalId: Number(pick(admin, ["hospitalId", "clinicId", "assignedClinicId", "HospitalId", "ClinicId"], 0)) || 0,
+    sendWelcomeEmail: pick(admin, ["sendWelcomeEmail"], true) !== false,
+  };
+
+  if (!includeBlankPassword && !payload.password) {
+    delete payload.password;
+    delete payload.temporaryPassword;
+  }
+
+  return payload;
+};
 
 export const normalizeActivity = (activity = {}, index = 0) => ({
   id: pick(activity, ["id", "activityId", "_id"], index),
@@ -379,6 +445,21 @@ const buildAdminRevenueRows = ({ billingRows = [], clinicRows = [], adminRows = 
 };
 
 export const normalizeRole = (role = {}, index = 0) => {
+  if (typeof role === "string") {
+    return {
+      id: "",
+      key: `role-${index}-${role || "role"}`,
+      canPersistPermissions: false,
+      name: role || "Role",
+      roleName: role || "Role",
+      module: "General",
+      users: 0,
+      status: "Active",
+      permissions: ["View"],
+      raw: role,
+    };
+  }
+
   const permissions = pick(role, ["permissions", "permissionNames", "claims"], []);
   const normalizedPermissions = Array.isArray(permissions)
     ? permissions.map((permission) =>
@@ -387,15 +468,64 @@ export const normalizeRole = (role = {}, index = 0) => {
           : pick(permission, ["name", "permission", "claimValue", "value"])
       )
     : [];
+  const booleanPermissions = [
+    pick(role, ["canView"], false) ? "View" : "",
+    pick(role, ["canCreate"], false) ? "Create" : "",
+    pick(role, ["canEdit"], false) ? "Edit" : "",
+    pick(role, ["canDelete"], false) ? "Delete" : "",
+  ].filter(Boolean);
+
+  const id = pick(role, ["id", "roleId", "_id"], "");
+  const name = pick(role, ["name", "roleName", "title"], "Role");
+  const roleName = pick(role, ["roleName", "name", "title"], "Role");
 
   return {
-    id: pick(role, ["id", "roleId", "_id"], index),
-    name: pick(role, ["name", "roleName", "title"], "Role"),
+    id,
+    key: id || `role-${index}-${roleName || name}`,
+    canPersistPermissions: hasValue(id) && ![name, roleName].includes(String(id)),
+    name,
+    roleName,
+    module: pick(role, ["module", "moduleName"], ""),
     users: toNumber(pick(role, ["users", "userCount", "assignedUsers", "totalUsers"], 0)),
     status: normalizeStatus(pick(role, ["status", "isActive", "active"], "Active")),
-    permissions: normalizedPermissions.filter(Boolean),
+    permissions: normalizedPermissions.filter(Boolean).length
+      ? normalizedPermissions.filter(Boolean)
+      : booleanPermissions,
     raw: role,
   };
+};
+
+const buildRolePayload = (role = {}) => {
+  const permissions = Array.isArray(role.permissions) ? role.permissions : [];
+  const roleName = String(pick(role, ["roleName", "name"], "")).trim();
+  const module = String(pick(role, ["module"], "")).trim();
+
+  return {
+    roleName: roleName || "Role",
+    module: module || "General",
+    status: String(pick(role, ["status"], "Active") || "Active"),
+    canView: permissions.includes("View") || pick(role, ["canView"], false) === true,
+    canCreate: permissions.includes("Create") || pick(role, ["canCreate"], false) === true,
+    canEdit: permissions.includes("Edit") || pick(role, ["canEdit"], false) === true,
+    canDelete: permissions.includes("Delete") || pick(role, ["canDelete"], false) === true,
+  };
+};
+
+const isDeletedRecord = (record = {}) => {
+  const deletedValue = pick(
+    record,
+    ["isDeleted", "deleted", "isRemoved", "removed", "IsDeleted", "Deleted"],
+    false
+  );
+  const status = String(pick(record, ["status", "Status"], "")).trim().toLowerCase();
+
+  return (
+    deletedValue === true ||
+    deletedValue === 1 ||
+    String(deletedValue).toLowerCase() === "true" ||
+    status === "deleted" ||
+    hasValue(pick(record, ["deletedAt", "DeletedAt", "removedAt"], ""))
+  );
 };
 
 export const normalizeUser = (user = {}, index = 0) => ({
@@ -403,12 +533,44 @@ export const normalizeUser = (user = {}, index = 0) => ({
   name: pick(user, ["name", "fullName", "userName", "displayName"], "User"),
   email: pick(user, ["email", "emailAddress"]),
   clinic: pick(user, ["clinic", "clinicName", "assignedClinic", "clinicId"]),
+  hospitalId: pick(user, ["hospitalId", "HospitalId"], 0),
+  clinicId: pick(user, ["clinicId", "ClinicId"], 0),
   type: pick(user, ["type", "userType", "role", "roleName"], "User"),
+  role: pick(user, ["role", "roleName", "type", "userType"], "User"),
   status: normalizeStatus(pick(user, ["status", "isActive", "active"], "Active")),
   lastActive: formatDateTime(pick(user, ["lastActive", "lastLogin", "lastSeen", "updatedAt"], "")),
   phone: pick(user, ["phone", "phoneNumber", "mobile", "contactNumber"]),
+  mobileNumber: pick(user, ["mobileNumber", "mobile", "phoneNumber", "phone"]),
+  isDeleted: isDeletedRecord(user),
   raw: user,
 });
+
+const buildUserPayload = (user = {}, { includeBlankPassword = true } = {}) => {
+  const phone = String(pick(user, ["phone", "phoneNumber", "mobile", "contactNumber"], "")).trim();
+  const mobileNumber = String(pick(user, ["mobileNumber", "mobile", "phoneNumber", "phone"], phone)).trim();
+  const type = pick(user, ["type", "userType"], pick(user, ["role", "roleName"], "User"));
+  const role = pick(user, ["role", "roleName"], type);
+
+  const payload = {
+    name: String(pick(user, ["name", "fullName", "userName", "displayName"], "")).trim(),
+    email: String(pick(user, ["email", "emailAddress"], "")).trim(),
+    clinic: String(pick(user, ["clinic", "clinicName", "assignedClinic"], "")).trim(),
+    hospitalId: Number(pick(user, ["hospitalId", "HospitalId"], 0)) || 0,
+    clinicId: Number(pick(user, ["clinicId", "ClinicId", "hospitalId", "HospitalId"], 0)) || 0,
+    type,
+    role,
+    status: pick(user, ["status"], "Active"),
+    phone,
+    mobileNumber,
+    password: pick(user, ["password", "Password"], ""),
+  };
+
+  if (!includeBlankPassword && !payload.password) {
+    delete payload.password;
+  }
+
+  return payload;
+};
 
 const normalizeSettingsSection = (section = {}, defaults = {}) => ({
   ...defaults,
@@ -423,7 +585,7 @@ export const normalizeSettings = (settings = {}) => {
 
   return {
     general: normalizeSettingsSection(payload.general || payload.generalSettings || payload, {
-      name: "MediCore Platform",
+      name: "CMS Platform",
       status: "Enabled",
       notes: "Update general settings used across all clinics.",
     }),
@@ -475,13 +637,13 @@ export const fetchAdmin = async (id) =>
 export const createClinicAdmin = async (admin) =>
   superAdminRequest(SUPER_ADMIN_API.createClinicAdmin, {
     method: "POST",
-    body: admin,
+    body: buildAdminPayload(admin),
   });
 
 export const saveAdmin = async (admin, id) =>
   superAdminRequest(id ? `${SUPER_ADMIN_API.admins}/${id}` : SUPER_ADMIN_API.admins, {
     method: id ? "PUT" : "POST",
-    body: admin,
+    body: buildAdminPayload(admin, { includeBlankPassword: !id }),
   });
 
 const getEntityId = (item = {}) =>
@@ -572,14 +734,22 @@ const updateStaffClinic = async ({ path, item, admin, clinicId, clinicName, buil
   if (!id) return false;
 
   const body = buildBody(item, clinicId, clinicName, admin);
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("adminToken") ||
+    localStorage.getItem("superAdminToken");
   const response = await fetch(apiUrl(`${path}/${id}`), {
     method: "PUT",
     headers:
       body instanceof FormData
-        ? { "ngrok-skip-browser-warning": "true" }
+        ? {
+            "ngrok-skip-browser-warning": "true",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          }
         : {
             "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "true",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
     body: body instanceof FormData ? body : JSON.stringify(body),
   });
@@ -730,8 +900,17 @@ export const fetchAuditLogs = async () => {
   return logs;
 };
 
-export const fetchRoles = async () =>
-  asArray(await superAdminRequest(SUPER_ADMIN_API.roles)).map(normalizeRole);
+export const fetchRoles = async () => {
+  try {
+    return asArray(await superAdminRequest(SUPER_ADMIN_API.roles)).map(normalizeRole);
+  } catch (error) {
+    const fallbackRoles = asArray(
+      await superAdminRequest(SUPER_ADMIN_API.roleNames)
+    ).map(normalizeRole);
+
+    return fallbackRoles;
+  }
+};
 
 export const fetchRoleNames = async () =>
   asArray(await superAdminRequest(SUPER_ADMIN_API.roleNames)).map((role, index) =>
@@ -744,20 +923,22 @@ export const fetchRole = async (id) =>
 export const saveRole = async (role, id) =>
   superAdminRequest(id ? `${SUPER_ADMIN_API.roles}/${id}` : SUPER_ADMIN_API.roles, {
     method: id ? "PUT" : "POST",
-    body: role,
+    body: buildRolePayload(role),
   });
 
 export const deleteRole = async (id) =>
   superAdminRequest(`${SUPER_ADMIN_API.roles}/${id}`, { method: "DELETE" });
 
-export const updateRolePermissions = async (id, permissions) =>
-  superAdminRequest(`${SUPER_ADMIN_API.roles}/${id}`, {
+export const updateRolePermissions = async (id, role) =>
+  superAdminRequest(`${SUPER_ADMIN_API.roles}/${id}/permissions`, {
     method: "PUT",
-    body: { permissions },
+    body: buildRolePayload(role),
   });
 
 export const fetchUsers = async () =>
-  asArray(await superAdminRequest(SUPER_ADMIN_API.users)).map(normalizeUser);
+  asArray(await superAdminRequest(SUPER_ADMIN_API.users))
+    .map(normalizeUser)
+    .filter((user) => !user.isDeleted);
 
 export const fetchUser = async (id) =>
   normalizeUser(await superAdminRequest(`${SUPER_ADMIN_API.users}/${id}`));
@@ -765,7 +946,7 @@ export const fetchUser = async (id) =>
 export const saveUser = async (user, id) =>
   superAdminRequest(id ? `${SUPER_ADMIN_API.users}/${id}` : SUPER_ADMIN_API.users, {
     method: id ? "PUT" : "POST",
-    body: user,
+    body: buildUserPayload(user, { includeBlankPassword: !id }),
   });
 
 export const deleteUser = async (id) =>
@@ -805,18 +986,22 @@ export const updatePaymentSettings = async (settings) =>
   });
 
 export const fetchDashboardData = async () => {
-  const [dashboard, summary, revenueOverview, activities, billing] = await Promise.allSettled([
-    superAdminRequest(SUPER_ADMIN_API.dashboard),
-    superAdminRequest(SUPER_ADMIN_API.dashboardSummary),
-    superAdminRequest(SUPER_ADMIN_API.revenueOverview),
-    superAdminRequest(SUPER_ADMIN_API.activities),
+  const [dashboard, summary, reportsSummary, revenueTrend, userActivity, billing] = await Promise.allSettled([
+    superAdminRequestFirst([SUPER_ADMIN_API.dashboard, SUPER_ADMIN_API.dashboardCompat]),
+    superAdminRequestFirst([SUPER_ADMIN_API.dashboardSummary, SUPER_ADMIN_API.dashboardSummaryCompat]),
+    superAdminRequest(SUPER_ADMIN_API.reportsSummary),
+    superAdminRequest(SUPER_ADMIN_API.reportsRevenueTrend),
+    superAdminRequest(SUPER_ADMIN_API.reportsUserActivity),
     superAdminRequest(SUPER_ADMIN_API.billing),
   ]);
 
   const dashboardData = dashboard.status === "fulfilled" ? asObject(dashboard.value) : {};
-  const summaryData = summary.status === "fulfilled" ? asObject(summary.value) : {};
-  const revenueData = revenueOverview.status === "fulfilled" ? revenueOverview.value : [];
-  const activityData = activities.status === "fulfilled" ? activities.value : [];
+  const summaryData = {
+    ...(reportsSummary.status === "fulfilled" ? asObject(reportsSummary.value) : {}),
+    ...(summary.status === "fulfilled" ? asObject(summary.value) : {}),
+  };
+  const revenueData = revenueTrend.status === "fulfilled" ? revenueTrend.value : [];
+  const activityData = userActivity.status === "fulfilled" ? userActivity.value : [];
   const billingRows = billing.status === "fulfilled" ? asArray(billing.value) : [];
   const totalRevenue = billingRows.reduce((sum, item) => sum + getBillingAmount(item), 0);
   const nextSummary = {
@@ -834,8 +1019,9 @@ export const fetchDashboardData = async () => {
     error:
       dashboard.status === "rejected" &&
       summary.status === "rejected" &&
-      revenueOverview.status === "rejected" &&
-      activities.status === "rejected" &&
+      reportsSummary.status === "rejected" &&
+      revenueTrend.status === "rejected" &&
+      userActivity.status === "rejected" &&
       billing.status === "rejected"
         ? dashboard.reason.message
         : "",
@@ -843,7 +1029,11 @@ export const fetchDashboardData = async () => {
 };
 
 export const fetchReports = async () => {
-  const [revenue, activity, billing, clinics, admins] = await Promise.allSettled([
+  const [summary, revenueTrend, topClinics, userActivity, revenue, activity, billing, clinics, admins] = await Promise.allSettled([
+    superAdminRequest(SUPER_ADMIN_API.reportsSummary),
+    superAdminRequest(SUPER_ADMIN_API.reportsRevenueTrend),
+    superAdminRequest(SUPER_ADMIN_API.reportsTopClinics),
+    superAdminRequest(SUPER_ADMIN_API.reportsUserActivity),
     superAdminRequest(SUPER_ADMIN_API.reportsRevenue),
     superAdminRequest(SUPER_ADMIN_API.reportsActivity),
     superAdminRequest(SUPER_ADMIN_API.billing),
@@ -851,27 +1041,46 @@ export const fetchReports = async () => {
     superAdminRequest(SUPER_ADMIN_API.admins),
   ]);
 
-  const revenueRows = revenue.status === "fulfilled" ? asArray(revenue.value) : [];
-  const activityRows = activity.status === "fulfilled" ? asArray(activity.value) : [];
+  const topClinicRows = topClinics.status === "fulfilled" ? asArray(topClinics.value) : [];
+  const revenueRows =
+    revenue.status === "fulfilled"
+      ? asArray(revenue.value)
+      : revenueTrend.status === "fulfilled"
+        ? asArray(revenueTrend.value)
+        : [];
+  const activityRows =
+    activity.status === "fulfilled"
+      ? asArray(activity.value)
+      : userActivity.status === "fulfilled"
+        ? asArray(userActivity.value)
+        : [];
   const billingRows = billing.status === "fulfilled" ? asArray(billing.value) : [];
   const clinicRows = clinics.status === "fulfilled" ? asArray(clinics.value) : [];
   const adminRows = admins.status === "fulfilled" ? asArray(admins.value) : [];
-  const rows = revenueRows.length
-    ? revenueRows.map(normalizeReportRow)
+  const rows = topClinicRows.length
+    ? topClinicRows.map(normalizeReportRow)
+    : revenueRows.length
+      ? revenueRows.map(normalizeReportRow)
     : buildAdminRevenueRows({ billingRows, clinicRows, adminRows });
 
   return {
     rows,
     chartData: revenueRows.length
       ? revenueRows.map(normalizeRevenuePoint)
+      : activityRows.length
+        ? activityRows.map(normalizeRevenuePoint)
       : buildRevenueChart(billingRows),
     error:
+      summary.status === "rejected" &&
+      revenueTrend.status === "rejected" &&
+      topClinics.status === "rejected" &&
+      userActivity.status === "rejected" &&
       revenue.status === "rejected" &&
       activity.status === "rejected" &&
       billing.status === "rejected" &&
       clinics.status === "rejected" &&
       admins.status === "rejected"
-        ? revenue.reason.message
+        ? revenueTrend.reason?.message || revenue.reason.message
         : "",
   };
 };

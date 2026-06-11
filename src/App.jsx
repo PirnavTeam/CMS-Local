@@ -22,7 +22,6 @@ import ForgotPassword from "./Login/Forgotpassword";
 import VerifyOTP from "./Login/Verifyopt";
 import ResetPassword from "./Login/Resertpassword";
 import Dashboard from "./Dashboard/Dashboard";
-import Staff from "./pages/Staff/Staff";
 import Receptionists from "./pages/RECEPTIONISTS/Receptionists";
 import Doctors from "./pages/DOCTORS/Doctors";
 import AddDoctor from "./pages/DOCTORS/AddDoctor";
@@ -74,7 +73,6 @@ function App() {
           <Route path="doctors/register" element={<RegisterDoctor />} />
           <Route path="doctors/schedule" element={<DoctorSchedule />} />
           <Route path="DoctorSchedule/schedule" element={<Doctorschedulepage />} />
-          <Route path="staff" element={<Staff />} />
           <Route path="receptionists" element={<Receptionists />} />
 
           {/* ✅ PATIENTS */}

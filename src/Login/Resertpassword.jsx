@@ -213,7 +213,7 @@ const ResetPassword = () => {
         </Link>
 
         <div className="auth-footer">
-          © {new Date().getFullYear()} Clinic Portal · Secure Admin Access
+          © {new Date().getFullYear()} CMS · Secure Admin Access
         </div>
       </div>
     </div>

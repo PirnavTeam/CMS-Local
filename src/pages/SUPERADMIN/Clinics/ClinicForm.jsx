@@ -6,7 +6,7 @@ import { fetchClinic, saveClinic } from "../superAdminApi";
 import { useToast } from "../../../components/ToastProvider";
 import {
   onlyAlpha,
-  onlyDigits,
+  onlyIndianMobileValue,
   validateAlpha,
   validateGmail,
   validateMobile,
@@ -124,7 +124,7 @@ function ClinicForm({ mode }) {
     }
 
     if (name === "contactNumber") {
-      nextValue = onlyDigits(value).slice(0, 10);
+      nextValue = onlyIndianMobileValue(value);
     }
 
     setForm((current) => ({ ...current, [name]: nextValue }));
@@ -184,7 +184,7 @@ function ClinicForm({ mode }) {
         subtitle="Manage clinic profile and availability status."
       />
 
-      <form className="sa-form-card" onSubmit={handleSubmit}>
+      <form className="sa-form-card" onSubmit={handleSubmit} noValidate>
         {error ? <div className="sa-state sa-state--error">{error}</div> : null}
 
         <div className="sa-form-grid">

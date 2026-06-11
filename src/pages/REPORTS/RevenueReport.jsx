@@ -275,7 +275,7 @@ import React, { useEffect, useState } from "react";
 
 import "./RevenueReport.css";
 
-import { ArrowLeft, Download } from "lucide-react";
+import { Download } from "lucide-react";
 
 import {
   LineChart,
@@ -287,8 +287,8 @@ import {
   CartesianGrid,
 } from "recharts";
 
-import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../../config/api";
+import { formatIndianCurrency } from "../../utils/format";
 
 // ================= API =================
 
@@ -384,8 +384,6 @@ const buildRevenueFromBilling = (billingRows = []) => {
 // ================= COMPONENT =================
 
 function RevenueReport() {
-  const navigate = useNavigate();
-
   const [data, setData] = useState([]);
 
   const [doctors, setDoctors] = useState([]);
@@ -530,11 +528,6 @@ function RevenueReport() {
 
       <div className="report-header">
         <div>
-          <button className="back" onClick={() => navigate("/reports")}>
-            <ArrowLeft size={16} />
-            All reports
-          </button>
-
           <h2>Revenue Report</h2>
 
           <p>Earnings and total revenue</p>
@@ -622,7 +615,7 @@ function RevenueReport() {
                   borderRadius: "12px",
                   border: "1px solid #e5e7eb",
                 }}
-                formatter={(value) => [`Rs. ${value}`, "Revenue"]}
+                formatter={(value) => [formatIndianCurrency(value), "Revenue"]}
               />
 
               <Line
@@ -659,7 +652,7 @@ function RevenueReport() {
           <div className="row" key={i}>
             <span>{d.month}</span>
 
-            <span>Rs. {d.revenue?.toLocaleString()}</span>
+            <span>{formatIndianCurrency(d.revenue)}</span>
 
             <span className="growth">{d.growth}%</span>
           </div>

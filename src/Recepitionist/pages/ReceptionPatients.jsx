@@ -5,7 +5,7 @@ import { parseList, requestJson } from "../receptionApi";
 import { useToast } from "../../components/ToastProvider";
 import {
   onlyAlpha,
-  onlyDigits,
+  onlyIndianMobileValue,
   onlyNumberValue,
   validateAlpha,
   validateDate,
@@ -89,7 +89,7 @@ function ReceptionPatients() {
     }
 
     if (["phone", "emergencyContactPhone"].includes(name)) {
-      nextValue = onlyDigits(value).slice(0, 10);
+      nextValue = onlyIndianMobileValue(value);
     }
 
     if (name === "age") {
@@ -252,6 +252,7 @@ function ReceptionPatients() {
       {modal ? (
         <div className="rc-modal-backdrop" onClick={() => setModal(null)}>
           <form
+            noValidate
             className="rc-modal"
             onSubmit={savePatient}
             onClick={(event) => event.stopPropagation()}

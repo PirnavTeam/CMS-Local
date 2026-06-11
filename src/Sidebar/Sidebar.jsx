@@ -1,81 +1,3 @@
-// import React from "react";
-// import { NavLink } from "react-router-dom";
-// import {
-//   LayoutDashboard,
-//   Stethoscope,
-//   Users,
-//   UserRound,
-//   CalendarDays,
-//   Settings2,
-//   FileBarChart2,
-//   HeartPulse,
-// } from "lucide-react";
-
-// import "./Sidebar.css";
-
-// const items = [
-//   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-//   { to: "/doctors", label: "Doctors", icon: Stethoscope },
-//   { to: "/staff", label: "Staff", icon: Users },
-//   { to: "/patients", label: "Patients", icon: UserRound },
-//   { to: "/appointments", label: "Appointments", icon: CalendarDays },
-//   { to: "/doctors/schedule", label: "Schedule Settings", icon: Settings2 },
-//   { to: "/reports", label: "Reports", icon: FileBarChart2 },
-// ];
-
-// function Sidebar({ open, onClose }) {
-//   return (
-//     <>
-//       <div className={`overlay ${open ? "show" : ""}`} onClick={onClose} />
-
-//       <aside className={`sidebar ${open ? "open" : ""}`}>
-
-//         {/* HEADER */}
-//         <div className="sidebar-header">
-//           <div className="logo-icon">
-//             <HeartPulse size={18} />
-//           </div>
-//           <div>
-//             <h3>MediCore</h3>
-//             <span>Admin Console</span>
-//           </div>
-//         </div>
-
-//         {/* NAV */}
-//         <nav className="nav">
-//           <p className="menu-title">MAIN MENU</p>
-
-//           {items.map(({ to, label, icon: Icon }) => (
-//             <NavLink
-//               key={to}
-//               to={to}
-//               onClick={onClose}
-//               className={({ isActive }) =>
-//                 `nav-item ${isActive ? "active" : ""}`
-//               }
-//             >
-//               <Icon size={18} />
-//               <span>{label}</span>
-//             </NavLink>
-//           ))}
-//         </nav>
-
-//         {/* FOOTER */}
-//         <div className="sidebar-footer">
-//           <p>System Status</p>
-//           <span>All services operational</span>
-//         </div>
-
-//       </aside>
-//     </>
-//   );
-// }
-
-// export default Sidebar;
-
-
-
-
 import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -102,7 +24,6 @@ import { getClinicDisplayName } from "../utils/clinicDisplay";
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/doctors", label: "Doctors", icon: Stethoscope },
-  { to: "/staff", label: "Staff", icon: Users },
   { to: "/receptionists", label: "Receptionists", icon: UserCheck },
   { to: "/patients", label: "Patients", icon: UserRound },
   { to: "/appointments", label: "Appointments", icon: CalendarDays },
@@ -139,7 +60,7 @@ function Sidebar() {
           <HeartPulse size={18} />
         </div>
         <div>
-          <h3>MediCore</h3>
+          <h3>CMS</h3>
           <span>{isSuperAdmin ? "Super Admin Console" : "Admin Console"}</span>
         </div>
       </div>

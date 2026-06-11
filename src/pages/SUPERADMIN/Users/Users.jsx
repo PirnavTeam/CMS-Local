@@ -10,14 +10,23 @@ import {
   saveUser,
   updateUserStatus,
 } from "../superAdminApi";
+import {
+  onlyIndianMobileValue,
+  validateMobile,
+} from "../../../utils/validation";
 
 const emptyUser = {
   name: "",
   email: "",
   clinic: "",
+  hospitalId: "",
+  clinicId: "",
   type: "Patient",
+  role: "Patient",
   status: "Active",
   phone: "",
+  mobileNumber: "",
+  password: "",
 };
 
 function Users() {
@@ -79,14 +88,31 @@ function Users() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    const nextValue = ["phone", "mobileNumber"].includes(name)
+      ? onlyIndianMobileValue(value)
+      : value;
+    setForm((current) => ({ ...current, [name]: nextValue }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!form.name.trim() || !form.email.trim()) {
-      setError("Name and email are required.");
+    if (!form.name.trim() || !form.email.trim() || (!editingUserId && !form.password)) {
+      setError(
+        editingUserId
+          ? "Name and email are required."
+          : "Name, email, and password are required."
+      );
+      return;
+    }
+
+    const phoneError = form.phone ? validateMobile(form.phone, "Phone") : "";
+    const mobileError = form.mobileNumber
+      ? validateMobile(form.mobileNumber, "Mobile number")
+      : "";
+
+    if (phoneError || mobileError) {
+      setError(phoneError || mobileError);
       return;
     }
 
@@ -139,6 +165,9 @@ function Users() {
       await deleteUser(user.id);
       if (selectedUser?.id === user.id) setSelectedUser(null);
       if (editingUserId === user.id) closeForm();
+      setUsers((currentUsers) =>
+        currentUsers.filter((currentUser) => String(currentUser.id) !== String(user.id))
+      );
       await loadUsers();
     } catch (requestError) {
       setError(requestError.message || "Unable to delete user.");
@@ -207,7 +236,7 @@ function Users() {
       />
 
       {showForm ? (
-        <form className="sa-form-card" style={{ marginBottom: 16 }} onSubmit={handleSubmit}>
+        <form className="sa-form-card" style={{ marginBottom: 16 }} onSubmit={handleSubmit} noValidate>
           <h3>{editingUserId ? "Edit User" : "Create User"}</h3>
           {error ? <div className="sa-state sa-state--error">{error}</div> : null}
           <div className="sa-form-grid">
@@ -224,14 +253,45 @@ function Users() {
               <input name="clinic" value={form.clinic} onChange={handleChange} />
             </div>
             <div className="sa-form-field">
+              <label>Hospital ID</label>
+              <input
+                name="hospitalId"
+                type="number"
+                value={form.hospitalId}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="sa-form-field">
+              <label>Clinic ID</label>
+              <input
+                name="clinicId"
+                type="number"
+                value={form.clinicId}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="sa-form-field">
               <label>Type</label>
-              <select name="type" value={form.type} onChange={handleChange}>
+              <select
+                name="type"
+                value={form.type}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    type: event.target.value,
+                    role: event.target.value,
+                  }))
+                }
+              >
                 <option>Patient</option>
                 <option>Doctor</option>
                 <option>Clinic Admin</option>
                 <option>Receptionist</option>
-                <option>Staff</option>
               </select>
+            </div>
+            <div className="sa-form-field">
+              <label>Role</label>
+              <input name="role" value={form.role} onChange={handleChange} />
             </div>
             <div className="sa-form-field">
               <label>Status</label>
@@ -243,6 +303,21 @@ function Users() {
             <div className="sa-form-field">
               <label>Phone</label>
               <input name="phone" value={form.phone} onChange={handleChange} />
+            </div>
+            <div className="sa-form-field">
+              <label>Mobile Number</label>
+              <input name="mobileNumber" value={form.mobileNumber} onChange={handleChange} />
+            </div>
+            <div className="sa-form-field">
+              <label>Password</label>
+              <input
+                name="password"
+                type="password"
+                value={form.password}
+                onChange={handleChange}
+                autoComplete="new-password"
+                required={!editingUserId}
+              />
             </div>
           </div>
           <div className="sa-page-actions" style={{ marginTop: 14 }}>
@@ -270,7 +345,19 @@ function Users() {
             action={<button className="sa-btn" onClick={() => setSelectedUser(null)}>Close</button>}
           />
           <div className="sa-form-grid">
-            {["name", "email", "clinic", "type", "status", "phone", "lastActive"].map((key) => (
+            {[
+              "name",
+              "email",
+              "clinic",
+              "hospitalId",
+              "clinicId",
+              "type",
+              "role",
+              "status",
+              "phone",
+              "mobileNumber",
+              "lastActive",
+            ].map((key) => (
               <div className="sa-form-field" key={key}>
                 <label>{key.replace(/^\w/, (letter) => letter.toUpperCase())}</label>
                 <input value={selectedUser[key] || ""} readOnly />

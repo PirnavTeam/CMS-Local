@@ -8,15 +8,20 @@ import {
   fetchRole,
   fetchRoles,
   saveRole,
+  updateRolePermissions,
 } from "../superAdminApi";
 
 const permissionOptions = ["View", "Create", "Edit", "Delete"];
 
 const emptyRole = {
   name: "",
+  roleName: "",
+  module: "General",
   status: "Active",
   permissions: ["View"],
 };
+
+const getRoleKey = (role = {}) => role.id || role.key || role.roleName || role.name;
 
 function RolesPermissions() {
   const [showForm, setShowForm] = useState(false);
@@ -25,6 +30,7 @@ function RolesPermissions() {
   const [editingRoleId, setEditingRoleId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updatingPermission, setUpdatingPermission] = useState("");
   const [error, setError] = useState("");
 
   const loadRoles = async () => {
@@ -53,14 +59,38 @@ function RolesPermissions() {
 
   const openEditForm = async (role) => {
     setEditingRoleId(role.id);
-    setForm(role);
+    setForm({
+      ...emptyRole,
+      ...role,
+      name: role.name || role.roleName || "",
+      roleName: role.roleName || role.name || "",
+      module: role.module || "General",
+      permissions: Array.isArray(role.permissions) ? role.permissions : [],
+    });
     setShowForm(true);
     setError("");
 
     try {
-      setForm(await fetchRole(role.id));
+      const remoteRole = await fetchRole(role.id);
+      setForm({
+        ...emptyRole,
+        ...remoteRole,
+        name: remoteRole.name || remoteRole.roleName || "",
+        roleName: remoteRole.roleName || remoteRole.name || "",
+        module: remoteRole.module || "General",
+        permissions: Array.isArray(remoteRole.permissions)
+          ? remoteRole.permissions
+          : [],
+      });
     } catch {
-      setForm(role);
+      setForm({
+        ...emptyRole,
+        ...role,
+        name: role.name || role.roleName || "",
+        roleName: role.roleName || role.name || "",
+        module: role.module || "General",
+        permissions: Array.isArray(role.permissions) ? role.permissions : [],
+      });
     }
   };
 
@@ -88,8 +118,13 @@ function RolesPermissions() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!form.name.trim()) {
+    if (!form.name.trim() && !form.roleName.trim()) {
       setError("Role name is required.");
+      return;
+    }
+
+    if (!form.module.trim()) {
+      setError("Module is required.");
       return;
     }
 
@@ -97,7 +132,14 @@ function RolesPermissions() {
     setError("");
 
     try {
-      await saveRole(form, editingRoleId || undefined);
+      await saveRole(
+        {
+          ...form,
+          roleName: form.roleName || form.name,
+          name: form.name || form.roleName,
+        },
+        editingRoleId || undefined
+      );
       closeForm();
       await loadRoles();
     } catch (requestError) {
@@ -122,8 +164,52 @@ function RolesPermissions() {
     }
   };
 
+  const handleMatrixPermissionToggle = async (role, permission) => {
+    const roleKey = getRoleKey(role);
+    if (!roleKey) return;
+
+    const currentPermissions = Array.isArray(role.permissions)
+      ? role.permissions
+      : [];
+    const nextPermissions = currentPermissions.includes(permission)
+      ? currentPermissions.filter((item) => item !== permission)
+      : [...currentPermissions, permission];
+    const updateKey = `${roleKey}:${permission}`;
+
+    setUpdatingPermission(updateKey);
+    setError("");
+    setRoles((currentRoles) =>
+      currentRoles.map((item) =>
+        getRoleKey(item) === roleKey ? { ...item, permissions: nextPermissions } : item
+      )
+    );
+
+    if (role.canPersistPermissions === false || !role.id) {
+      setUpdatingPermission("");
+      return;
+    }
+
+    try {
+      await updateRolePermissions(role.id, {
+        ...role,
+        permissions: nextPermissions,
+      });
+      await loadRoles();
+    } catch (requestError) {
+      setError(requestError.message || "Unable to update permissions.");
+      setRoles((currentRoles) =>
+        currentRoles.map((item) =>
+          getRoleKey(item) === roleKey ? { ...item, permissions: currentPermissions } : item
+        )
+      );
+    } finally {
+      setUpdatingPermission("");
+    }
+  };
+
   const columns = [
     { key: "name", label: "Role" },
+    { key: "module", label: "Module" },
     { key: "users", label: "Assigned Users", width: "minmax(110px, 0.7fr)" },
     {
       key: "permissions",
@@ -135,16 +221,30 @@ function RolesPermissions() {
       key: "actions",
       label: "Actions",
       width: "minmax(112px, 0.7fr)",
-      render: (role) => (
-        <div className="sa-actions">
-          <button className="sa-icon-btn" onClick={() => openEditForm(role)} title="Edit role">
-            <Pencil size={15} />
-          </button>
-          <button className="sa-icon-btn" onClick={() => handleDelete(role)} title="Delete role">
-            <Trash2 size={15} />
-          </button>
-        </div>
-      ),
+      render: (role) => {
+        const canUseRemoteActions = role.canPersistPermissions !== false && role.id;
+
+        return (
+          <div className="sa-actions">
+            <button
+              className="sa-icon-btn"
+              disabled={!canUseRemoteActions}
+              onClick={() => openEditForm(role)}
+              title={canUseRemoteActions ? "Edit role" : "Backend id unavailable"}
+            >
+              <Pencil size={15} />
+            </button>
+            <button
+              className="sa-icon-btn"
+              disabled={!canUseRemoteActions}
+              onClick={() => handleDelete(role)}
+              title={canUseRemoteActions ? "Delete role" : "Backend id unavailable"}
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -162,7 +262,7 @@ function RolesPermissions() {
       />
 
       {showForm ? (
-        <form className="sa-form-card" style={{ marginBottom: 16 }} onSubmit={handleSubmit}>
+        <form className="sa-form-card" style={{ marginBottom: 16 }} onSubmit={handleSubmit} noValidate>
           <h3>{editingRoleId ? "Edit Role" : "Create Role"}</h3>
           {error ? <div className="sa-state sa-state--error">{error}</div> : null}
           <div className="sa-form-grid">
@@ -171,8 +271,24 @@ function RolesPermissions() {
               <input
                 name="name"
                 value={form.name}
-                onChange={handleChange}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    name: event.target.value,
+                    roleName: event.target.value,
+                  }))
+                }
                 placeholder="Enter role name"
+                required
+              />
+            </div>
+            <div className="sa-form-field">
+              <label>Module</label>
+              <input
+                name="module"
+                value={form.module}
+                onChange={handleChange}
+                placeholder="Enter module name"
                 required
               />
             </div>
@@ -219,7 +335,11 @@ function RolesPermissions() {
       <div className="sa-panel" style={{ marginTop: 16 }}>
         <h3>Assign Permissions</h3>
         <p>Permission matrix for the current role list.</p>
-        <PermissionMatrix roles={roles} />
+        <PermissionMatrix
+          roles={roles}
+          onToggle={handleMatrixPermissionToggle}
+          updatingKey={updatingPermission}
+        />
       </div>
     </>
   );

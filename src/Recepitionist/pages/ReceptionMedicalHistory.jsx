@@ -263,6 +263,7 @@ function ReceptionMedicalHistory() {
       {modal ? (
         <div className="rc-modal-backdrop" onClick={() => setModal(null)}>
           <form
+            noValidate
             className="rc-modal"
             onSubmit={saveHistory}
             onClick={(event) => event.stopPropagation()}

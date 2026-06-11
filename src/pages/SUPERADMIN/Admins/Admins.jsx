@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import Header from "../../../components/superadmin/Header";
 import DataTable from "../../../components/superadmin/DataTable";
 import SearchFilter from "../../../components/superadmin/SearchFilter";
 import {
   deleteAdmin,
-  fetchAdmin,
+  deleteUser,
   fetchAdmins,
   fetchClinics,
+  fetchUsers,
   saveAdmin,
   syncAdminStaffClinic,
 } from "../superAdminApi";
@@ -15,7 +16,7 @@ import PasswordField from "../../../components/PasswordField";
 import { useToast } from "../../../components/ToastProvider";
 import {
   onlyAlpha,
-  onlyDigits,
+  onlyIndianMobileValue,
   validateAlpha,
   validateGmail,
   validateMobile,
@@ -63,6 +64,47 @@ const updateCurrentAdminClinicSession = (admin, clinicId, clinicName) => {
   localStorage.setItem("assignedClinic", clinicName || "");
 };
 
+const isAdminType = (value = "") => {
+  const role = String(value).trim().toLowerCase();
+  return role === "admin" || role === "clinic admin";
+};
+
+const getUserAdminRole = (user = {}) =>
+  [user.type, user.role, user.raw?.type, user.raw?.role, user.raw?.roleName]
+    .find(isAdminType) || "";
+
+const normalizeUserAdmin = (user = {}) => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  phone: user.phone || user.mobileNumber,
+  assignedClinic: user.clinic,
+  assignedClinicId: user.clinicId || user.hospitalId,
+  role: "Admin",
+  status: user.status,
+  raw: user.raw || user,
+  source: "users",
+});
+
+const mergeAdmins = (adminRows = [], userRows = []) => {
+  const rows = new Map();
+
+  adminRows.forEach((admin) => {
+    const key = String(admin.email || admin.id || "").toLowerCase();
+    rows.set(key, { ...admin, source: admin.source || "admins" });
+  });
+
+  userRows
+    .filter((user) => !user.isDeleted && getUserAdminRole(user))
+    .map(normalizeUserAdmin)
+    .forEach((admin) => {
+      const key = String(admin.email || admin.id || "").toLowerCase();
+      rows.set(key, { ...rows.get(key), ...admin });
+    });
+
+  return Array.from(rows.values());
+};
+
 
 function Admins() {
   const toast = useToast();
@@ -85,7 +127,19 @@ function Admins() {
     setError("");
 
     try {
-      setAdmins(await fetchAdmins());
+      const [adminsResult, usersResult] = await Promise.allSettled([
+        fetchAdmins(),
+        fetchUsers(),
+      ]);
+      const adminRows = adminsResult.status === "fulfilled" ? adminsResult.value : [];
+      const userRows = usersResult.status === "fulfilled" ? usersResult.value : [];
+      const mergedRows = mergeAdmins(adminRows, userRows);
+
+      setAdmins(mergedRows);
+
+      if (!mergedRows.length && adminsResult.status === "rejected" && usersResult.status === "rejected") {
+        setError(adminsResult.reason?.message || "Unable to load admins.");
+      }
     } catch (requestError) {
       setError(requestError.message || "Unable to load admins.");
     } finally {
@@ -118,50 +172,6 @@ function Admins() {
     setError("");
   };
 
-  const openEditForm = async (admin) => {
-    const initialClinicId = getAdminClinicId(admin, clinics);
-    const initialClinicName = getAdminClinicName(admin, clinics);
-
-    setSelectedAdmin(null);
-    setEditingAdminId(admin.id);
-    setOriginalAdminClinic({
-      id: initialClinicId,
-      name: initialClinicName,
-    });
-    setForm({
-      ...emptyAdmin,
-      fullName: admin.name || "",
-      email: admin.email || "",
-      phone: admin.phone || "",
-      temporaryPassword: "",
-      role: "Admin",
-      assignedClinicId: initialClinicId,
-    });
-    setShowForm(true);
-    setError("");
-
-    try {
-      const remoteAdmin = await fetchAdmin(admin.id);
-      const remoteClinicId = getAdminClinicId(remoteAdmin, clinics) || initialClinicId;
-      const remoteClinicName = getAdminClinicName(remoteAdmin, clinics) || initialClinicName;
-
-      setOriginalAdminClinic({
-        id: remoteClinicId,
-        name: remoteClinicName,
-      });
-      setForm((current) => ({
-        ...current,
-        fullName: remoteAdmin.name || current.fullName,
-        email: remoteAdmin.email || current.email,
-        phone: remoteAdmin.phone || current.phone,
-        role: "Admin",
-        assignedClinicId: remoteClinicId || current.assignedClinicId,
-      }));
-    } catch {
-      // Keep the table row values when the detail endpoint is unavailable.
-    }
-  };
-
   const closeForm = () => {
     setShowForm(false);
     setEditingAdminId("");
@@ -178,7 +188,7 @@ function Admins() {
     }
 
     if (name === "phone") {
-      nextValue = onlyDigits(value).slice(0, 10);
+      nextValue = onlyIndianMobileValue(value);
     }
 
     setForm((current) => ({
@@ -234,32 +244,18 @@ function Admins() {
         (isCurrentAdmin(previousAdmin) ? localStorage.getItem("clinicName") : "");
       const adminName = form.fullName.trim();
       const adminEmail = form.email.trim();
-      const adminMobileNumber = form.phone.trim();
+      const adminPhone = form.phone.trim();
       const clinicName = selectedClinic?.name || "";
       const temporaryPassword = form.temporaryPassword;
       await saveAdmin({
-        AdminName: adminName,
-        AdminEmail: adminEmail,
-        MobileNumber: adminMobileNumber,
-        AdminMobileNumber: adminMobileNumber,
-        ClinicName: clinicName,
-        AdminPassword: temporaryPassword,
-        TemporaryPassword: temporaryPassword,
-        Password: temporaryPassword,
-        AdminRole: form.role,
-        Role: form.role,
-        fullName: adminName,
         name: adminName,
+        fullName: adminName,
+        phone: adminPhone,
         email: adminEmail,
-        phone: adminMobileNumber,
-        phoneNumber: adminMobileNumber,
-        temporaryPassword,
         password: temporaryPassword,
+        temporaryPassword,
         role: form.role,
-        clinicId,
         hospitalId: clinicId,
-        assignedClinicId: clinicId,
-        assignedClinic: selectedClinic?.name || "",
         sendWelcomeEmail: form.sendWelcomeEmail,
       }, editingAdminId || undefined);
       updateCurrentAdminClinicSession(
@@ -323,7 +319,11 @@ function Admins() {
     setError("");
 
     try {
-      await deleteAdmin(admin.id);
+      if (admin.source === "users") {
+        await deleteUser(admin.id);
+      } else {
+        await deleteAdmin(admin.id);
+      }
       if (selectedAdmin?.id === admin.id) setSelectedAdmin(null);
       if (editingAdminId === admin.id) closeForm();
       toast.success("Admin deleted successfully");
@@ -356,12 +356,6 @@ function Admins() {
       width: "minmax(112px, 0.7fr)",
       render: (admin) => (
         <div className="sa-actions">
-          <button className="sa-icon-btn" onClick={() => setSelectedAdmin(admin)} title="View admin">
-            <Eye size={15} />
-          </button>
-          <button className="sa-icon-btn" onClick={() => openEditForm(admin)} title="Edit admin">
-            <Pencil size={15} />
-          </button>
           <button className="sa-icon-btn" onClick={() => handleDelete(admin)} title="Delete admin">
             <Trash2 size={15} />
           </button>
@@ -396,7 +390,7 @@ function Admins() {
       />
 
       {showForm ? (
-        <form className="sa-form-card" style={{ marginBottom: 16 }} onSubmit={handleCreateAdmin}>
+        <form className="sa-form-card" style={{ marginBottom: 16 }} onSubmit={handleCreateAdmin} noValidate>
           <h3>{editingAdminId ? "Edit admin" : "Create new admin"}</h3>
           <p className="sa-form-subtitle">Manage administrator access for a clinic.</p>
           {error ? <div className="sa-state sa-state--error">{error}</div> : null}

@@ -2,7 +2,9 @@ import React from "react";
 
 const permissions = ["View", "Create", "Edit", "Delete"];
 
-function PermissionMatrix({ roles = [] }) {
+const getRoleKey = (role = {}) => role.id || role.key || role.roleName || role.name;
+
+function PermissionMatrix({ roles = [], onToggle, updatingKey = "" }) {
   return (
     <div className="sa-permission-matrix">
       <div className="sa-permission-head">
@@ -12,21 +14,26 @@ function PermissionMatrix({ roles = [] }) {
         ))}
       </div>
 
-      {roles.map((role) => (
-        <div className="sa-permission-row" key={role.id}>
-          <b>{role.name}</b>
-          {permissions.map((permission) => (
-            <label key={permission} className="sa-checkbox">
-              <input
-                type="checkbox"
-                checked={role.permissions.includes(permission)}
-                readOnly
-              />
-              <span>{permission}</span>
-            </label>
-          ))}
-        </div>
-      ))}
+      {roles.map((role) => {
+        const roleKey = getRoleKey(role);
+
+        return (
+          <div className="sa-permission-row" key={roleKey}>
+            <b>{role.name}</b>
+            {permissions.map((permission) => (
+              <label key={permission} className="sa-checkbox">
+                <input
+                  type="checkbox"
+                  checked={(role.permissions || []).includes(permission)}
+                  disabled={!roleKey || updatingKey === `${roleKey}:${permission}`}
+                  onChange={() => onToggle?.(role, permission)}
+                />
+                <span>{permission}</span>
+              </label>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

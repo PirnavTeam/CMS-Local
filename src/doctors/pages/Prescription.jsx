@@ -294,7 +294,7 @@ function Prescription() {
     loadPrescription();
   }, [routeState.appointmentId, routeState.patientId]);
 
-  const hospitalName = getClinicDisplayName({}, "MediCare");
+  const hospitalName = getClinicDisplayName({}, "CMS");
   const doctorName = localStorage.getItem("doctorName") || appointment?.doctorName || "Doctor";
 
   const validMedicines = useMemo(
@@ -439,19 +439,18 @@ function Prescription() {
     }
   };
 
+  useEffect(() => {
+    if (!loading && error && !appointment) {
+      navigate("/doctor/dashboard", { replace: true });
+    }
+  }, [appointment, error, loading, navigate]);
+
   if (loading) {
     return <div className="rx-state-card">Loading prescription...</div>;
   }
 
   if (error && !appointment) {
-    return (
-      <div className="rx-state-card rx-state-card--error">
-        <span>{error}</span>
-        <button type="button" onClick={() => navigate("/doctor/dashboard")}>
-          Back to dashboard
-        </button>
-      </div>
-    );
+    return <div className="rx-state-card rx-state-card--error">{error}</div>;
   }
 
   return (

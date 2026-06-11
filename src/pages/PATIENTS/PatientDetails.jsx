@@ -4,7 +4,6 @@ import React, {
 } from "react";
 
 import {
-  ArrowLeft,
   Calendar,
   ClipboardList,
   Droplet,
@@ -487,6 +486,12 @@ function PatientDetails() {
     );
   };
 
+  useEffect(() => {
+    if (!loading && (error || !patientData)) {
+      navigate("/patients", { replace: true });
+    }
+  }, [error, loading, navigate, patientData]);
+
   // ================= LOADING =================
 
   if (loading) {
@@ -528,22 +533,6 @@ function PatientDetails() {
 
   return (
     <div className="patient-details-page">
-
-      {/* BACK */}
-
-      <button
-        type="button"
-        className="patient-back-btn"
-        onClick={() =>
-          navigate("/patients")
-        }
-      >
-
-        <ArrowLeft size={22} />
-
-        Back to Patients
-
-      </button>
 
       {/* TITLE */}
 

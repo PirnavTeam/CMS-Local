@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Download, FileText } from "lucide-react";
+import { ArrowLeft, Banknote, CreditCard, Download, FileText, ReceiptText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { parseList, requestJson } from "../receptionApi";
 import { useToast } from "../../components/ToastProvider";
@@ -8,6 +8,7 @@ import {
   validateNumeric,
   validateSelected,
 } from "../../utils/validation";
+import { formatIndianCurrency } from "../../utils/format";
 
 const escapeHtml = (value) =>
   String(value ?? "")
@@ -19,6 +20,8 @@ const escapeHtml = (value) =>
 
 const firstValue = (...values) =>
   values.find((value) => value !== undefined && value !== null && value !== "" && value !== 0);
+
+const formatCurrency = (value) => formatIndianCurrency(value);
 
 const getInvoiceNumber = (invoice) =>
   firstValue(
@@ -91,10 +94,12 @@ function ReceptionBilling() {
   }, [appointments, form.appointmentId]);
 
   const consultationCharge = Number(selectedAppointment?.consultationCharge || 0);
+  const medicineCharges = Number(form.medicineCharges || 0);
+  const labCharges = Number(form.labCharges || 0);
   const total =
     consultationCharge +
-    Number(form.medicineCharges || 0) +
-    Number(form.labCharges || 0);
+    medicineCharges +
+    labCharges;
 
   const validateForm = () => {
     const nextErrors = {
@@ -281,12 +286,12 @@ function ReceptionBilling() {
                 <tr><th>Charge</th><th>Amount</th></tr>
               </thead>
               <tbody>
-                <tr><td>Consultation</td><td>Rs ${escapeHtml(consultationCharge || 0)}</td></tr>
-                <tr><td>Medicine</td><td>Rs ${escapeHtml(medicineCharge || 0)}</td></tr>
-                <tr><td>Lab</td><td>Rs ${escapeHtml(labCharge || 0)}</td></tr>
+                <tr><td>Consultation</td><td>${escapeHtml(formatCurrency(consultationCharge))}</td></tr>
+                <tr><td>Medicine</td><td>${escapeHtml(formatCurrency(medicineCharge))}</td></tr>
+                <tr><td>Lab</td><td>${escapeHtml(formatCurrency(labCharge))}</td></tr>
               </tbody>
             </table>
-            <div class="total"><span>Total</span><span>Rs ${escapeHtml(grandTotal)}</span></div>
+            <div class="total"><span>Total</span><span>${escapeHtml(formatCurrency(grandTotal))}</span></div>
           </main>
           <script>
             window.onload = () => {
@@ -306,7 +311,7 @@ function ReceptionBilling() {
       <div className="rc-page-head">
         <div>
           <h2>Billing</h2>
-          <p>Fetch appointment, add charges, confirm payment, and generate invoice.</p>
+          <p>Create invoices from appointments and collect payments.</p>
         </div>
         <button className="rc-btn" onClick={() => navigate("/reception/dashboard")}>
           <ArrowLeft size={16} /> Dashboard
@@ -315,8 +320,33 @@ function ReceptionBilling() {
 
       {message ? <div className={`rc-alert ${invoice ? "" : "error"}`}>{message}</div> : null}
 
-      <form className="rc-card rc-billing-form" onSubmit={generate}>
-        <h3>Generate Bill</h3>
+      <div className="rc-billing-stats">
+        <div className="rc-billing-stat">
+          <ReceiptText size={18} />
+          <span>Appointments</span>
+          <strong>{appointments.length}</strong>
+        </div>
+        <div className="rc-billing-stat">
+          <Banknote size={18} />
+          <span>Current Total</span>
+          <strong>{formatCurrency(total)}</strong>
+        </div>
+        <div className="rc-billing-stat">
+          <CreditCard size={18} />
+          <span>Payment Mode</span>
+          <strong>{form.paymentMode}</strong>
+        </div>
+      </div>
+
+      <div className="rc-billing-layout">
+      <form className="rc-card rc-billing-form" onSubmit={generate} noValidate>
+        <div className="rc-billing-card-head">
+          <div>
+            <h3>Generate Bill</h3>
+            <p>Review patient and charge details before creating the invoice.</p>
+          </div>
+          <FileText size={20} />
+        </div>
         <div className="rc-patient-summary">
           <strong>
             {selectedAppointment?.patientName || selectedAppointment?.patient?.name || "-"}
@@ -326,7 +356,8 @@ function ReceptionBilling() {
             {selectedAppointment?.doctorName || selectedAppointment?.doctor?.name || "-"}
           </span>
         </div>
-        <label>
+        <div className="rc-billing-fields">
+        <label className="rc-field-wide">
           <span>Appointment</span>
           <select
             value={form.appointmentId}
@@ -384,12 +415,18 @@ function ReceptionBilling() {
           />
           {fieldErrors.labCharges ? <small className="rc-field-error">{fieldErrors.labCharges}</small> : null}
         </label>
+        </div>
+        <div className="rc-charge-summary">
+          <div><span>Consultation</span><b>{formatCurrency(consultationCharge)}</b></div>
+          <div><span>Medicine</span><b>{formatCurrency(medicineCharges)}</b></div>
+          <div><span>Lab</span><b>{formatCurrency(labCharges)}</b></div>
+        </div>
         <div className="rc-total">
           <span>Total</span>
-          <strong>₹ {total}</strong>
+          <strong>{formatCurrency(total)}</strong>
         </div>
         <button className="rc-confirm" type="submit">
-          <FileText size={15} /> Confirm Payment and Generate Invoice
+          <FileText size={15} /> Generate Invoice
         </button>
       </form>
 
@@ -427,7 +464,7 @@ function ReceptionBilling() {
                 Status <b>{invoice ? getInvoiceStatus(invoice) : "Pending"}</b>
               </p>
               <p>
-                Total <b>Rs {invoice?.totalAmount || invoice?.total || total}</b>
+                Total <b>{formatCurrency(invoice?.totalAmount || invoice?.total || total)}</b>
               </p>
               {invoice?.paymentMode ? (
                 <p>
@@ -437,6 +474,7 @@ function ReceptionBilling() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </section>
   );

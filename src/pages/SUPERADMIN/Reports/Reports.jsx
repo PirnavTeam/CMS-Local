@@ -5,6 +5,7 @@ import Charts from "../../../components/superadmin/Charts";
 import DataTable from "../../../components/superadmin/DataTable";
 import SearchFilter from "../../../components/superadmin/SearchFilter";
 import { fetchReports } from "../superAdminApi";
+import { formatIndianCurrency } from "../../../utils/format";
 
 const downloadFile = (filename, content, type) => {
   const blob = new Blob([content], { type });
@@ -60,7 +61,7 @@ function Reports() {
     {
       key: "revenue",
       label: "Total Revenue",
-      render: (clinic) => `Rs. ${clinic.revenue.toLocaleString("en-IN")}`,
+      render: (clinic) => formatIndianCurrency(clinic.revenue),
     },
     { key: "invoiceCount", label: "Invoices" },
     { key: "users", label: "Users" },
@@ -109,7 +110,7 @@ function Reports() {
         <td>${row.adminName || "-"}</td>
         <td>${row.adminEmail || "-"}</td>
         <td>${row.name || "-"}</td>
-        <td>Rs. ${Number(row.revenue || 0).toLocaleString("en-IN")}</td>
+        <td>${formatIndianCurrency(row.revenue)}</td>
         <td>${row.invoiceCount || 0}</td>
         <td>${row.users || 0}</td>
         <td>${row.status || "-"}</td>

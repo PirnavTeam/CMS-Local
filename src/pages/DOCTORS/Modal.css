@@ -117,7 +117,8 @@
   box-shadow: 0 0 0 3px rgba(20, 156, 164, 0.24);
 }
 
-.add-doctor-input-group input.is-invalid {
+.add-doctor-input-group input.is-invalid,
+.add-doctor-input-group select.is-invalid {
   border-color: #dc2626;
   background: #fff7f7;
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle, Check } from "lucide-react";
 import "./Completion.css";
@@ -32,6 +32,14 @@ function Completion() {
     location.state?.appointmentStatus ||
     "Completed";
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      navigate("/doctor/dashboard", { replace: true });
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
+  }, [navigate]);
+
   return (
     <div className="comp-page">
       <div className="comp-card">
@@ -63,14 +71,6 @@ function Completion() {
             </div>
           ))}
         </div>
-
-        {/* ── Back to dashboard ── */}
-        <button
-          className="comp-btn"
-          onClick={() => navigate("/doctor/dashboard")}
-        >
-          Back to Dashboard
-        </button>
 
       </div>
     </div>

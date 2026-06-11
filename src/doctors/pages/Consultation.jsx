@@ -371,19 +371,18 @@ function Consultation() {
     });
   };
 
+  useEffect(() => {
+    if (!loading && error && !appointment) {
+      navigate("/doctor/dashboard", { replace: true });
+    }
+  }, [appointment, error, loading, navigate]);
+
   if (loading) {
     return <div className="cn-state-card">Loading consultation...</div>;
   }
 
   if (error && !appointment) {
-    return (
-      <div className="cn-state-card cn-state-card--error">
-        <span>{error}</span>
-        <button type="button" onClick={() => navigate("/doctor/dashboard")}>
-          Back to dashboard
-        </button>
-      </div>
-    );
+    return <div className="cn-state-card cn-state-card--error">{error}</div>;
   }
 
   return (

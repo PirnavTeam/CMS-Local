@@ -18,7 +18,7 @@ import { apiUrl } from "../../config/api";
 import { useToast } from "../../components/ToastProvider";
 import {
   onlyAlpha,
-  onlyDigits,
+  onlyIndianMobileValue,
   onlyNumberValue,
   validateAlpha,
   validateGmail,
@@ -29,6 +29,7 @@ import {
   validateStrongPassword,
 } from "../../utils/validation";
 import { getClinicDisplayName } from "../../utils/clinicDisplay";
+import { formatIndianCurrency } from "../../utils/format";
 
 const DOCTORS_API_URL =
   apiUrl("Doctor");
@@ -416,7 +417,7 @@ function Doctors() {
     }
 
     if (name === "phone") {
-      nextValue = onlyDigits(value).slice(0, 10);
+      nextValue = onlyIndianMobileValue(value);
     }
 
     if (["experience", "fees"].includes(name)) {
@@ -721,7 +722,9 @@ function Doctors() {
               </div>
 
               <div className="doctors-cell doctors-fee">
-                {doc.fees !== undefined && doc.fees !== null ? `$${doc.fees}` : "-"}
+                {doc.fees !== undefined && doc.fees !== null
+                  ? formatIndianCurrency(doc.fees)
+                  : "-"}
               </div>
 
               <div className="doctors-contact-cell">

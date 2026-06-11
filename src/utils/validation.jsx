@@ -1,10 +1,15 @@
 export const GMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@gmail\.com$/;
-export const TEN_DIGIT_MOBILE_PATTERN = /^\d{10}$/;
+export const INDIAN_MOBILE_PATTERN = /^[6-9]\d{9}$/;
 export const ALPHA_PATTERN = /^[A-Za-z\s.]+$/;
 export const STRONG_PASSWORD_PATTERN =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
 export const onlyDigits = (value) => String(value ?? "").replace(/\D/g, "");
+
+export const onlyIndianMobileValue = (value) => {
+  const digits = onlyDigits(value).slice(0, 10);
+  return digits && !/^[6-9]/.test(digits) ? "" : digits;
+};
 
 export const onlyAlpha = (value) =>
   String(value ?? "").replace(/[^A-Za-z\s.]/g, "");
@@ -74,9 +79,9 @@ export const validateGmail = (value, label = "Email") => {
 export const validateMobile = (value, label = "Mobile number") => {
   const required = validateRequired(value, label);
   if (required) return required;
-  return TEN_DIGIT_MOBILE_PATTERN.test(String(value).trim())
+  return INDIAN_MOBILE_PATTERN.test(String(value).trim())
     ? ""
-    : `${label} must be exactly 10 digits.`;
+    : `${label} must be a valid Indian mobile number.`;
 };
 
 export const validateNumeric = (value, label, { integer = false } = {}) => {

@@ -175,7 +175,7 @@ function ReceptionAppointments() {
 
       {message ? <div className="rc-alert">{message}</div> : null}
 
-      <form className="rc-card rc-booking-form" onSubmit={submit}>
+      <form className="rc-card rc-booking-form" onSubmit={submit} noValidate>
         <div className="rc-booking-fields">
           <h3>Book Appointment</h3>
           <label>

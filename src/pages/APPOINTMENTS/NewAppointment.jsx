@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import "./NewAppointment.css";
-import { ArrowLeft, CalendarPlus } from "lucide-react";
+import { CalendarPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   createAppointmentId,
@@ -88,18 +88,10 @@ function NewAppointment() {
 
   return (
     <div className="new-appointment-page">
-      <button
-        type="button"
-        className="new-appointment-back-btn"
-        onClick={() => navigate("/appointments")}
-      >
-        <ArrowLeft size={16} /> Back to Appointments
-      </button>
-
       <h2 className="new-appointment-title">New Appointment</h2>
       <p className="new-appointment-subtitle">Create a new appointment</p>
 
-      <form className="new-appointment-form-card" onSubmit={handleSubmit}>
+      <form className="new-appointment-form-card" onSubmit={handleSubmit} noValidate>
         <div className="new-appointment-grid">
           <div className="new-appointment-field">
             <label>Patient</label>
@@ -190,13 +182,6 @@ function NewAppointment() {
         {error && <p className="new-appointment-error">{error}</p>}
 
         <div className="new-appointment-actions">
-          <button
-            type="button"
-            className="new-appointment-cancel-btn"
-            onClick={() => navigate("/appointments")}
-          >
-            Cancel
-          </button>
           <button type="submit" className="new-appointment-save-btn">
             <CalendarPlus size={16} /> Save Appointment
           </button>

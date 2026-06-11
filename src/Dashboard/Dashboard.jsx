@@ -32,6 +32,10 @@ import {
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/api";
+import {
+  formatCompactIndianCurrency,
+  formatIndianCurrency,
+} from "../utils/format";
 
 /* ================= API ================= */
 
@@ -42,31 +46,17 @@ const getAdminToken = () =>
   localStorage.getItem("token");
 
 const formatCurrency = (value) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
+  formatIndianCurrency(value, {
+    minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(Number(value || 0));
+  });
 
 const formatNumber = (value) =>
   new Intl.NumberFormat("en-IN").format(
     Number(value || 0)
   );
 
-const formatCurrencyShort = (value) => {
-  const amount =
-    Number(value || 0);
-
-  if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(1)}L`;
-  }
-
-  if (amount >= 1000) {
-    return `₹${(amount / 1000).toFixed(1)}k`;
-  }
-
-  return `₹${amount}`;
-};
+const formatCurrencyShort = formatCompactIndianCurrency;
 
 const getPaddedMax = (value) =>
   Math.max(

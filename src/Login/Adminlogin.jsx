@@ -394,8 +394,8 @@ const AdminLogin = () => {
           <LogoIcon />
         </div>
 
-        <h2>Clinic Login</h2>
-        <p className="subtitle">Welcome back to the Clinic Portal</p>
+        <h2>CMS Login</h2>
+        <p className="subtitle">Welcome back to the Clinic Management System</p>
         {successMessage ? <p className="success-message">{successMessage}</p> : null}
 
         <form className="auth-form" onSubmit={handleLogin} noValidate>
@@ -458,7 +458,7 @@ const AdminLogin = () => {
         </Link>
 
         <div className="auth-footer">
-          © {new Date().getFullYear()} Clinic Portal · Secure Access
+          © {new Date().getFullYear()} CMS · Secure Access
         </div>
       </div>
     </div>

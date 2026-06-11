@@ -3,7 +3,7 @@ import "./AddPatientModal.css";
 import { useToast } from "../../components/ToastProvider";
 import {
   onlyAlpha,
-  onlyDigits,
+  onlyIndianMobileValue,
   onlyNumberValue,
   validateAlpha,
   validateGmail,
@@ -37,7 +37,7 @@ function AddPatientModal({ onClose, onAdd }) {
     }
 
     if (["phone", "emergencyContactPhone"].includes(name)) {
-      value = onlyDigits(value).slice(0, 10);
+      value = onlyIndianMobileValue(value);
     }
 
     if (name === "age") {
@@ -112,7 +112,7 @@ function AddPatientModal({ onClose, onAdd }) {
         <h2>Add Patient</h2>
         <p>Enter patient details</p>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <div className="add-patient-grid">
             <div className="add-patient-field">
               <label>Name</label>

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, FileText, Printer, Upload } from "lucide-react";
+import { FileText, Printer, Upload } from "lucide-react";
 import "./PatientDetails.css";
 import { apiUrl } from "../../config/api";
 import {
@@ -463,19 +463,18 @@ function PatientDetails() {
     });
   };
 
+  useEffect(() => {
+    if (!loading && (error || !patient)) {
+      navigate("/doctor/dashboard", { replace: true });
+    }
+  }, [error, loading, navigate, patient]);
+
   if (loading) {
     return <div className="pd-state-card">Loading patient details...</div>;
   }
 
   if (error) {
-    return (
-      <div className="pd-state-card pd-state-card--error">
-        <span>{error}</span>
-        <button type="button" onClick={() => navigate("/doctor/dashboard")}>
-          Back to dashboard
-        </button>
-      </div>
-    );
+    return <div className="pd-state-card pd-state-card--error">{error}</div>;
   }
 
   if (!patient) {
@@ -485,13 +484,6 @@ function PatientDetails() {
   return (
     <div className="pd-page">
       <div className="pd-toprow">
-        <button
-          className="pd-back-btn"
-          type="button"
-          onClick={() => navigate("/doctor/dashboard")}
-        >
-          <ArrowLeft size={16} /> Back
-        </button>
         <h2 className="pd-page-title">Patient Details</h2>
         <button className="pd-start-btn" type="button" onClick={startConsultation}>
           Start Consultation

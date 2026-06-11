@@ -15,7 +15,7 @@ import PasswordField from "../../components/PasswordField";
 import { useToast } from "../../components/ToastProvider";
 import {
   onlyAlpha,
-  onlyDigits,
+  onlyIndianMobileValue,
   validateAlpha,
   validateGmail,
   validateMobile,
@@ -210,7 +210,7 @@ function Receptionists() {
     }
 
     if (name === "phone") {
-      nextValue = onlyDigits(value).slice(0, 10);
+      nextValue = onlyIndianMobileValue(value);
     }
 
     setForm((previous) => ({

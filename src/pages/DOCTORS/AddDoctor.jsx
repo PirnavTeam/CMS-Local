@@ -221,16 +221,43 @@ import { apiUrl } from "../../config/api";
 import { useToast } from "../../components/ToastProvider";
 import {
   onlyAlpha,
-  onlyDigits,
+  onlyIndianMobileValue,
   onlyNumberValue,
   validateAlpha,
   validateGmail,
   validateMobile,
   validateNumeric,
+  validateSelected,
 } from "../../utils/validation";
 
 const DOCTORS_API_URL =
   apiUrl("Doctor");
+
+const SPECIALIZATION_OPTIONS = [
+  "Cardiology",
+  "Dermatology",
+  "ENT",
+  "General Medicine",
+  "Gynecology",
+  "Neurology",
+  "Orthopedics",
+  "Pediatrics",
+  "Psychiatry",
+  "Radiology",
+  "Other",
+];
+
+const QUALIFICATION_OPTIONS = [
+  "Bachelor of Medicine and Bachelor of Surgery (MBBS)",
+  "Bachelor of Dental Surgery (BDS)",
+  "Bachelor of Ayurvedic Medicine and Surgery (BAMS)",
+  "Bachelor of Homeopathic Medicine and Surgery (BHMS)",
+  "Doctor of Medicine (MD)",
+  "Master of Surgery (MS)",
+  "Diplomate of National Board (DNB)",
+  "Doctorate of Medicine (DM)",
+  "Master of Chirurgiae (MCh)",
+];
 
 function AddDoctor() {
   const navigate = useNavigate();
@@ -239,6 +266,8 @@ function AddDoctor() {
   const [form, setForm] = useState({
     name: "",
     specialization: "",
+    otherSpecialization: "",
+    qualification: "",
     experience: "0",
     fees: "0",
     email: "",
@@ -254,12 +283,12 @@ function AddDoctor() {
     const { name } = event.target;
     let { value } = event.target;
 
-    if (["name", "specialization"].includes(name)) {
+    if (["name", "otherSpecialization"].includes(name)) {
       value = onlyAlpha(value);
     }
 
     if (name === "phone") {
-      value = onlyDigits(value).slice(0, 10);
+      value = onlyIndianMobileValue(value);
     }
 
     if (["experience", "fees"].includes(name)) {
@@ -273,6 +302,11 @@ function AddDoctor() {
     setFieldErrors((previous) => ({ ...previous, [name]: "" }));
     setError("");
   };
+
+  const getSpecializationValue = () =>
+    form.specialization === "Other"
+      ? form.otherSpecialization.trim()
+      : form.specialization.trim();
 
   const parseErrorMessage = async (response) => {
     const fallback = "Unable to add doctor right now.";
@@ -296,7 +330,8 @@ function AddDoctor() {
   const validateForm = () => {
     const nextErrors = {
       name: validateAlpha(form.name, "Doctor name"),
-      specialization: validateAlpha(form.specialization, "Specialization"),
+      specialization: validateAlpha(getSpecializationValue(), "Specialization"),
+      qualification: validateSelected(form.qualification, "a qualification"),
       experience: validateNumeric(form.experience, "Experience", {
         integer: true,
       }),
@@ -328,7 +363,8 @@ function AddDoctor() {
     const body = new FormData();
 
     body.append("Name", form.name.trim());
-    body.append("Specialization", form.specialization.trim());
+    body.append("Specialization", getSpecializationValue());
+    body.append("Qualification", form.qualification);
     body.append("Experience", String(Number(form.experience) || 0));
     body.append("Fees", String(Number(form.fees) || 0));
     body.append("Email", form.email.trim());
@@ -367,7 +403,7 @@ function AddDoctor() {
           className="add-doctor-close-button"
           type="button"
           aria-label="Close add doctor form"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/doctors")}
           disabled={saving}
         >
           <X size={22} strokeWidth={2} />
@@ -378,7 +414,7 @@ function AddDoctor() {
           <p>Enter doctor details below.</p>
         </div>
 
-        <form className="add-doctor-form" onSubmit={handleSubmit}>
+        <form className="add-doctor-form" onSubmit={handleSubmit} noValidate>
           <div className="add-doctor-grid">
 
             <div className="add-doctor-input-group">
@@ -397,13 +433,30 @@ function AddDoctor() {
 
             <div className="add-doctor-input-group">
               <label>Specialization</label>
-              <input
+              <select
                 name="specialization"
                 value={form.specialization}
                 onChange={handleChange}
                 className={fieldErrors.specialization ? "is-invalid" : ""}
                 required
-              />
+              >
+                <option value="">Select specialization</option>
+                {SPECIALIZATION_OPTIONS.map((specialization) => (
+                  <option key={specialization} value={specialization}>
+                    {specialization}
+                  </option>
+                ))}
+              </select>
+              {form.specialization === "Other" ? (
+                <input
+                  name="otherSpecialization"
+                  value={form.otherSpecialization}
+                  onChange={handleChange}
+                  className={fieldErrors.specialization ? "is-invalid" : ""}
+                  placeholder="Enter specialization"
+                  required
+                />
+              ) : null}
               {fieldErrors.specialization ? (
                 <span className="add-doctor-field-error">
                   {fieldErrors.specialization}
@@ -425,6 +478,29 @@ function AddDoctor() {
               {fieldErrors.experience ? (
                 <span className="add-doctor-field-error">
                   {fieldErrors.experience}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="add-doctor-input-group">
+              <label>Qualification</label>
+              <select
+                name="qualification"
+                value={form.qualification}
+                onChange={handleChange}
+                className={fieldErrors.qualification ? "is-invalid" : ""}
+                required
+              >
+                <option value="">Select qualification</option>
+                {QUALIFICATION_OPTIONS.map((qualification) => (
+                  <option key={qualification} value={qualification}>
+                    {qualification}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.qualification ? (
+                <span className="add-doctor-field-error">
+                  {fieldErrors.qualification}
                 </span>
               ) : null}
             </div>
@@ -476,7 +552,7 @@ function AddDoctor() {
               ) : null}
             </div>
 
-            <div className="add-doctor-input-group add-doctor-status-group">
+            <div className="add-doctor-input-group">
               <label htmlFor="add-doctor-is-active">Is Active</label>
               <select
                 id="add-doctor-is-active"
@@ -496,15 +572,6 @@ function AddDoctor() {
           ) : null}
 
           <div className="add-doctor-actions">
-            <button
-              className="add-doctor-cancel"
-              type="button"
-              onClick={() => navigate(-1)}
-              disabled={saving}
-            >
-              Cancel
-            </button>
-
             <button
               className="add-doctor-primary"
               type="submit"

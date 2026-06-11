@@ -38,13 +38,12 @@ function DoctorSidebar() {
       {/* ── Brand / Logo ── */}
       <div className="dr-brand">
         <div className="dr-brand-icon">
-          {/* Medical cross icon */}
           <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
             <path d="M19 8h-3V5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v3H5a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h3v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3h3a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1z" />
           </svg>
         </div>
         <div>
-          <p className="dr-brand-name">MediCare</p>
+          <p className="dr-brand-name">CMS</p>
           <p className="dr-brand-sub">{hospitalName}</p>
         </div>
       </div>

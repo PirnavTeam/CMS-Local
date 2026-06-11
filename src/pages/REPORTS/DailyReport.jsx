@@ -126,8 +126,6 @@ import React, {
   useState,
 } from "react";
 
-import { useNavigate } from "react-router-dom";
-
 import {
   Download,
 } from "lucide-react";
@@ -146,8 +144,6 @@ const DOCTOR_API =
 // ================= COMPONENT =================
 
 function DailyReport() {
-
-  const navigate = useNavigate();
 
   const [data, setData] =
     useState([]);
@@ -313,17 +309,6 @@ function DailyReport() {
 
   return (
     <div className="daily-report">
-
-      {/* BACK */}
-
-      <button
-        className="back"
-        onClick={() =>
-          navigate("/reports")
-        }
-      >
-        ← All reports
-      </button>
 
       {/* HEADER */}
 

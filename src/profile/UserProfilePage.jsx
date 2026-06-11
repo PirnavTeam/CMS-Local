@@ -128,7 +128,7 @@ function UserProfilePage({ roleType = "admin" }) {
               </div>
             </>
           ) : (
-            <form onSubmit={changePassword}>
+            <form onSubmit={changePassword} noValidate>
               <h3>Change Password</h3>
               <label>
                 <span>Current Password</span>

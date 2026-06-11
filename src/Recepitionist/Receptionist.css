@@ -526,6 +526,124 @@
   color: #f00;
 }
 
+.rc-billing-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.rc-billing-stat {
+  min-height: 92px;
+  border: 1px solid #d9e1ec;
+  border-radius: 10px;
+  background: #fff;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 12px;
+  box-shadow: 0 8px 22px rgba(12, 23, 38, 0.05);
+}
+
+.rc-billing-stat svg {
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  border-radius: 10px;
+  color: #0f9d9d;
+  background: #e8f6f4;
+}
+
+.rc-billing-stat span {
+  color: #40516a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rc-billing-stat strong {
+  margin-top: 4px;
+  color: #071120;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.rc-billing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(330px, 0.65fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.rc-billing-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rc-billing-card-head h3 {
+  margin: 0 0 5px;
+  font-size: 17px;
+}
+
+.rc-billing-card-head p {
+  margin: 0;
+  color: #40516a;
+  font-size: 12px;
+}
+
+.rc-billing-card-head > svg {
+  width: 38px;
+  height: 38px;
+  padding: 10px;
+  border-radius: 10px;
+  color: #0f9d9d;
+  background: #e8f6f4;
+  flex: 0 0 auto;
+}
+
+.rc-billing-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rc-billing-fields .rc-field-wide {
+  grid-column: 1 / -1;
+}
+
+.rc-charge-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rc-charge-summary div {
+  border: 1px solid #d9e1ec;
+  border-radius: 9px;
+  background: #fbfdff;
+  padding: 12px;
+}
+
+.rc-charge-summary span,
+.rc-invoice-person span,
+.rc-invoice-lines span {
+  display: block;
+  color: #40516a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rc-charge-summary b {
+  display: block;
+  margin-top: 6px;
+  color: #071120;
+  font-size: 15px;
+}
+
 .rc-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -652,40 +770,106 @@
 }
 
 .rc-total {
-  background: #eaf0f7;
+  background: #071120;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .rc-total span {
   display: block;
-  color: #314052;
+  color: #c9d4e3;
   font-size: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 0;
 }
 
 .rc-total strong {
-  font-size: 20px;
+  font-size: 24px;
 }
 
 .rc-invoice-box {
   display: grid;
-  gap: 10px;
+  gap: 14px;
+  border-color: #dce8e8;
+  background: #fbfefe;
 }
 
 .rc-invoice-box p {
   margin: 0;
   display: flex;
   justify-content: space-between;
+  gap: 16px;
   color: #34435a;
+}
+
+.rc-invoice {
+  position: sticky;
+  top: 104px;
+}
+
+.rc-invoice-status {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  color: #7a1d22;
+  background: #fee8ea;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.rc-invoice-status.paid {
+  color: #008f58;
+  background: #ddf4e8;
+}
+
+.rc-invoice-person {
+  border-bottom: 1px solid #e3edf2;
+  padding-bottom: 12px;
+}
+
+.rc-invoice-person strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 20px;
+}
+
+.rc-invoice-person p {
+  margin-top: 5px;
+  justify-content: flex-start;
+}
+
+.rc-invoice-lines {
+  display: grid;
+  gap: 10px;
+}
+
+.rc-invoice-lines p {
+  min-height: 34px;
+  align-items: center;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.rc-invoice-lines p:last-child {
+  border-bottom: 0;
 }
 
 .rc-invoice-meta {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
 .rc-invoice-meta > div:last-child {
   flex: 1;
+}
+
+.rc-invoice-meta .rc-btn {
+  flex: 1;
+  box-shadow: none;
 }
 
 .rc-invoice-file {
@@ -776,12 +960,17 @@
   .rc-stat-grid,
   .rc-action-grid,
   .rc-booking-form,
+  .rc-billing-stats,
+  .rc-billing-layout,
+  .rc-billing-fields,
+  .rc-charge-summary,
   .rc-slots,
   .rc-form-grid {
     grid-template-columns: 1fr;
   }
 
-  .rc-slot-panel {
+  .rc-slot-panel,
+  .rc-invoice {
     position: static;
   }
 
