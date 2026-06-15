@@ -8,7 +8,6 @@ import {
   Calendar,
   X,
   Camera,
-  UserPlus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AuthImage, {
@@ -628,13 +627,6 @@ function Doctors() {
             onClick={() => navigate("/doctors/schedule")}
           >
             <Calendar size={16} /> Manage Schedule
-          </button>
-
-          <button
-            className="doctors-btn doctors-btn-light"
-            onClick={() => navigate("/doctors/register")}
-          >
-            <UserPlus size={16} /> Doctor Register
           </button>
 
           <button

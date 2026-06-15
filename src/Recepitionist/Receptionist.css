@@ -721,6 +721,12 @@
   background: #fff;
 }
 
+.rc-field-message {
+  color: #b42318;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .rc-form-grid textarea {
   min-height: 84px;
   padding: 10px 12px;

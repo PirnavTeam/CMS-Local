@@ -357,11 +357,11 @@ function Dashboard() {
           type="button"
           className="dashboard-action-button"
           onClick={() =>
-            navigate("/doctors/register")
+            navigate("/doctors/add")
           }
         >
           <UserPlus size={16} />
-          Doctor Register
+          Add Doctor
         </button>
 
       </div>

@@ -31,6 +31,28 @@ const LogoIcon = () => (
 
 const RESET_PASSWORD_API = apiUrl('Auth/reset-password');
 
+const readJson = async (response) =>
+  response.json().catch(() => ({}));
+
+const resetPasswordRequestBodies = (email, token, password, confirmPassword) => [
+  {
+    email,
+    token,
+    newPassword: password,
+    confirmPassword,
+  },
+  {
+    Email: email,
+    Token: token,
+    NewPassword: password,
+    ConfirmPassword: confirmPassword,
+  },
+  {
+    token,
+    newPassword: password,
+  },
+];
+
 const ResetPassword = () => {
   const toast = useToast();
   const [newPassword, setNewPassword] = useState('');
@@ -41,6 +63,7 @@ const ResetPassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const resetEmail = location.state?.email || sessionStorage.getItem('resetEmail') || '';
   const resetToken = location.state?.resetToken || sessionStorage.getItem('resetToken') || '';
 
   useEffect(() => {
@@ -89,18 +112,30 @@ const ResetPassword = () => {
     setErrors({});
 
     try {
-      const response = await fetch(RESET_PASSWORD_API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: resetToken,
-          newPassword,
-        }),
-      });
+      let response = null;
+      let data = {};
 
-      const data = await response.json().catch(() => ({}));
+      for (const body of resetPasswordRequestBodies(
+        resetEmail,
+        resetToken,
+        newPassword,
+        confirmPassword
+      )) {
+        response = await fetch(RESET_PASSWORD_API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+
+        data = await readJson(response);
+
+        if (response.ok) {
+          break;
+        }
+      }
+
       if (!response.ok) {
         setErrors({
           api: data.message || 'Unable to reset password. Please try again.',
@@ -116,6 +151,7 @@ const ResetPassword = () => {
       navigate('/login', {
         replace: true,
         state: {
+          email: resetEmail,
           message: data.message || 'Password reset successful. Please login.',
         },
       });

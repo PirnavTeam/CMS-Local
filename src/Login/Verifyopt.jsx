@@ -14,6 +14,21 @@ const LogoIcon = () => (
 
 const VERIFY_OTP_API = apiUrl('Auth/verify-otp');
 
+const readJson = async (response) =>
+  response.json().catch(() => ({}));
+
+const verifyOtpRequestBodies = (email, otp) => [
+  {
+    email,
+    otp,
+  },
+  {
+    Email: email,
+    OTP: otp,
+  },
+  otp,
+];
+
 const VerifyOTP = () => {
   const toast = useToast();
   const [otp, setOtp] = useState('');
@@ -49,11 +64,14 @@ const VerifyOTP = () => {
 
   const handleVerify = async (e) => {
     e.preventDefault();
+    const email = location.state?.email || sessionStorage.getItem('resetEmail') || '';
+    const trimmedOtp = otp.trim();
+
     if (!otp) {
       setError('OTP is required');
       toast.error('OTP is required');
       return;
-    } else if (otp.length < 4 || !/^\d+$/.test(otp)) {
+    } else if (trimmedOtp.length < 4 || !/^\d+$/.test(trimmedOtp)) {
       setError('Enter a valid numeric OTP');
       toast.error('Enter a valid numeric OTP');
       return;
@@ -63,15 +81,25 @@ const VerifyOTP = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(VERIFY_OTP_API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(otp.trim()),
-      });
+      let response = null;
+      let data = {};
 
-      const data = await response.json().catch(() => ({}));
+      for (const body of verifyOtpRequestBodies(email, trimmedOtp)) {
+        response = await fetch(VERIFY_OTP_API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+
+        data = await readJson(response);
+
+        if (response.ok) {
+          break;
+        }
+      }
+
       if (!response.ok) {
         setError(data.message || 'OTP verification failed. Please try again.');
         toast.error(data.message || 'OTP verification failed. Please try again.');
@@ -88,6 +116,7 @@ const VerifyOTP = () => {
       toast.success('OTP verified successfully');
       navigate('/ResetPassword', {
         state: {
+          email,
           resetToken: data.resetToken,
         },
       });

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { KeyRound, LogOut, Mail, ShieldCheck, UserRound } from "lucide-react";
+import { Eye, EyeOff, KeyRound, LogOut, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { apiUrl } from "../config/api";
 import { clearAllSessions, getInitials, getRoleProfile } from "./sessionProfile";
@@ -15,6 +15,11 @@ function UserProfilePage({ roleType = "admin" }) {
     newPassword: "",
     confirmPassword: "",
   });
+  const [visiblePasswords, setVisiblePasswords] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -26,6 +31,13 @@ function UserProfilePage({ roleType = "admin" }) {
   const logout = () => {
     clearAllSessions();
     navigate("/login", { replace: true });
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setVisiblePasswords((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
   };
 
   const changePassword = async (event) => {
@@ -57,16 +69,15 @@ function UserProfilePage({ roleType = "admin" }) {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          email: profile.email,
-          currentPassword: form.currentPassword,
+          oldPassword: form.currentPassword,
           newPassword: form.newPassword,
-          confirmPassword: form.confirmPassword,
         }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || `Request failed with status ${response.status}`);
       setMessage(data.message || "Password changed successfully.");
       setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setVisiblePasswords({ currentPassword: false, newPassword: false, confirmPassword: false });
     } catch (error) {
       setMessage(error.message || "Unable to change password right now.");
     } finally {
@@ -132,33 +143,66 @@ function UserProfilePage({ roleType = "admin" }) {
               <h3>Change Password</h3>
               <label>
                 <span>Current Password</span>
-                <input
-                  type="password"
-                  value={form.currentPassword}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, currentPassword: event.target.value }))
-                  }
-                />
+                <div className="profile-password-field">
+                  <input
+                    type={visiblePasswords.currentPassword ? "text" : "password"}
+                    value={form.currentPassword}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, currentPassword: event.target.value }))
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="profile-password-toggle"
+                    onClick={() => togglePasswordVisibility("currentPassword")}
+                    aria-label={visiblePasswords.currentPassword ? "Hide current password" : "Show current password"}
+                    title={visiblePasswords.currentPassword ? "Hide password" : "Show password"}
+                  >
+                    {visiblePasswords.currentPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+                </div>
               </label>
               <label>
                 <span>New Password</span>
-                <input
-                  type="password"
-                  value={form.newPassword}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, newPassword: event.target.value }))
-                  }
-                />
+                <div className="profile-password-field">
+                  <input
+                    type={visiblePasswords.newPassword ? "text" : "password"}
+                    value={form.newPassword}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, newPassword: event.target.value }))
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="profile-password-toggle"
+                    onClick={() => togglePasswordVisibility("newPassword")}
+                    aria-label={visiblePasswords.newPassword ? "Hide new password" : "Show new password"}
+                    title={visiblePasswords.newPassword ? "Hide password" : "Show password"}
+                  >
+                    {visiblePasswords.newPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+                </div>
               </label>
               <label>
                 <span>Confirm Password</span>
-                <input
-                  type="password"
-                  value={form.confirmPassword}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, confirmPassword: event.target.value }))
-                  }
-                />
+                <div className="profile-password-field">
+                  <input
+                    type={visiblePasswords.confirmPassword ? "text" : "password"}
+                    value={form.confirmPassword}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, confirmPassword: event.target.value }))
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="profile-password-toggle"
+                    onClick={() => togglePasswordVisibility("confirmPassword")}
+                    aria-label={visiblePasswords.confirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    title={visiblePasswords.confirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {visiblePasswords.confirmPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+                </div>
               </label>
               {message ? <p className="profile-message">{message}</p> : null}
               <button type="submit" className="profile-save" disabled={saving}>

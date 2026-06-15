@@ -1,33 +1,39 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../components/ToastProvider";
 import { formatToday, parseList, requestJson } from "../receptionApi";
-
-const slots = [
-  "09:00 - 09:30",
-  "09:30 - 10:00",
-  "10:00 - 10:30",
-  "10:30 - 11:00",
-  "11:00 - 11:30",
-  "11:30 - 12:00",
-  "12:00 - 12:30",
-  "12:30 - 13:00",
-  "14:00 - 14:30",
-  "14:30 - 15:00",
-  "15:00 - 15:30",
-  "15:30 - 16:00",
-  "16:00 - 16:30",
-  "16:30 - 17:00",
-];
+import { getReceptionistProfile } from "../receptionSession";
 
 const getSlotStart = (slot) => String(slot || "").split(" - ")[0].trim();
+
+const getRecordHospitalId = (record = {}) =>
+  record.hospitalId ??
+  record.HospitalId ??
+  record.clinicId ??
+  record.ClinicId ??
+  record.hospital?.id ??
+  record.clinic?.id ??
+  "";
+
+const getDoctorId = (doctor = {}) =>
+  doctor.id ?? doctor.doctorId ?? doctor.DoctorId ?? "";
+
+const isActiveDoctor = (doctor = {}) => {
+  if (typeof doctor.isActive === "boolean") return doctor.isActive;
+  const status = String(doctor.status || "").trim().toLowerCase();
+  return !status || status === "active";
+};
 
 function ReceptionAppointments() {
   const navigate = useNavigate();
   const toast = useToast();
+  const receptionistHospitalId = String(
+    getReceptionistProfile().hospitalId || ""
+  ).trim();
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [doctorLoadMessage, setDoctorLoadMessage] = useState("");
   const [appointments, setAppointments] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [slotLoading, setSlotLoading] = useState(false);
@@ -46,28 +52,59 @@ function ReceptionAppointments() {
     respiratoryRate: "",
   });
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
+    setDoctorLoadMessage("");
+
     Promise.all([
       requestJson("Patient").catch(() => []),
-      requestJson("Doctor").catch(() => []),
+      requestJson("Doctor")
+        .then((data) => ({ data, error: "" }))
+        .catch((error) => ({
+          data: [],
+          error: error.message || "Unable to load doctors.",
+        })),
       requestJson("Appointment").catch(() => []),
-    ]).then(([patientData, doctorData, appointmentData]) => {
+    ]).then(([patientData, doctorResult, appointmentData]) => {
       const nextPatients = parseList(patientData);
-      const nextDoctors = parseList(doctorData);
+      const activeDoctors = parseList(doctorResult.data).filter(isActiveDoctor);
+      const nextDoctors = receptionistHospitalId
+        ? activeDoctors.filter(
+            (doctor) =>
+              String(getRecordHospitalId(doctor)).trim() ===
+              receptionistHospitalId
+          )
+        : activeDoctors;
+
+      if (doctorResult.error) {
+        setDoctorLoadMessage(doctorResult.error);
+      } else if (nextDoctors.length === 0) {
+        setDoctorLoadMessage(
+          receptionistHospitalId
+            ? `No active doctors are assigned to hospital ${receptionistHospitalId}.`
+            : "No active doctors are available for this receptionist."
+        );
+      } else {
+        setDoctorLoadMessage("");
+      }
+
       setPatients(nextPatients);
       setDoctors(nextDoctors);
       setAppointments(parseList(appointmentData));
       setForm((prev) => ({
         ...prev,
         patientId: prev.patientId || String(nextPatients[0]?.id || ""),
-        doctorId: prev.doctorId || String(nextDoctors[0]?.id || ""),
+        doctorId: nextDoctors.some(
+          (doctor) => String(getDoctorId(doctor)) === String(prev.doctorId)
+        )
+          ? prev.doctorId
+          : String(getDoctorId(nextDoctors[0]) || ""),
       }));
     });
-  };
+  }, [receptionistHospitalId]);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   const parseSlots = (data) => {
     if (Array.isArray(data)) return data;
@@ -191,12 +228,21 @@ function ReceptionAppointments() {
           <label>
             <span>Doctor</span>
             <select value={form.doctorId} onChange={(e) => setField("doctorId", e.target.value)}>
+              {doctors.length === 0 ? (
+                <option value="">
+                  {doctorLoadMessage || "No doctors available"}
+                </option>
+              ) : null}
               {doctors.map((d) => (
-                <option key={d.id} value={d.id}>
+                <option key={getDoctorId(d)} value={getDoctorId(d)}>
                   {d.name}
+                  {d.specialization ? ` - ${d.specialization}` : ""}
                 </option>
               ))}
             </select>
+            {doctorLoadMessage ? (
+              <small className="rc-field-message">{doctorLoadMessage}</small>
+            ) : null}
           </label>
           <label>
             <span>Date</span>

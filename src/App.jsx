@@ -25,7 +25,6 @@ import Dashboard from "./Dashboard/Dashboard";
 import Receptionists from "./pages/RECEPTIONISTS/Receptionists";
 import Doctors from "./pages/DOCTORS/Doctors";
 import AddDoctor from "./pages/DOCTORS/AddDoctor";
-import RegisterDoctor from "./pages/DOCTORS/RegisterDoctor";
 import DoctorSchedule from "./pages/DOCTORS/DoctorSchedule";
 import Patients from "./pages/PATIENTS/Patients";
 import PatientDetails from "./pages/PATIENTS/PatientDetails";
@@ -70,7 +69,7 @@ function App() {
           {/* MODULES */}
           <Route path="doctors" element={<Doctors />} />
           <Route path="doctors/add" element={<AddDoctor />} />
-          <Route path="doctors/register" element={<RegisterDoctor />} />
+          <Route path="doctors/register" element={<Navigate to="/doctors/add" replace />} />
           <Route path="doctors/schedule" element={<DoctorSchedule />} />
           <Route path="DoctorSchedule/schedule" element={<Doctorschedulepage />} />
           <Route path="receptionists" element={<Receptionists />} />

@@ -42,13 +42,26 @@ export const getReceptionistProfile = () => {
     localStorage.getItem("clinicName") ||
     getClaim(claims, "HospitalName", "hospitalName", "ClinicName", "clinicName") ||
     "";
+  const hospitalId =
+    localStorage.getItem("hospitalId") ||
+    localStorage.getItem("clinicId") ||
+    getClaim(
+      claims,
+      "HospitalId",
+      "hospitalId",
+      "ClinicId",
+      "clinicId",
+      "hospital_id",
+      "clinic_id"
+    ) ||
+    "";
 
   return {
     token,
     email,
     name,
     role: localStorage.getItem("receptionistRole") || "Receptionist",
-    hospitalId: localStorage.getItem("hospitalId") || "",
+    hospitalId: String(hospitalId),
     hospitalName,
   };
 };

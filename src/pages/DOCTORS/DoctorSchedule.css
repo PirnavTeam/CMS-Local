@@ -79,6 +79,11 @@
   text-align: center;
 }
 
+.save-message.error {
+  color: #dc2626;
+  font-weight: 700;
+}
+
 /* RIGHT */
 .right {
   background: white;
@@ -107,6 +112,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   background: #f3f4f6;
   padding: 8px 12px;
   border-radius: 8px;
@@ -123,9 +129,16 @@
   cursor: pointer;
 }
 
+.date-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .date-pagination span {
+  min-width: 0;
   font-weight: 600;
   font-size: 14px;
+  text-align: center;
 }
 
 .slots {
@@ -160,4 +173,24 @@
   text-align: center;
   font-size: 14px;
   margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .schedule-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .schedule-page {
+    padding: 16px;
+  }
+
+  .days {
+    flex-wrap: wrap;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
