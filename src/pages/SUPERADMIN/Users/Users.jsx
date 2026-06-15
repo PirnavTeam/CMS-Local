@@ -14,6 +14,7 @@ import {
   onlyIndianMobileValue,
   validateMobile,
 } from "../../../utils/validation";
+import { formatTitleCase } from "../../../utils/format";
 
 const emptyUser = {
   name: "",
@@ -156,7 +157,7 @@ function Users() {
   };
 
   const handleDelete = async (user) => {
-    const confirmed = window.confirm(`Delete ${user.name || "this user"}?`);
+    const confirmed = window.confirm(`Delete ${formatTitleCase(user.name) || "this user"}?`);
     if (!confirmed) return;
 
     setError("");
@@ -175,7 +176,11 @@ function Users() {
   };
 
   const columns = [
-    { key: "name", label: "User" },
+    {
+      key: "name",
+      label: "User",
+      render: (user) => formatTitleCase(user.name) || "-",
+    },
     { key: "email", label: "Email", width: "minmax(170px, 1.2fr)" },
     { key: "clinic", label: "Clinic" },
     { key: "type", label: "Type", width: "minmax(90px, 0.6fr)" },
@@ -360,7 +365,7 @@ function Users() {
             ].map((key) => (
               <div className="sa-form-field" key={key}>
                 <label>{key.replace(/^\w/, (letter) => letter.toUpperCase())}</label>
-                <input value={selectedUser[key] || ""} readOnly />
+                <input value={key === "name" ? formatTitleCase(selectedUser[key]) : selectedUser[key] || ""} readOnly />
               </div>
             ))}
           </div>
