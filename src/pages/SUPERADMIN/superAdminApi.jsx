@@ -130,6 +130,22 @@ const normalizeStatus = (value) => {
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
+const formatRoleLabel = (value) => {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  const normalized = text.toLowerCase().replace(/[\s_-]+/g, "");
+  if (normalized === "superadmin") return "Super Admin";
+  if (normalized === "clinicadmin") return "Clinic Admin";
+
+  return text
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+};
+
 const formatDateTime = (value) => {
   if (!value) return "";
   const date = new Date(value);
@@ -147,6 +163,56 @@ const getTimestamp = (value) => {
 };
 
 const normalizeString = (value) => String(value || "").trim().toLowerCase();
+
+const AUDIT_ROLE_KEYS = [
+  "role",
+  "Role",
+  "roleName",
+  "RoleName",
+  "userRole",
+  "UserRole",
+  "actorRole",
+  "ActorRole",
+  "performedByRole",
+  "PerformedByRole",
+  "createdByRole",
+  "CreatedByRole",
+];
+
+const pickNestedValue = (source = {}, objectKeys = [], valueKeys = []) => {
+  for (const objectKey of objectKeys) {
+    const value = source?.[objectKey];
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const nestedValue = pick(value, valueKeys);
+      if (nestedValue) return nestedValue;
+    }
+  }
+
+  return "";
+};
+
+const getAuditRole = (log = {}) => {
+  const role =
+    pick(log, AUDIT_ROLE_KEYS) ||
+    pickNestedValue(
+      log,
+      [
+        "user",
+        "User",
+        "actor",
+        "Actor",
+        "performedBy",
+        "PerformedBy",
+        "createdByUser",
+        "CreatedByUser",
+        "admin",
+        "Admin",
+      ],
+      AUDIT_ROLE_KEYS
+    );
+
+  return formatRoleLabel(role);
+};
 
 const isUserLoginMatch = (user = {}, log = {}) => {
   const userEmail = normalizeString(pick(user, ["email", "emailAddress"]));
@@ -332,8 +398,8 @@ const superAdminRequestFirst = async (paths, options = {}) => {
 };
 
 export const normalizeClinic = (clinic = {}) => ({
-  id: pick(clinic, ["id", "clinicId", "clinicID", "hospitalId", "hospitalID", "_id"]),
-  name: pick(clinic, ["name", "clinicName", "clinic_name"]),
+  id: pick(clinic, ["id", "Id", "clinicId", "ClinicId", "clinicID", "hospitalId", "HospitalId", "hospitalID", "_id"]),
+  name: pick(clinic, ["name", "Name", "clinicName", "ClinicName", "clinic_name", "hospitalName", "HospitalName"]),
   type: pick(clinic, ["type", "clinicType", "ClinicType", "category"], "General"),
   address: formatClinicAddress(clinic),
   contactNumber: pick(clinic, ["contactNumber", "phone", "phoneNumber", "mobile", "contact"]),
@@ -347,12 +413,12 @@ export const normalizeClinic = (clinic = {}) => ({
 });
 
 export const normalizeAdmin = (admin = {}) => ({
-  id: pick(admin, ["id", "adminId", "adminID", "userId", "_id"]),
-  name: pick(admin, ["name", "fullName", "adminName", "AdminName", "userName"]),
-  email: pick(admin, ["email", "emailAddress", "adminEmail", "AdminEmail"]),
+  id: pick(admin, ["id", "Id", "adminId", "AdminId", "adminID", "userId", "UserId", "_id"]),
+  name: pick(admin, ["name", "Name", "fullName", "FullName", "adminName", "AdminName", "userName", "UserName"]),
+  email: pick(admin, ["email", "Email", "emailAddress", "EmailAddress", "adminEmail", "AdminEmail"]),
   phone: pick(admin, ["phone", "phoneNumber", "mobile", "mobileNumber", "MobileNumber", "adminMobileNumber", "AdminMobileNumber"]),
-  assignedClinic: pick(admin, ["assignedClinic", "clinicName", "ClinicName", "hospitalName", "HospitalName", "clinic"]),
-  assignedClinicId: pick(admin, ["clinicId", "hospitalId", "assignedClinicId", "ClinicId", "HospitalId"]),
+  assignedClinic: pick(admin, ["assignedClinic", "AssignedClinic", "clinicName", "ClinicName", "hospitalName", "HospitalName", "clinic"]),
+  assignedClinicId: pick(admin, ["clinicId", "ClinicId", "hospitalId", "HospitalId", "assignedClinicId", "AssignedClinicId"]),
   role: "Admin",
   status: normalizeStatus(pick(admin, ["status", "isActive", "active"], "Active")),
   raw: admin,
@@ -417,6 +483,8 @@ export const normalizeAuditLog = (log = {}) => ({
   timestamp: formatDateTime(pick(log, ["timestamp", "createdAt", "date"])),
   sortTime: getTimestamp(pick(log, ["timestamp", "createdAt", "date"])),
   module: pick(log, ["module", "moduleName", "category"], "Audit"),
+  ipAddress: pick(log, ["ipAddress", "ip", "clientIp"], ""),
+  role: getAuditRole(log),
 });
 
 export const normalizeLoginLog = (log = {}, index = 0) => ({
@@ -429,7 +497,7 @@ export const normalizeLoginLog = (log = {}, index = 0) => ({
   sortTime: getTimestamp(pick(log, ["timestamp", "createdAt", "date", "loginTime", "time"])),
   module: "Login",
   ipAddress: pick(log, ["ipAddress", "ip", "clientIp"], ""),
-  role: pick(log, ["role", "roleName", "userRole"], ""),
+  role: getAuditRole(log),
 });
 
 export const normalizeNotification = (notification = {}) => ({
@@ -440,15 +508,84 @@ export const normalizeNotification = (notification = {}) => ({
   status: normalizeStatus(pick(notification, ["status", "state"], "Sent")),
 });
 
+const pickNestedObject = (source, keys) => {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  }
+
+  return {};
+};
+
+const getReportAdminName = (source = {}) => {
+  const directName = pick(source, [
+    "adminName",
+    "AdminName",
+    "administratorName",
+    "AdministratorName",
+    "createdBy",
+    "CreatedBy",
+    "createdByName",
+    "CreatedByName",
+    "userName",
+    "UserName",
+    "admin",
+    "Admin",
+  ]);
+
+  if (directName && typeof directName !== "object") return directName;
+
+  const nestedAdmin = pickNestedObject(source, [
+    "admin",
+    "Admin",
+    "administrator",
+    "Administrator",
+    "createdByUser",
+    "CreatedByUser",
+    "user",
+    "User",
+  ]);
+
+  return pick(nestedAdmin, ["name", "Name", "fullName", "FullName", "adminName", "AdminName", "userName", "UserName"], "");
+};
+
+const getReportAdminEmail = (source = {}) => {
+  const directEmail = pick(source, [
+    "adminEmail",
+    "AdminEmail",
+    "administratorEmail",
+    "AdministratorEmail",
+    "createdByEmail",
+    "CreatedByEmail",
+    "email",
+    "Email",
+  ]);
+
+  if (directEmail && typeof directEmail !== "object") return directEmail;
+
+  const nestedAdmin = pickNestedObject(source, [
+    "admin",
+    "Admin",
+    "administrator",
+    "Administrator",
+    "createdByUser",
+    "CreatedByUser",
+    "user",
+    "User",
+  ]);
+
+  return pick(nestedAdmin, ["email", "Email", "emailAddress", "EmailAddress", "adminEmail", "AdminEmail"], "");
+};
+
 export const normalizeReportRow = (row = {}, index = 0) => ({
-  id: pick(row, ["id", "clinicId", "_id"], index),
-  name: pick(row, ["name", "clinic", "clinicName", "label"], `Report ${index + 1}`),
-  adminName: pick(row, ["adminName", "admin", "createdBy", "userName"], ""),
-  adminEmail: pick(row, ["adminEmail", "email", "createdByEmail"], ""),
-  revenue: toNumber(pick(row, ["revenue", "totalRevenue", "amount"], 0)),
-  users: toNumber(pick(row, ["users", "userCount", "activity", "totalUsers"], 0)),
-  invoiceCount: toNumber(pick(row, ["invoiceCount", "invoices", "billingCount"], 0)),
-  status: normalizeStatus(pick(row, ["status", "isActive", "active"], "Active")),
+  id: pick(row, ["id", "Id", "clinicId", "ClinicId", "hospitalId", "HospitalId", "_id"], index),
+  name: pick(row, ["name", "Name", "clinic", "Clinic", "clinicName", "ClinicName", "hospitalName", "HospitalName", "label"], `Report ${index + 1}`),
+  adminName: getReportAdminName(row),
+  adminEmail: getReportAdminEmail(row),
+  revenue: toNumber(pick(row, ["revenue", "Revenue", "totalRevenue", "TotalRevenue", "amount", "Amount"], 0)),
+  users: toNumber(pick(row, ["users", "Users", "userCount", "UserCount", "activity", "Activity", "totalUsers", "TotalUsers"], 0)),
+  invoiceCount: toNumber(pick(row, ["invoiceCount", "InvoiceCount", "invoices", "Invoices", "billingCount", "BillingCount"], 0)),
+  status: normalizeStatus(pick(row, ["status", "Status", "isActive", "IsActive", "active", "Active"], "Active")),
 });
 
 const getBillingAmount = (item = {}) =>
@@ -479,14 +616,14 @@ const getMonthLabel = (value) => {
 };
 
 const getBillingClinicId = (item = {}) =>
-  String(pick(item, ["clinicId", "hospitalId", "assignedClinicId", "clinicID", "hospitalID"], ""));
+  String(pick(item, ["clinicId", "ClinicId", "hospitalId", "HospitalId", "assignedClinicId", "AssignedClinicId", "clinicID", "hospitalID"], ""));
 
 const getBillingClinicName = (item = {}) =>
-  pick(item, ["clinicName", "hospitalName", "clinic", "assignedClinic"], "");
+  pick(item, ["clinicName", "ClinicName", "hospitalName", "HospitalName", "clinic", "Clinic", "assignedClinic", "AssignedClinic"], "");
 
 const getBillingAdminKey = (item = {}) =>
   String(
-    pick(item, ["adminId", "createdById", "userId", "createdBy", "adminEmail", "createdByEmail"], "")
+    pick(item, ["adminId", "AdminId", "createdById", "CreatedById", "userId", "UserId", "createdBy", "CreatedBy", "adminEmail", "AdminEmail", "createdByEmail", "CreatedByEmail"], "")
   );
 
 const buildRevenueChart = (billingRows = []) => {
@@ -503,20 +640,68 @@ const buildRevenueChart = (billingRows = []) => {
   return Array.from(byMonth.values());
 };
 
-const buildAdminRevenueRows = ({ billingRows = [], clinicRows = [], adminRows = [] }) => {
+const getReportClinicId = (row = {}) =>
+  String(pick(row, ["clinicId", "ClinicId", "hospitalId", "HospitalId", "assignedClinicId", "AssignedClinicId"], ""));
+
+const buildAdminLookups = ({ clinicRows = [], adminRows = [] }) => {
   const clinics = clinicRows.map(normalizeClinic);
   const admins = adminRows.map(normalizeAdmin);
   const clinicById = new Map(clinics.map((clinic) => [String(clinic.id), clinic]));
   const clinicByName = new Map(clinics.map((clinic) => [String(clinic.name).toLowerCase(), clinic]));
   const adminByClinicId = new Map();
   const adminByClinicName = new Map();
+  const adminById = new Map();
+  const adminByEmail = new Map();
 
   admins.forEach((admin) => {
-    const clinicId = pick(admin.raw, ["clinicId", "hospitalId", "assignedClinicId"], "");
-    if (clinicId) adminByClinicId.set(String(clinicId), admin);
-    if (admin.assignedClinic) {
-      adminByClinicName.set(String(admin.assignedClinic).toLowerCase(), admin);
-    }
+    if (admin.id) adminById.set(String(admin.id), admin);
+    if (admin.email) adminByEmail.set(String(admin.email).toLowerCase(), admin);
+    if (admin.assignedClinicId) adminByClinicId.set(String(admin.assignedClinicId), admin);
+    if (admin.assignedClinic) adminByClinicName.set(String(admin.assignedClinic).toLowerCase(), admin);
+  });
+
+  return { admins, clinics, clinicById, clinicByName, adminByClinicId, adminByClinicName, adminById, adminByEmail };
+};
+
+const findReportAdmin = (rawRow = {}, normalizedRow = {}, lookups = {}) => {
+  const rawAdminId = pick(rawRow, ["adminId", "AdminId", "createdById", "CreatedById", "userId", "UserId"], "");
+  const rawAdminEmail = getReportAdminEmail(rawRow);
+  const clinicId = getReportClinicId(rawRow);
+  const clinic =
+    (clinicId && lookups.clinicById.get(String(clinicId))) ||
+    (normalizedRow.name && lookups.clinicByName.get(String(normalizedRow.name).toLowerCase())) ||
+    {};
+
+  return (
+    (rawAdminId && lookups.adminById.get(String(rawAdminId))) ||
+    (rawAdminEmail && lookups.adminByEmail.get(String(rawAdminEmail).toLowerCase())) ||
+    (clinicId && lookups.adminByClinicId.get(String(clinicId))) ||
+    (clinic.id && lookups.adminByClinicId.get(String(clinic.id))) ||
+    (normalizedRow.name && lookups.adminByClinicName.get(String(normalizedRow.name).toLowerCase())) ||
+    (clinic.name && lookups.adminByClinicName.get(String(clinic.name).toLowerCase())) ||
+    {}
+  );
+};
+
+const enrichReportRows = ({ rows = [], clinicRows = [], adminRows = [] }) => {
+  const lookups = buildAdminLookups({ clinicRows, adminRows });
+
+  return rows.map((row, index) => {
+    const normalizedRow = normalizeReportRow(row, index);
+    const admin = findReportAdmin(row, normalizedRow, lookups);
+
+    return {
+      ...normalizedRow,
+      adminName: normalizedRow.adminName || admin.name || "",
+      adminEmail: normalizedRow.adminEmail || admin.email || "",
+    };
+  });
+};
+
+const buildAdminRevenueRows = ({ billingRows = [], clinicRows = [], adminRows = [] }) => {
+  const { admins, clinicById, clinicByName, adminByClinicId, adminByClinicName } = buildAdminLookups({
+    clinicRows,
+    adminRows,
   });
 
   const rows = new Map();
@@ -533,8 +718,8 @@ const buildAdminRevenueRows = ({ billingRows = [], clinicRows = [], adminRows = 
       (clinicId && adminByClinicId.get(String(clinicId))) ||
       adminByClinicName.get(String(clinicName).toLowerCase()) ||
       {};
-    const directAdminName = pick(item, ["adminName", "createdBy", "userName"], "");
-    const directAdminEmail = pick(item, ["adminEmail", "createdByEmail", "email"], "");
+    const directAdminName = getReportAdminName(item);
+    const directAdminEmail = getReportAdminEmail(item);
     const key = getBillingAdminKey(item) || admin.id || `${clinicName}-${directAdminName || index}`;
     const current =
       rows.get(key) || {
@@ -1019,10 +1204,18 @@ export const createNotification = async (notification) => {
   }
 };
 
+const getCurrentSessionRole = () =>
+  localStorage.getItem("adminRole") ||
+  localStorage.getItem("doctorRole") ||
+  localStorage.getItem("receptionistRole") ||
+  localStorage.getItem("userRole") ||
+  "";
+
 export const recordAuditLog = (log) =>
   prependLocalItem(LOCAL_AUDIT_LOGS_KEY, {
     id: `local-audit-${Date.now()}`,
     timestamp: new Date().toISOString(),
+    role: getCurrentSessionRole(),
     ...log,
   });
 
@@ -1032,6 +1225,7 @@ const recordSuperAdminActivity = (action, module, detail = "") =>
     module,
     description: detail,
     user: localStorage.getItem("userName") || localStorage.getItem("adminName") || "Super Admin",
+    role: getCurrentSessionRole() || "Super Admin",
   });
 
 const toDashboardActivity = (activity, index = 0) => ({
@@ -1085,10 +1279,48 @@ export const createNotificationRemote = async (notification) =>
     body: notification,
   });
 
+const addRoleLookupValue = (lookup, key, role) => {
+  const normalizedKey = normalizeString(key);
+  if (normalizedKey && role && !lookup.has(normalizedKey)) {
+    lookup.set(normalizedKey, formatRoleLabel(role));
+  }
+};
+
+const addRoleLookupUser = (lookup, user = {}) => {
+  const role = pick(user, ["role", "roleName", "type", "userType"], "");
+  addRoleLookupValue(lookup, pick(user, ["email", "emailAddress", "userEmail"], ""), role);
+  addRoleLookupValue(lookup, pick(user, ["name", "fullName", "userName", "displayName"], ""), role);
+};
+
+const buildAuditRoleLookup = ({ users = [], admins = [], loginLogs = [] }) => {
+  const lookup = new Map();
+
+  users.map(normalizeUser).forEach((user) => addRoleLookupUser(lookup, user));
+  admins.map(normalizeAdmin).forEach((admin) => addRoleLookupUser(lookup, admin));
+  loginLogs.forEach((log) => {
+    addRoleLookupValue(lookup, log.userEmail, log.role);
+    addRoleLookupValue(lookup, log.user, log.role);
+  });
+
+  return lookup;
+};
+
+const withAuditRoleFallback = (log, roleLookup) => {
+  if (log.role) return log;
+
+  const role =
+    roleLookup.get(normalizeString(log.userEmail)) ||
+    roleLookup.get(normalizeString(log.user));
+
+  return role ? { ...log, role } : log;
+};
+
 export const fetchAuditLogs = async () => {
-  const [auditResult, loginResult] = await Promise.allSettled([
+  const [auditResult, loginResult, usersResult, adminsResult] = await Promise.allSettled([
     superAdminRequest(SUPER_ADMIN_API.auditLogs),
     superAdminRequest(SUPER_ADMIN_API.loginHistory),
+    superAdminRequest(SUPER_ADMIN_API.users),
+    superAdminRequest(SUPER_ADMIN_API.admins),
   ]);
 
   const auditLogs =
@@ -1100,7 +1332,14 @@ export const fetchAuditLogs = async () => {
       ? asArray(loginResult.value).map(normalizeLoginLog)
       : [];
   const localLogs = readLocalList(LOCAL_AUDIT_LOGS_KEY).map(normalizeAuditLog);
-  const logs = [...localLogs, ...loginLogs, ...auditLogs];
+  const roleLookup = buildAuditRoleLookup({
+    users: usersResult.status === "fulfilled" ? asArray(usersResult.value) : [],
+    admins: adminsResult.status === "fulfilled" ? asArray(adminsResult.value) : [],
+    loginLogs,
+  });
+  const logs = [...localLogs, ...loginLogs, ...auditLogs].map((log) =>
+    withAuditRoleFallback(log, roleLookup)
+  );
 
   if (!logs.length && auditResult.status === "rejected" && loginResult.status === "rejected") {
     throw auditResult.reason;
@@ -1184,7 +1423,7 @@ export const fetchUsers = async () => {
           /logged in/i.test(String(log.action))
       );
     } catch {
-      loginLogs = loginLogs;
+      // Keep the original login history result when the audit fallback is unavailable.
     }
   }
 
@@ -1358,9 +1597,9 @@ export const fetchReports = async () => {
   const clinicRows = clinics.status === "fulfilled" ? asArray(clinics.value) : [];
   const adminRows = admins.status === "fulfilled" ? asArray(admins.value) : [];
   const rows = topClinicRows.length
-    ? topClinicRows.map(normalizeReportRow)
+    ? enrichReportRows({ rows: topClinicRows, clinicRows, adminRows })
     : revenueRows.length
-      ? revenueRows.map(normalizeReportRow)
+      ? enrichReportRows({ rows: revenueRows, clinicRows, adminRows })
     : buildAdminRevenueRows({ billingRows, clinicRows, adminRows });
 
   return {
