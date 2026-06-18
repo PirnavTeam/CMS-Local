@@ -2,11 +2,20 @@ import React, { useEffect, useState } from "react";
 import { Send } from "lucide-react";
 import Header from "../../../components/superadmin/Header";
 import NotificationPanel from "../../../components/superadmin/NotificationPanel";
-import { createNotification, fetchNotifications } from "../superAdminApi";
+import {
+  createNotification,
+  fetchNotificationTargetOptions,
+  fetchNotifications,
+} from "../superAdminApi";
+
+const defaultTargetOptions = [
+  { value: "All Active Users", label: "All Active Users" },
+  { value: "Active Admins", label: "Active Admins" },
+];
 
 const emptyNotification = {
   title: "",
-  targetUsers: "All",
+  targetUsers: "All Active Users",
   message: "",
 };
 
@@ -15,6 +24,7 @@ function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [form, setForm] = useState(emptyNotification);
   const [loading, setLoading] = useState(true);
+  const [targetOptions, setTargetOptions] = useState(defaultTargetOptions);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,6 +43,17 @@ function Notifications() {
 
   useEffect(() => {
     loadNotifications();
+
+    const loadTargetOptions = async () => {
+      try {
+        const options = await fetchNotificationTargetOptions();
+        setTargetOptions(options.length ? options : defaultTargetOptions);
+      } catch {
+        setTargetOptions(defaultTargetOptions);
+      }
+    };
+
+    loadTargetOptions();
   }, []);
 
   const handleChange = (event) => {
@@ -91,11 +112,13 @@ function Notifications() {
             <div className="sa-form-field">
               <label>Target Users</label>
               <select name="targetUsers" value={form.targetUsers} onChange={handleChange}>
-                <option>All</option>
-                <option>Admins</option>
-                <option>Doctors</option>
-                <option>Users</option>
-                <option>Receptionists</option>
+                {targetOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.count !== undefined
+                      ? `${option.label} (${option.count})`
+                      : option.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="sa-form-field sa-form-field-full">

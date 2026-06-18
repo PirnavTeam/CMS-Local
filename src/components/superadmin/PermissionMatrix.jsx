@@ -24,8 +24,12 @@ function PermissionMatrix({ roles = [], onToggle, updatingKey = "" }) {
               <label key={permission} className="sa-checkbox">
                 <input
                   type="checkbox"
-                  checked={(role.permissions || []).includes(permission)}
-                  disabled={!roleKey || updatingKey === `${roleKey}:${permission}`}
+                  checked={permission === "View" || (role.permissions || []).includes(permission)}
+                  disabled={
+                    permission === "View" ||
+                    !roleKey ||
+                    updatingKey === `${roleKey}:${permission}`
+                  }
                   onChange={() => onToggle?.(role, permission)}
                 />
                 <span>{permission}</span>

@@ -25,6 +25,10 @@ import {
   getClinicDisplayName,
   getStoredClinicName,
 } from "../../utils/clinicDisplay";
+import {
+  hasAdminPermission,
+  requireAdminPermission,
+} from "../../utils/adminPermissions";
 
 const RECEPTIONIST_API = apiUrl("Receptionist");
 
@@ -112,6 +116,9 @@ const parseErrorMessage = async (response, fallback) => {
 
 function Receptionists() {
   const toast = useToast();
+  const canCreate = hasAdminPermission("Create");
+  const canEdit = hasAdminPermission("Edit");
+  const canDelete = hasAdminPermission("Delete");
   const [receptionists, setReceptionists] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -127,6 +134,10 @@ function Receptionists() {
   const hospitalId = getHospitalId();
   const clinicDisplayName =
     getStoredClinicName() || getClinicDisplayName({ hospitalId }, "Clinic");
+  const denyPermission = (message) => {
+    setError(message);
+    toast.error(message);
+  };
 
   const fetchReceptionists = async () => {
     setLoading(true);
@@ -171,6 +182,8 @@ function Receptionists() {
   }, [receptionists, searchText]);
 
   const openAddModal = () => {
+    if (!requireAdminPermission("Create", denyPermission)) return;
+
     setEditingReceptionist(null);
     setForm(getEmptyForm());
     setFieldErrors({});
@@ -180,6 +193,8 @@ function Receptionists() {
   };
 
   const openEditModal = (receptionist) => {
+    if (!requireAdminPermission("Edit", denyPermission)) return;
+
     setEditingReceptionist(receptionist);
     setForm({
       name: receptionist?.name || "",
@@ -251,6 +266,9 @@ function Receptionists() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    const permission = editingReceptionist ? "Edit" : "Create";
+    if (!requireAdminPermission(permission, denyPermission)) return;
+
     if (!validateForm()) {
       setError("Please fix the highlighted fields.");
       toast.error("Please fix the highlighted fields.");
@@ -321,6 +339,7 @@ function Receptionists() {
 
   const handleDelete = async (receptionist) => {
     if (!receptionist?.id || deletingId) return;
+    if (!requireAdminPermission("Delete", denyPermission)) return;
 
     const shouldDelete = window.confirm(
       `Delete receptionist ${receptionist.name || ""}?`
@@ -387,6 +406,8 @@ function Receptionists() {
             type="button"
             className="receptionists-primary-button"
             onClick={openAddModal}
+            disabled={!canCreate}
+            title={canCreate ? "Add receptionist" : "Create permission required"}
           >
             <Plus size={16} />
             Add Receptionist
@@ -470,8 +491,8 @@ function Receptionists() {
                   type="button"
                   className="receptionists-action-button"
                   onClick={() => openEditModal(receptionist)}
-                  disabled={isDeleting}
-                  title="Edit receptionist"
+                  disabled={!canEdit || isDeleting}
+                  title={canEdit ? "Edit receptionist" : "Edit permission required"}
                 >
                   <Pencil size={14} />
                 </button>
@@ -480,8 +501,8 @@ function Receptionists() {
                   type="button"
                   className="receptionists-action-button receptionists-action-danger"
                   onClick={() => handleDelete(receptionist)}
-                  disabled={isDeleting}
-                  title="Delete receptionist"
+                  disabled={!canDelete || isDeleting}
+                  title={canDelete ? "Delete receptionist" : "Delete permission required"}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -616,7 +637,7 @@ function Receptionists() {
                 <button
                   type="submit"
                   className="receptionists-save-button"
-                  disabled={saving}
+                  disabled={saving || (editingReceptionist ? !canEdit : !canCreate)}
                 >
                   <CheckCircle size={16} />
                   {saving

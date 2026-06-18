@@ -64,24 +64,31 @@ const isSentNotification = (notification = {}) =>
 const isReadNotification = (notification = {}) =>
   String(notification.status || "").toLowerCase() === "read";
 
+const getStatusLabel = (notification = {}) =>
+  isReadNotification(notification) ? "Read" : "Unread";
+
 const isVisibleNotification = (notification = {}) =>
   isSentNotification(notification) || isReadNotification(notification);
 
 const matchesTargetUsers = (notification = {}, role = "") => {
-  const target = String(notification.targetUsers || "all clinics").trim().toLowerCase();
+  const target = String(notification.targetUsers || "all active users").trim().toLowerCase();
   const r = normalizeRole(role);
 
-  if (!target || target.includes("all")) return true; // everyone
+  if (!target) return true;
+
+  if (target.includes("all active user") || target === "active users") {
+    return ["user", "patient"].includes(r);
+  }
 
   if (target.includes("admin")) {
-    return ["admin", "superadmin", "clinicadmin"].includes(r);
+    return ["admin", "clinicadmin"].includes(r);
   }
 
   if (target.includes("doctor")) {
     return r === "doctor";
   }
 
-  if (target.includes("receptionist")) {
+  if (target.includes("receptionist") || target.includes("reception")) {
     return r === "receptionist";
   }
 
@@ -210,8 +217,13 @@ function NotificationPopup({ isSuperAdmin = false }) {
                 {visibleNotifications.map((item) => (
                   <button
                     type="button"
-                    key={item.id}
-                    className={`notification-item-button ${activeNotification?.id === item.id ? "is-active" : ""}`}
+                    key={getNotificationKey(item)}
+                    className={`notification-item-button ${
+                      activeNotification &&
+                      getNotificationKey(activeNotification) === getNotificationKey(item)
+                        ? "is-active"
+                        : ""
+                    }`}
                     onClick={async () => {
                       const readItem = { ...item, status: "Read" };
                       setActiveNotification(readItem);
@@ -232,8 +244,12 @@ function NotificationPopup({ isSuperAdmin = false }) {
                       <b>{item.title}</b>
                       <p>{item.message}</p>
                     </div>
-                    <span className={`notification-status ${item.status === "Sent" ? "is-active" : "is-muted"}`}>
-                      {item.status}
+                    <span
+                      className={`notification-status ${
+                        isReadNotification(item) ? "is-muted" : "is-active"
+                      }`}
+                    >
+                      {getStatusLabel(item)}
                     </span>
                   </button>
                 ))}
@@ -248,7 +264,6 @@ function NotificationPopup({ isSuperAdmin = false }) {
                     <div className="notification-detail-header">
                       <div>
                         <h4>{activeNotification.title}</h4>
-                        <span>{activeNotification.targetUsers}</span>
                       </div>
                       <button
                         type="button"

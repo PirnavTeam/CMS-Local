@@ -19,7 +19,7 @@ const formatShort = (value) => {
   return number;
 };
 
-function Charts({ data = [], type = "bar", dataKey = "revenue", secondaryKey }) {
+function Charts({ data = [], type = "bar", dataKey = "revenue", secondaryKey, tertiaryKey }) {
   const hasData = Array.isArray(data) && data.length > 0;
 
   if (!hasData) {
@@ -47,6 +47,7 @@ function Charts({ data = [], type = "bar", dataKey = "revenue", secondaryKey }) 
             <Tooltip />
             <Line type="monotone" dataKey={dataKey} stroke="#0f766e" strokeWidth={3} dot={{ r: 4 }} />
             {secondaryKey ? <Line type="monotone" dataKey={secondaryKey} stroke="#2563eb" strokeWidth={3} dot={{ r: 4 }} /> : null}
+            {tertiaryKey ? <Line type="monotone" dataKey={tertiaryKey} stroke="#b45309" strokeWidth={3} dot={{ r: 4 }} /> : null}
           </LineChart>
         ) : (
           <BarChart data={data} margin={{ top: 18, right: 24, left: 0, bottom: 4 }}>
@@ -56,6 +57,7 @@ function Charts({ data = [], type = "bar", dataKey = "revenue", secondaryKey }) 
             <Tooltip />
             <Bar dataKey={dataKey} fill="#0f766e" radius={[8, 8, 0, 0]} />
             {secondaryKey ? <Bar dataKey={secondaryKey} fill="#2563eb" radius={[8, 8, 0, 0]} /> : null}
+            {tertiaryKey ? <Bar dataKey={tertiaryKey} fill="#b45309" radius={[8, 8, 0, 0]} /> : null}
           </BarChart>
         )}
       </ResponsiveContainer>

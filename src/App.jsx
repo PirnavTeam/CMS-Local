@@ -39,7 +39,10 @@ import RevenueReport from "./pages/REPORTS/RevenueReport";
 import DoctorWiseReport from "./pages/REPORTS/DoctorWiseReport";
 import "./pages/SUPERADMIN/SuperAdmin.css";
 import { ToastProvider } from "./components/ToastProvider";
+import { hasAdminPermission } from "./utils/adminPermissions";
 
+const PermissionRoute = ({ permission, children }) =>
+  hasAdminPermission(permission) ? children : <Navigate to="/dashboard" replace />;
 
 function App() {
   return (
@@ -68,10 +71,10 @@ function App() {
 
           {/* MODULES */}
           <Route path="doctors" element={<Doctors />} />
-          <Route path="doctors/add" element={<AddDoctor />} />
+          <Route path="doctors/add" element={<PermissionRoute permission="Create"><AddDoctor /></PermissionRoute>} />
           <Route path="doctors/register" element={<Navigate to="/doctors/add" replace />} />
-          <Route path="doctors/schedule" element={<DoctorSchedule />} />
-          <Route path="DoctorSchedule/schedule" element={<Doctorschedulepage />} />
+          <Route path="doctors/schedule" element={<PermissionRoute permission="Edit"><DoctorSchedule /></PermissionRoute>} />
+          <Route path="DoctorSchedule/schedule" element={<PermissionRoute permission="Edit"><Doctorschedulepage /></PermissionRoute>} />
           <Route path="receptionists" element={<Receptionists />} />
 
           {/* ✅ PATIENTS */}
@@ -79,7 +82,7 @@ function App() {
           <Route path="patients/:id" element={<PatientDetails />} /> {/* ✅ IMPORTANT */}
 
           <Route path="appointments" element={<Appointments />} />
-          <Route path="appointments/new" element={<NewAppointment />} />
+          <Route path="appointments/new" element={<PermissionRoute permission="Create"><NewAppointment /></PermissionRoute>} />
 
           <Route path="reports" element={<Reports />} />
           <Route path="reports/daily" element={<DailyReport />} />

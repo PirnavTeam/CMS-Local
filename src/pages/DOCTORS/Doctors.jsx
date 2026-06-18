@@ -29,6 +29,10 @@ import {
 } from "../../utils/validation";
 import { getClinicDisplayName } from "../../utils/clinicDisplay";
 import { formatIndianCurrency } from "../../utils/format";
+import {
+  hasAdminPermission,
+  requireAdminPermission,
+} from "../../utils/adminPermissions";
 
 const DOCTORS_API_URL =
   apiUrl("Doctor");
@@ -223,6 +227,13 @@ function Doctors() {
   const navigate = useNavigate();
   const toast = useToast();
   const editImageInputRef = useRef(null);
+  const canCreate = hasAdminPermission("Create");
+  const canEdit = hasAdminPermission("Edit");
+  const canDelete = hasAdminPermission("Delete");
+  const denyPermission = (message) => {
+    setError(message);
+    toast.error(message);
+  };
 
   const [searchText, setSearchText] = useState("");
   const [doctors, setDoctors] = useState([]);
@@ -378,6 +389,7 @@ function Doctors() {
 
   const openEditDoctor = (doctor) => {
     if (!doctor?.id) return;
+    if (!requireAdminPermission("Edit", denyPermission)) return;
 
     if (editImagePreview.startsWith("blob:")) {
       URL.revokeObjectURL(editImagePreview);
@@ -471,6 +483,10 @@ function Doctors() {
     event.preventDefault();
 
     if (!editingDoctor?.id) return;
+    if (!requireAdminPermission("Edit", (message) => {
+      setEditError(message);
+      toast.error(message);
+    })) return;
 
     const validationErrors = {
       ...validateEditForm(editForm),
@@ -527,6 +543,7 @@ function Doctors() {
 
   const handleToggleDoctorStatus = async (doctor) => {
     if (!doctor?.id) return;
+    if (!requireAdminPermission("Edit", denyPermission)) return;
 
     const nextIsActive = !getDoctorIsActive(doctor);
 
@@ -573,6 +590,7 @@ function Doctors() {
 
   const handleDeleteDoctor = async (doctorId) => {
     if (!doctorId) return;
+    if (!requireAdminPermission("Delete", denyPermission)) return;
 
     const shouldDelete = window.confirm("Delete this doctor?");
     if (!shouldDelete) return;
@@ -625,6 +643,8 @@ function Doctors() {
           <button
             className="doctors-btn doctors-btn-light"
             onClick={() => navigate("/doctors/schedule")}
+            disabled={!canEdit}
+            title={canEdit ? "Manage schedule" : "Edit permission required"}
           >
             <Calendar size={16} /> Manage Schedule
           </button>
@@ -632,6 +652,8 @@ function Doctors() {
           <button
             className="doctors-btn doctors-btn-primary"
             onClick={() => navigate("/doctors/add")}
+            disabled={!canCreate}
+            title={canCreate ? "Add doctor" : "Create permission required"}
           >
             <Plus size={16} /> Add Doctor
           </button>
@@ -731,8 +753,8 @@ function Doctors() {
                   type="button"
                   className="doctors-status-button"
                   onClick={() => handleToggleDoctorStatus(doc)}
-                  disabled={!doc.id || isStatusUpdating || isDeleting}
-                  title="Toggle status"
+                  disabled={!canEdit || !doc.id || isStatusUpdating || isDeleting}
+                  title={canEdit ? "Toggle status" : "Edit permission required"}
                 >
                   <span
                     className={`doctors-status ${isActive ? "doctors-status-active" : "doctors-status-inactive"
@@ -756,8 +778,8 @@ function Doctors() {
                   type="button"
                   className="doctors-action-icon"
                   onClick={() => openEditDoctor(doc)}
-                  disabled={!doc.id || isDeleting}
-                  title="Edit doctor"
+                  disabled={!canEdit || !doc.id || isDeleting}
+                  title={canEdit ? "Edit doctor" : "Edit permission required"}
                 >
                   <Pencil size={14} />
                 </button>
@@ -766,8 +788,8 @@ function Doctors() {
                   type="button"
                   className="doctors-action-icon doctors-action-icon-delete"
                   onClick={() => handleDeleteDoctor(doc.id)}
-                  disabled={!doc.id || isDeleting || isStatusUpdating}
-                  title="Delete doctor"
+                  disabled={!canDelete || !doc.id || isDeleting || isStatusUpdating}
+                  title={canDelete ? "Delete doctor" : "Delete permission required"}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -1003,7 +1025,7 @@ function Doctors() {
                 <button
                   type="submit"
                   className="doctor-edit-save"
-                  disabled={savingEdit}
+                  disabled={savingEdit || !canEdit}
                 >
                   {savingEdit ? "Saving..." : "Save Changes"}
                 </button>

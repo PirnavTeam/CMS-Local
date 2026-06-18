@@ -16,6 +16,8 @@ import {
 
 const permissionOptions = ["View", "Create", "Edit", "Delete"];
 const DEFAULT_SYSTEM_ROLES = ["Admin", "Doctor", "Patient", "Receptionist"];
+const withViewPermission = (permissions = []) =>
+  Array.from(new Set(["View", ...(Array.isArray(permissions) ? permissions : [])]));
 
 const isDefaultRole = (role = {}) => {
   const roleName = String(role.name || role.roleName || "").toLowerCase();
@@ -165,7 +167,7 @@ function RolesPermissions() {
       name: role.name || role.roleName || "",
       roleName: role.roleName || role.name || "",
       module: role.module || "General",
-      permissions: Array.isArray(role.permissions) ? role.permissions : [],
+      permissions: withViewPermission(role.permissions),
     });
     setShowForm(true);
     setError("");
@@ -178,9 +180,7 @@ function RolesPermissions() {
         name: remoteRole.name || remoteRole.roleName || "",
         roleName: remoteRole.roleName || remoteRole.name || "",
         module: remoteRole.module || "General",
-        permissions: Array.isArray(remoteRole.permissions)
-          ? remoteRole.permissions
-          : [],
+        permissions: withViewPermission(remoteRole.permissions),
       });
     } catch {
       setForm({
@@ -189,7 +189,7 @@ function RolesPermissions() {
         name: role.name || role.roleName || "",
         roleName: role.roleName || role.name || "",
         module: role.module || "General",
-        permissions: Array.isArray(role.permissions) ? role.permissions : [],
+        permissions: withViewPermission(role.permissions),
       });
     }
   };
@@ -206,12 +206,14 @@ function RolesPermissions() {
   };
 
   const handlePermissionChange = (permission) => {
+    if (permission === "View") return;
+
     setForm((current) => {
       const permissions = current.permissions.includes(permission)
         ? current.permissions.filter((item) => item !== permission)
         : [...current.permissions, permission];
 
-      return { ...current, permissions };
+      return { ...current, permissions: withViewPermission(permissions) };
     });
   };
 
@@ -237,6 +239,7 @@ function RolesPermissions() {
           ...form,
           roleName: form.roleName || form.name,
           name: form.name || form.roleName,
+          permissions: withViewPermission(form.permissions),
         },
         editingRoleId || undefined
       );
@@ -270,15 +273,17 @@ function RolesPermissions() {
   };
 
   const handleMatrixPermissionToggle = async (role, permission) => {
+    if (permission === "View") return;
+
     const roleKey = getRoleKey(role);
     if (!roleKey) return;
 
-    const currentPermissions = Array.isArray(role.permissions)
-      ? role.permissions
-      : [];
-    const nextPermissions = currentPermissions.includes(permission)
-      ? currentPermissions.filter((item) => item !== permission)
-      : [...currentPermissions, permission];
+    const currentPermissions = withViewPermission(role.permissions);
+    const nextPermissions = withViewPermission(
+      currentPermissions.includes(permission)
+        ? currentPermissions.filter((item) => item !== permission)
+        : [...currentPermissions, permission]
+    );
     const updateKey = `${roleKey}:${permission}`;
 
     setUpdatingPermission(updateKey);
@@ -445,8 +450,9 @@ function RolesPermissions() {
                   <label className="sa-checkbox" key={permission}>
                     <input
                       type="checkbox"
-                      checked={form.permissions.includes(permission)}
+                      checked={permission === "View" || form.permissions.includes(permission)}
                       onChange={() => handlePermissionChange(permission)}
+                      disabled={permission === "View"}
                     />
                     <span>{permission}</span>
                   </label>

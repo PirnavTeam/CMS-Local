@@ -75,31 +75,61 @@ const writeLocalRoleOverrides = (overrides) => {
 const getRoleStorageKey = (role = {}) =>
   String(pick(role, ["id", "roleName", "name", "key"], "")).trim();
 
+const getRoleStorageKeys = (role = {}) =>
+  Array.from(
+    new Set(
+      ["id", "roleId", "_id", "roleName", "name", "key"]
+        .map((field) => String(role?.[field] || "").trim())
+        .filter(Boolean)
+    )
+  );
+
 const applyRoleOverrides = (role = {}) => {
   const overrides = readLocalRoleOverrides();
-  const key = getRoleStorageKey(role);
-  return key && overrides[key] ? { ...role, ...overrides[key] } : role;
+  const override = getRoleStorageKeys(role)
+    .map((key) => overrides[key])
+    .find(Boolean);
+
+  return override ? { ...role, ...override } : role;
 };
 
 const saveRoleOverride = (role = {}, override = {}) => {
-  const key = getRoleStorageKey(role);
-  if (!key) return;
+  const keys = getRoleStorageKeys(role);
+  if (!keys.length) return;
+
   const overrides = readLocalRoleOverrides();
-  writeLocalRoleOverrides({
-    ...overrides,
-    [key]: {
-      ...overrides[key],
-      ...override,
-    },
+  const roleName = String(pick(role, ["roleName", "name"], "")).trim();
+  const nextOverride = {
+    ...(roleName ? { roleName, name: roleName } : {}),
+    ...override,
+  };
+  const nextOverrides = { ...overrides };
+
+  keys.forEach((key) => {
+    nextOverrides[key] = {
+      ...nextOverrides[key],
+      ...nextOverride,
+    };
   });
+
+  writeLocalRoleOverrides(nextOverrides);
 };
 
 const deleteRoleOverride = (role = {}) => {
-  const key = getRoleStorageKey(role);
-  if (!key) return;
+  const keys = getRoleStorageKeys(role);
+  if (!keys.length) return;
+
   const overrides = readLocalRoleOverrides();
-  if (!(key in overrides)) return;
-  delete overrides[key];
+  let changed = false;
+
+  keys.forEach((key) => {
+    if (key in overrides) {
+      delete overrides[key];
+      changed = true;
+    }
+  });
+
+  if (!changed) return;
   writeLocalRoleOverrides(overrides);
 };
 
@@ -174,6 +204,35 @@ const normalizeStatus = (value) => {
   if (typeof value === "boolean") return value ? "Active" : "Inactive";
   const status = String(value || "Active");
   return status.charAt(0).toUpperCase() + status.slice(1);
+};
+
+const normalizeNotificationStatus = (notification = {}) => {
+  const readValue = pick(
+    notification,
+    ["isRead", "read", "readStatus", "is_read", "IsRead"],
+    ""
+  );
+  const readAt = pick(notification, ["readAt", "readOn", "readDate", "ReadAt"], "");
+
+  if (
+    readAt ||
+    readValue === true ||
+    readValue === 1 ||
+    String(readValue).toLowerCase() === "true" ||
+    String(readValue).toLowerCase() === "read"
+  ) {
+    return "Read";
+  }
+
+  const status = normalizeStatus(pick(notification, ["status", "state"], "Sent"));
+  return status.toLowerCase() === "read" ? "Read" : "Sent";
+};
+
+const isActiveRecord = (record = {}) => {
+  const status = normalizeStatus(
+    pick(record, ["status", "Status", "isActive", "IsActive", "active", "Active"], "Active")
+  );
+  return status.toLowerCase() === "active";
 };
 
 const formatRoleLabel = (value) => {
@@ -518,6 +577,7 @@ export const normalizeRevenuePoint = (point = {}, index = 0) => ({
   name: pick(point, ["name", "month", "date", "label"], `Item ${index + 1}`),
   revenue: toNumber(pick(point, ["revenue", "totalRevenue", "amount"], 0)),
   users: toNumber(pick(point, ["users", "userCount", "totalUsers", "activity"], 0)),
+  invoices: getReportInvoiceCount(point),
 });
 
 export const normalizeAuditLog = (log = {}) => ({
@@ -550,16 +610,55 @@ export const normalizeNotification = (notification = {}) => ({
   id: pick(notification, ["id", "notificationId", "_id"]),
   title: pick(notification, ["title", "subject"], "Notification"),
   message: pick(notification, ["message", "body", "description"]),
-  targetUsers: pick(notification, ["targetUsers", "audience", "target", "recipient"], "All Clinics"),
-  status: normalizeStatus(pick(notification, ["status", "state"], "Sent")),
+  targetUsers: pick(notification, ["targetUsers", "audience", "target", "recipient"], "All Active Users"),
+  status: normalizeNotificationStatus(notification),
   createdAt: pick(notification, ["createdAt", "createdOn", "date", "timestamp"], ""),
 });
 
 const buildNotificationPayload = (notification = {}) => ({
   title: String(pick(notification, ["title", "subject"], "")).trim(),
   message: String(pick(notification, ["message", "body", "description"], "")).trim(),
-  targetUsers: String(pick(notification, ["targetUsers", "audience", "target", "recipient"], "All Clinics")).trim(),
+  targetUsers: String(pick(notification, ["targetUsers", "audience", "target", "recipient"], "All Active Users")).trim(),
 });
+
+const getNotificationIdentity = (notification = {}) => {
+  const id = String(notification.id || "").trim();
+  if (id && !id.startsWith("local-notification-")) return `id:${id}`;
+
+  return [
+    notification.title,
+    notification.message,
+    notification.targetUsers,
+  ]
+    .map((value) => String(value || "").trim().toLowerCase())
+    .join("|");
+};
+
+const mergeNotificationRecords = (notifications = []) => {
+  const merged = new Map();
+
+  notifications.forEach((notification) => {
+    const key = getNotificationIdentity(notification);
+    const existing = merged.get(key);
+
+    if (!existing) {
+      merged.set(key, notification);
+      return;
+    }
+
+    const status =
+      existing.status === "Read" || notification.status === "Read" ? "Read" : notification.status;
+
+    merged.set(key, {
+      ...existing,
+      ...notification,
+      status,
+      id: notification.id || existing.id,
+    });
+  });
+
+  return Array.from(merged.values());
+};
 
 const pickNestedObject = (source, keys) => {
   for (const key of keys) {
@@ -722,11 +821,45 @@ const getMonthLabel = (value) => {
   return date.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
 };
 
-const getBillingClinicId = (item = {}) =>
+const getBillingAppointmentId = (item = {}) =>
+  String(pick(item, ["appointmentId", "AppointmentId", "appointmentID", "AppointmentID", "apptId", "bookingId"], ""));
+
+const getAppointmentClinicId = (item = {}) =>
   String(pick(item, ["clinicId", "ClinicId", "hospitalId", "HospitalId", "assignedClinicId", "AssignedClinicId", "clinicID", "hospitalID"], ""));
 
-const getBillingClinicName = (item = {}) =>
+const getAppointmentClinicName = (item = {}) =>
   pick(item, ["clinicName", "ClinicName", "hospitalName", "HospitalName", "clinic", "Clinic", "assignedClinic", "AssignedClinic"], "");
+
+const buildAppointmentClinicLookup = (appointmentRows = []) => {
+  const lookup = new Map();
+
+  appointmentRows.forEach((appointment) => {
+    const appointmentId = normalizeLookupKey(getBillingAppointmentId(appointment) || pick(appointment, ["id", "Id"], ""));
+    if (!appointmentId) return;
+
+    lookup.set(appointmentId, {
+      clinicId: getAppointmentClinicId(appointment),
+      clinicName: getAppointmentClinicName(appointment),
+    });
+  });
+
+  return lookup;
+};
+
+const getBillingAppointmentClinic = (item = {}, appointmentLookup = new Map()) =>
+  appointmentLookup.get(normalizeLookupKey(getBillingAppointmentId(item))) || {};
+
+const getBillingClinicId = (item = {}, appointmentLookup = new Map()) =>
+  String(
+    pick(item, ["clinicId", "ClinicId", "hospitalId", "HospitalId", "assignedClinicId", "AssignedClinicId", "clinicID", "hospitalID"], "") ||
+      getBillingAppointmentClinic(item, appointmentLookup).clinicId ||
+      ""
+  );
+
+const getBillingClinicName = (item = {}, appointmentLookup = new Map()) =>
+  pick(item, ["clinicName", "ClinicName", "hospitalName", "HospitalName", "clinic", "Clinic", "assignedClinic", "AssignedClinic"], "") ||
+  getBillingAppointmentClinic(item, appointmentLookup).clinicName ||
+  "";
 
 const getBillingAdminKey = (item = {}) =>
   String(
@@ -738,13 +871,67 @@ const buildRevenueChart = (billingRows = []) => {
 
   billingRows.forEach((item) => {
     const month = getMonthLabel(getBillingDate(item));
-    const current = byMonth.get(month) || { name: month, revenue: 0, users: 0 };
+    const current = byMonth.get(month) || { name: month, revenue: 0, users: 0, invoices: 0 };
     current.revenue += getBillingAmount(item);
+    current.invoices += 1;
     current.users += 1;
     byMonth.set(month, current);
   });
 
   return Array.from(byMonth.values());
+};
+
+const buildMonthlyRevenueRows = (revenueRows = []) => {
+  const byMonth = new Map();
+
+  revenueRows.map(normalizeRevenuePoint).forEach((point) => {
+    const label = String(point.name || "").trim();
+    if (!label || /^item\s+\d+$/i.test(label)) return;
+
+    const month = getMonthLabel(label);
+    const current = byMonth.get(month) || { name: month, revenue: 0, users: 0, invoices: 0 };
+    current.revenue += toNumber(point.revenue);
+    current.users += toNumber(point.users);
+    current.invoices += toNumber(point.invoices);
+    byMonth.set(month, current);
+  });
+
+  return Array.from(byMonth.values());
+};
+
+const mergeReportChartData = ({ revenueRows = [], activityRows = [], billingRows = [], rows = [] }) => {
+  const billingChart = buildRevenueChart(billingRows);
+  const monthlyRevenueRows = buildMonthlyRevenueRows(revenueRows);
+  const baseRows = billingChart.length ? billingChart : monthlyRevenueRows;
+
+  if (!baseRows.length) return [];
+
+  const billingByPeriod = new Map(
+    billingChart.map((point) => [normalizeLookupKey(point.name), point])
+  );
+  const revenueRowsOnly = rows.filter((row) => toNumber(row.revenue) > 0);
+  const rowsForRevenueTotals = revenueRowsOnly.length ? revenueRowsOnly : rows;
+  const totalInvoices = rowsForRevenueTotals.reduce((sum, row) => sum + getReportInvoiceCount(row), 0);
+  const totalUsers = rowsForRevenueTotals.reduce((sum, row) => sum + getReportUserCount(row), 0);
+
+  return baseRows.map((point, index) => {
+    const billingPoint =
+      billingByPeriod.get(normalizeLookupKey(point.name)) ||
+      (baseRows.length === 1 && billingChart.length === 1 ? billingChart[0] : {});
+    const hasRevenue = getBillingAmount(point) > 0 || toNumber(point.revenue) > 0;
+
+    return {
+      ...point,
+      invoices:
+        toNumber(point.invoices) ||
+        toNumber(billingPoint.invoices) ||
+        (hasRevenue ? totalInvoices : 0),
+      users:
+        (hasRevenue ? totalUsers : 0) ||
+        toNumber(point.users) ||
+        toNumber(billingPoint.users),
+    };
+  });
 };
 
 const getReportClinicId = (row = {}) =>
@@ -796,14 +983,21 @@ const buildClinicUserCountLookup = (userRows = []) => {
   return lookup;
 };
 
-const buildClinicInvoiceCountLookup = (billingRows = []) => {
+const buildClinicInvoiceCountLookup = (billingRows = [], appointmentRows = []) => {
   const lookup = new Map();
+  const appointmentLookup = buildAppointmentClinicLookup(appointmentRows);
+  let totalRevenue = 0;
 
   billingRows.forEach((item) => {
+    totalRevenue += getBillingAmount(item);
+
     const keys = new Set(
       [
-        getBillingClinicId(item),
-        getBillingClinicName(item),
+        getBillingClinicId(item, appointmentLookup),
+        getBillingClinicName(item, appointmentLookup),
+        getBillingAdminKey(item),
+        getReportAdminName(item),
+        getReportAdminEmail(item),
         pick(item, ["clinicName", "ClinicName", "hospitalName", "HospitalName", "assignedClinic", "AssignedClinic"], ""),
       ]
         .map((value) => normalizeLookupKey(value))
@@ -812,6 +1006,9 @@ const buildClinicInvoiceCountLookup = (billingRows = []) => {
 
     keys.forEach((key) => addLookupCountValue(lookup, key));
   });
+
+  lookup.set("__total_count__", billingRows.length);
+  lookup.set("__total_revenue__", totalRevenue);
 
   return lookup;
 };
@@ -842,11 +1039,21 @@ const getClinicInvoiceCount = (rawRow = {}, normalizedRow = {}, clinic = {}, loo
     getReportClinicName(rawRow),
     clinic.name,
     normalizedRow.name,
+    getReportAdminName(rawRow),
+    getReportAdminEmail(rawRow),
   ];
 
   for (const key of keys) {
     const count = lookup.get(normalizeLookupKey(key));
     if (count !== undefined) return count;
+  }
+
+  const totalCount = lookup.get("__total_count__") || 0;
+  const totalRevenue = lookup.get("__total_revenue__") || 0;
+  const rowRevenue = toNumber(normalizedRow.revenue || pick(rawRow, ["revenue", "Revenue", "totalRevenue", "TotalRevenue", "amount", "Amount"], 0));
+
+  if (totalCount > 0 && rowRevenue > 0 && totalRevenue > 0 && rowRevenue === totalRevenue) {
+    return totalCount;
   }
 
   return 0;
@@ -898,20 +1105,18 @@ const findReportClinic = (rawRow = {}, normalizedRow = {}, lookups = {}) => {
   );
 };
 
-const enrichReportRows = ({ rows = [], clinicRows = [], adminRows = [], userRows = [], billingRows = [] }) => {
+const enrichReportRows = ({ rows = [], clinicRows = [], adminRows = [], userRows = [], billingRows = [], appointmentRows = [] }) => {
   const lookups = buildAdminLookups({ clinicRows, adminRows });
   const userCountLookup = buildClinicUserCountLookup(userRows);
-  const invoiceCountLookup = buildClinicInvoiceCountLookup(billingRows);
+  const invoiceCountLookup = buildClinicInvoiceCountLookup(billingRows, appointmentRows);
 
   return rows.map((row, index) => {
     const normalizedRow = normalizeReportRow(row, index);
     const clinic = findReportClinic(row, normalizedRow, lookups);
     const admin = findReportAdmin(row, normalizedRow, lookups);
-    const users = Math.max(
-      normalizedRow.users,
-      toNumber(pick(clinic, ["users"], 0)),
-      getClinicUserCount(row, normalizedRow, clinic, userCountLookup)
-    );
+    const clinicUsers = getClinicUserCount(row, normalizedRow, clinic, userCountLookup);
+    const assignedClinicUsers = toNumber(pick(clinic, ["users"], 0));
+    const users = clinicUsers || assignedClinicUsers || normalizedRow.users;
     const invoiceCount = Math.max(
       normalizedRow.invoiceCount,
       getClinicInvoiceCount(row, normalizedRow, clinic, invoiceCountLookup)
@@ -927,19 +1132,20 @@ const enrichReportRows = ({ rows = [], clinicRows = [], adminRows = [], userRows
   });
 };
 
-const buildAdminRevenueRows = ({ billingRows = [], clinicRows = [], adminRows = [], userRows = [] }) => {
+const buildAdminRevenueRows = ({ billingRows = [], clinicRows = [], adminRows = [], userRows = [], appointmentRows = [] }) => {
   const { admins, clinics, clinicById, clinicByName, adminByClinicId, adminByClinicName } = buildAdminLookups({
     clinicRows,
     adminRows,
   });
   const userCountLookup = buildClinicUserCountLookup(userRows);
-  const invoiceCountLookup = buildClinicInvoiceCountLookup(billingRows);
+  const invoiceCountLookup = buildClinicInvoiceCountLookup(billingRows, appointmentRows);
+  const appointmentLookup = buildAppointmentClinicLookup(appointmentRows);
 
   const rows = new Map();
 
   billingRows.forEach((item, index) => {
-    const clinicId = getBillingClinicId(item);
-    const rawClinicName = getBillingClinicName(item);
+    const clinicId = getBillingClinicId(item, appointmentLookup);
+    const rawClinicName = getBillingClinicName(item, appointmentLookup);
     const clinic =
       (clinicId && clinicById.get(String(clinicId))) ||
       (rawClinicName && clinicByName.get(String(rawClinicName).toLowerCase())) ||
@@ -1427,11 +1633,41 @@ export const fetchNotifications = async () => {
       await superAdminRequest(SUPER_ADMIN_API.notifications)
     ).map(normalizeNotification);
 
-    return [...localNotifications, ...remoteNotifications];
+    return mergeNotificationRecords([...localNotifications, ...remoteNotifications]);
   } catch (error) {
     if (localNotifications.length) return localNotifications;
     throw error;
   }
+};
+
+export const fetchNotificationTargetOptions = async () => {
+  const [adminsResult, usersResult] = await Promise.allSettled([
+    superAdminRequest(SUPER_ADMIN_API.admins),
+    superAdminRequest(SUPER_ADMIN_API.users),
+  ]);
+
+  const counts = {
+    admins:
+      adminsResult.status === "fulfilled"
+        ? asArray(adminsResult.value).filter(isActiveRecord).length
+        : 0,
+    users:
+      usersResult.status === "fulfilled"
+        ? asArray(usersResult.value).filter(isActiveRecord).length
+        : 0,
+  };
+
+  const options = [
+    {
+      value: "All Active Users",
+      label: "All Active Users",
+      count: counts.users,
+    },
+    { value: "Active Admins", label: "Active Admins", count: counts.admins },
+  ];
+
+  const activeOptions = options.filter((option) => option.count > 0);
+  return activeOptions.length ? activeOptions : options;
 };
 
 export const createNotification = async (notification) => {
@@ -1470,6 +1706,7 @@ export const markNotificationRead = async (id) => {
   try {
     const result = await superAdminRequest(`${SUPER_ADMIN_API.notifications}/${id}/read`, {
       method: "PUT",
+      body: { status: "Read", isRead: true },
     });
     return result;
   } catch (error) {
@@ -1798,16 +2035,14 @@ export const updatePaymentSettings = async (settings) => {
 };
 
 export const fetchDashboardData = async () => {
-  const [dashboard, summary, reportsSummary, revenueTrend, userActivity, dashboardActivities, auditLogs, loginHistory, billing] = await Promise.allSettled([
+  const [dashboard, summary, reportsSummary, revenueTrend, userActivity, auditLogs, loginHistory] = await Promise.allSettled([
     superAdminRequestFirst([SUPER_ADMIN_API.dashboard, SUPER_ADMIN_API.dashboardCompat]),
     superAdminRequestFirst([SUPER_ADMIN_API.dashboardSummary, SUPER_ADMIN_API.dashboardSummaryCompat]),
     superAdminRequest(SUPER_ADMIN_API.reportsSummary),
     superAdminRequest(SUPER_ADMIN_API.reportsRevenueTrend),
     superAdminRequest(SUPER_ADMIN_API.reportsUserActivity),
-    superAdminRequest(SUPER_ADMIN_API.activities),
     superAdminRequest(SUPER_ADMIN_API.auditLogs),
     superAdminRequest(SUPER_ADMIN_API.loginHistory),
-    superAdminRequest(SUPER_ADMIN_API.billing),
   ]);
 
   const dashboardData = dashboard.status === "fulfilled" ? asObject(dashboard.value) : {};
@@ -1817,29 +2052,22 @@ export const fetchDashboardData = async () => {
   };
   const revenueData = revenueTrend.status === "fulfilled" ? revenueTrend.value : [];
   const reportActivityRows = userActivity.status === "fulfilled" ? asArray(userActivity.value).map(normalizeActivity) : [];
-  const dashboardActivityRows =
-    dashboardActivities.status === "fulfilled" ? asArray(dashboardActivities.value).map(normalizeActivity) : [];
   const auditActivityRows =
     auditLogs.status === "fulfilled" ? asArray(auditLogs.value).map(normalizeAuditLog).map(auditLogToDashboardActivity) : [];
   const loginActivityRows =
     loginHistory.status === "fulfilled" ? asArray(loginHistory.value).map(normalizeLoginLog).map(auditLogToDashboardActivity) : [];
   const localActivityRows = readLocalList(LOCAL_AUDIT_LOGS_KEY).map(normalizeAuditLog).map(auditLogToDashboardActivity);
-  const billingRows = billing.status === "fulfilled" ? asArray(billing.value) : [];
-  const totalRevenue = billingRows.reduce((sum, item) => sum + getBillingAmount(item), 0);
   const nextSummary = {
     ...summaryData,
-    totalRevenue: getDashboardMetric({ ...dashboardData, ...summaryData }, ["totalRevenue", "revenue", "revenueSummary"]) || totalRevenue,
+    totalRevenue: getDashboardMetric({ ...dashboardData, ...summaryData }, ["totalRevenue", "revenue", "revenueSummary"]),
   };
 
   return {
     dashboard: dashboardData,
     summary: nextSummary,
-    revenueData: asArray(revenueData).length
-      ? asArray(revenueData).map(normalizeRevenuePoint)
-      : buildRevenueChart(billingRows),
+    revenueData: buildMonthlyRevenueRows(asArray(revenueData)),
     activities: buildDashboardActivities(
       localActivityRows,
-      dashboardActivityRows,
       auditActivityRows,
       loginActivityRows,
       reportActivityRows
@@ -1850,24 +2078,21 @@ export const fetchDashboardData = async () => {
       reportsSummary.status === "rejected" &&
       revenueTrend.status === "rejected" &&
       userActivity.status === "rejected" &&
-      dashboardActivities.status === "rejected" &&
       auditLogs.status === "rejected" &&
-      loginHistory.status === "rejected" &&
-      billing.status === "rejected"
+      loginHistory.status === "rejected"
         ? dashboard.reason.message
         : "",
   };
 };
 
 export const fetchReports = async () => {
-  const [summary, revenueTrend, topClinics, userActivity, revenue, activity, billing, clinics, admins, users] = await Promise.allSettled([
+  const [summary, revenueTrend, topClinics, userActivity, revenue, activity, clinics, admins, users] = await Promise.allSettled([
     superAdminRequest(SUPER_ADMIN_API.reportsSummary),
     superAdminRequest(SUPER_ADMIN_API.reportsRevenueTrend),
     superAdminRequest(SUPER_ADMIN_API.reportsTopClinics),
     superAdminRequest(SUPER_ADMIN_API.reportsUserActivity),
     superAdminRequest(SUPER_ADMIN_API.reportsRevenue),
     superAdminRequest(SUPER_ADMIN_API.reportsActivity),
-    superAdminRequest(SUPER_ADMIN_API.billing),
     superAdminRequest(SUPER_ADMIN_API.clinics),
     superAdminRequest(SUPER_ADMIN_API.admins),
     superAdminRequest(SUPER_ADMIN_API.users),
@@ -1886,23 +2111,18 @@ export const fetchReports = async () => {
       : userActivity.status === "fulfilled"
         ? asArray(userActivity.value)
         : [];
-  const billingRows = billing.status === "fulfilled" ? asArray(billing.value) : [];
   const clinicRows = clinics.status === "fulfilled" ? asArray(clinics.value) : [];
   const adminRows = admins.status === "fulfilled" ? asArray(admins.value) : [];
   const userRows = users.status === "fulfilled" ? asArray(users.value) : [];
   const rows = topClinicRows.length
-    ? enrichReportRows({ rows: topClinicRows, clinicRows, adminRows, userRows, billingRows })
+    ? enrichReportRows({ rows: topClinicRows, clinicRows, adminRows, userRows })
     : revenueRows.length
-      ? enrichReportRows({ rows: revenueRows, clinicRows, adminRows, userRows, billingRows })
-    : buildAdminRevenueRows({ billingRows, clinicRows, adminRows, userRows });
+      ? enrichReportRows({ rows: revenueRows, clinicRows, adminRows, userRows })
+    : buildAdminRevenueRows({ clinicRows, adminRows, userRows });
 
   return {
     rows,
-    chartData: revenueRows.length
-      ? revenueRows.map(normalizeRevenuePoint)
-      : activityRows.length
-        ? activityRows.map(normalizeRevenuePoint)
-      : buildRevenueChart(billingRows),
+    chartData: mergeReportChartData({ revenueRows, activityRows, rows }),
     error:
       summary.status === "rejected" &&
       revenueTrend.status === "rejected" &&
@@ -1910,7 +2130,6 @@ export const fetchReports = async () => {
       userActivity.status === "rejected" &&
       revenue.status === "rejected" &&
       activity.status === "rejected" &&
-      billing.status === "rejected" &&
       clinics.status === "rejected" &&
       admins.status === "rejected"
         ? revenueTrend.reason?.message || revenue.reason.message

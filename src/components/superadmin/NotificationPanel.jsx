@@ -5,6 +5,8 @@ function NotificationPanel({ items = [] }) {
     return <div className="sa-state">No notifications available.</div>;
   }
 
+  const isRead = (item = {}) => String(item.status || "").toLowerCase() === "read";
+
   return (
     <div className="sa-notification-list">
       {items.map((item) => (
@@ -14,8 +16,8 @@ function NotificationPanel({ items = [] }) {
             <p>{item.message}</p>
             <span>{item.targetUsers}</span>
           </div>
-          <span className={`sa-badge ${item.status === "Sent" ? "is-active" : "is-muted"}`}>
-            {item.status}
+          <span className={`sa-badge ${isRead(item) ? "is-muted" : "is-active"}`}>
+            {isRead(item) ? "Read" : "Unread"}
           </span>
         </div>
       ))}

@@ -36,6 +36,11 @@ import {
   formatCompactIndianCurrency,
   formatIndianCurrency,
 } from "../utils/format";
+import {
+  hasAdminPermission,
+  requireAdminPermission,
+  ADMIN_PERMISSION_DENIED_MESSAGE,
+} from "../utils/adminPermissions";
 
 /* ================= API ================= */
 
@@ -79,6 +84,23 @@ function Dashboard() {
   const [loading,
     setLoading] =
     useState(true);
+  const [permissionError, setPermissionError] =
+    useState("");
+  const canCreate =
+    hasAdminPermission("Create");
+
+  const openAddDoctor = () => {
+    if (
+      !requireAdminPermission(
+        "Create",
+        setPermissionError
+      )
+    )
+      return;
+
+    setPermissionError("");
+    navigate("/doctors/add");
+  };
 
   /* ================= LOAD DASHBOARD ================= */
 
@@ -356,15 +378,21 @@ function Dashboard() {
         <button
           type="button"
           className="dashboard-action-button"
-          onClick={() =>
-            navigate("/doctors/add")
-          }
+          onClick={openAddDoctor}
+          disabled={!canCreate}
+          title={canCreate ? "Add doctor" : "Create permission required"}
         >
           <UserPlus size={16} />
           Add Doctor
         </button>
 
       </div>
+
+      {permissionError ? (
+        <div className="dashboard-permission-error">
+          {permissionError || ADMIN_PERMISSION_DENIED_MESSAGE}
+        </div>
+      ) : null}
 
       {/* STATS */}
 
