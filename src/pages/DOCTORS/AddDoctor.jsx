@@ -494,7 +494,7 @@ function AddDoctor() {
         max: 99,
       }),
       fees: validateNumeric(form.fees, "Fees"),
-      email: validateGmail(form.email),
+      email: validateGmail(form.email, 'Email', { strict: false }),
       phone: validateMobile(form.phone, "Phone"),
     };
 

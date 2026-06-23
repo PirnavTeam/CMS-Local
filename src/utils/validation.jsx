@@ -1,6 +1,6 @@
 export const GMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@gmail\.com$/;
 export const INDIAN_MOBILE_PATTERN = /^[6-9]\d{9}$/;
-export const ALPHA_PATTERN = /^[A-Za-z\s.]+$/;
+export const ALPHA_PATTERN = /^[A-Za-z\s.'-]+$/;
 export const STRONG_PASSWORD_PATTERN =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 export const ADDRESS_TEXT_PATTERN = /^[A-Za-z0-9\s.,/#-]+$/;
@@ -21,7 +21,7 @@ export const onlyIndianMobileValue = (value) => {
 };
 
 export const onlyAlpha = (value) =>
-  String(value ?? "").replace(/[^A-Za-z\s.]/g, "");
+  String(value ?? "").replace(/[^A-Za-z\s.'-]/g, "");
 
 export const onlyAddressText = (value) =>
   String(value ?? "").replace(/[^A-Za-z0-9\s.,/#-]/g, "");

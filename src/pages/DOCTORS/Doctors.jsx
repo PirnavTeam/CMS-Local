@@ -7,7 +7,6 @@ import {
   Trash2,
   Calendar,
   X,
-  Camera,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AuthImage, {
@@ -163,7 +162,7 @@ const validateEditForm = (form) => {
     integer: true,
   });
   errors.fees = validateNumeric(form.fees, "Fees");
-  errors.email = validateGmail(form.email);
+  errors.email = validateGmail(form.email, 'Email', { strict: false });
   errors.phone = validateMobile(form.phone, "Phone");
   errors.password = validateStrongPassword(form.password, "Password", {
     required: false,
@@ -821,23 +820,7 @@ function Doctors() {
                       display: "flex",
                     }}
                   />
-                  <button
-                    type="button"
-                    className="doctor-edit-image-btn"
-                    onClick={() => editImageInputRef.current?.click()}
-                    aria-label="Upload doctor image"
-                  >
-                    <Camera size={14} />
-                  </button>
                 </div>
-                <input
-                  ref={editImageInputRef}
-                  type="file"
-                  name="Image"
-                  accept="image/*"
-                  className="doctor-edit-image-input"
-                  onChange={handleEditImageChange}
-                />
               </div>
 
               <div className="doctor-edit-grid">

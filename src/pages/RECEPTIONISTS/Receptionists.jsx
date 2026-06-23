@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import "./Receptionists.css";
 import { apiUrl } from "../../config/api";
-import PasswordField from "../../components/PasswordField";
 import { useToast } from "../../components/ToastProvider";
 import {
   onlyAlpha,
@@ -19,7 +18,6 @@ import {
   validateAlpha,
   validateGmail,
   validateMobile,
-  validateStrongPassword,
 } from "../../utils/validation";
 import {
   getClinicDisplayName,
@@ -55,7 +53,6 @@ const getEmptyForm = () => ({
   name: "",
   email: "",
   phone: "",
-  password: "",
 });
 
 const parseReceptionistsResponse = (data) => {
@@ -183,7 +180,6 @@ function Receptionists() {
       name: receptionist?.name || "",
       email: receptionist?.email || "",
       phone: receptionist?.phone || "",
-      password: "",
     });
     setFieldErrors({});
     setError("");
@@ -230,9 +226,6 @@ function Receptionists() {
     nextErrors.name = validateAlpha(form.name, "Name");
     nextErrors.email = validateGmail(form.email);
     nextErrors.phone = validateMobile(form.phone, "Phone");
-    nextErrors.password = validateStrongPassword(form.password, "Password", {
-      required: !editingReceptionist,
-    });
 
     if (!hospitalId) {
       nextErrors.form = "Clinic not found. Please login again.";
@@ -263,12 +256,7 @@ function Receptionists() {
       name: form.name.trim(),
       email: form.email.trim(),
       phone: form.phone.trim(),
-      password: form.password,
       hospitalId,
-      hospitalName: clinicDisplayName,
-      clinicName: clinicDisplayName,
-      adminEmail: localStorage.getItem("adminEmail") || "",
-      adminName: localStorage.getItem("adminName") || "",
     };
 
     try {
@@ -573,26 +561,6 @@ function Receptionists() {
                 {fieldErrors.phone ? (
                   <span className="receptionists-field-error">
                     {fieldErrors.phone}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="receptionists-field">
-                <label htmlFor="receptionist-password">Password</label>
-                <PasswordField
-                  id="receptionist-password"
-                  value={form.password}
-                  onChange={(event) => updateField("password", event.target.value)}
-                  className={fieldErrors.password ? "is-invalid" : ""}
-                  placeholder={
-                    editingReceptionist ? "Leave blank if unchanged" : ""
-                  }
-                  disabled={saving}
-                  autoComplete="new-password"
-                />
-                {fieldErrors.password ? (
-                  <span className="receptionists-field-error">
-                    {fieldErrors.password}
                   </span>
                 ) : null}
               </div>
