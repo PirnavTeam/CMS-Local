@@ -96,7 +96,7 @@ const normalizeOverview = (data) => ({
 
 const updateAppointmentStatusAPI = async (appointmentId, newStatus, headers = {}) => {
   if (!appointmentId) return null;
-  
+
   const defaultHeaders = {
     "Content-Type": "application/json",
     "ngrok-skip-browser-warning": "true",
@@ -124,7 +124,7 @@ const updateAppointmentStatusAPI = async (appointmentId, newStatus, headers = {}
       console.warn(`Failed to update status at ${url}:`, err.message);
     }
   }
-  
+
   console.warn(`Could not update appointment ${appointmentId} to status "${newStatus}"`);
   return { status: newStatus };
 };
@@ -263,7 +263,7 @@ function Consultation() {
             rawAppointments,
             getLoggedInDoctor()
           );
-          
+
           apiAppointments = rawAppointments.map((item) =>
             normalizeAppointment(item, {
               patientId: routeState.patientId || routeAppointment?.patientId,
@@ -505,9 +505,8 @@ function Consultation() {
           <React.Fragment key={label}>
             <div className="cn-step">
               <div
-                className={`cn-step-circle ${
-                  i < step ? "done" : i === step ? "active" : ""
-                }`}
+                className={`cn-step-circle ${i < step ? "done" : i === step ? "active" : ""
+                  }`}
               >
                 {i < step ? "✓" : i + 1}
               </div>
