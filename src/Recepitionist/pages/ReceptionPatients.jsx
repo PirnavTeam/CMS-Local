@@ -351,9 +351,9 @@ function ReceptionPatients() {
   useEffect(() => {
     const addressParts = form.addressParts || emptyAddressParts;
     const nextAddress = buildAddress(addressParts);
-    if (form.address !== nextAddress) {
-      setForm((current) => ({ ...current, address: nextAddress }));
-    }
+    setForm((current) =>
+      current.address === nextAddress ? current : { ...current, address: nextAddress }
+    );
   }, [form.addressParts]);
 
   useEffect(() => {
