@@ -6,6 +6,8 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  ToggleLeft,
+  ToggleRight,
   UserCheck,
   X,
 } from "lucide-react";
@@ -354,6 +356,65 @@ function Receptionists() {
     }
   };
 
+  const toggleReceptionistStatus = async (receptionist) => {
+    if (!receptionist?.id || deletingId) return;
+    if (!canEditReceptionist) {
+      toast.error("Edit permission is disabled by Super Admin.");
+      return;
+    }
+
+    const nextStatus = receptionist.isActive ? "Inactive" : "Active";
+    setDeletingId(receptionist.id);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(`${RECEPTIONIST_API}/${receptionist.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: JSON.stringify({
+          ...receptionist,
+          isActive: nextStatus === "Active",
+          status: nextStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          await parseErrorMessage(response, "Unable to update receptionist status.")
+        );
+      }
+
+      setReceptionists((previous) =>
+        previous.map((item) =>
+          String(item.id) === String(receptionist.id)
+            ? { ...item, isActive: nextStatus === "Active" }
+            : item
+        )
+      );
+      setSuccess(
+        nextStatus === "Active"
+          ? "Receptionist activated successfully"
+          : "Receptionist deactivated successfully"
+      );
+      toast.success(
+        nextStatus === "Active"
+          ? "Receptionist activated successfully"
+          : "Receptionist deactivated successfully"
+      );
+    } catch (toggleError) {
+      const message =
+        toggleError.message || "Unable to update receptionist status.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const handleDelete = async (receptionist) => {
     if (!receptionist?.id || deletingId) return;
     if (!canDeleteReceptionist) {
@@ -451,6 +512,7 @@ function Receptionists() {
 
       <div className="receptionists-table">
         <div className="receptionists-thead">
+          <span>S.No.</span>
           <span>Name</span>
           <span>Email</span>
           <span>Phone</span>
@@ -463,7 +525,7 @@ function Receptionists() {
           <div className="receptionists-empty">No receptionists found.</div>
         ) : null}
 
-        {filteredReceptionists.map((receptionist) => {
+        {filteredReceptionists.map((receptionist, index) => {
           const initials =
             (receptionist.name || "R")
               .split(" ")
@@ -480,6 +542,7 @@ function Receptionists() {
 
           return (
             <div className="receptionists-row" key={receptionist.id}>
+              <span>{index + 1}</span>
               <div className="receptionists-name-cell">
                 <div className="receptionists-avatar">{initials}</div>
                 <div>
@@ -515,6 +578,16 @@ function Receptionists() {
                   title={canEditReceptionist ? "Edit receptionist" : permissionDisabledTitle}
                 >
                   <Pencil size={14} />
+                </button>
+
+                <button
+                  type="button"
+                  className="receptionists-action-button"
+                  onClick={() => toggleReceptionistStatus(receptionist)}
+                  disabled={!canEditReceptionist || isDeleting}
+                  title={canEditReceptionist ? (receptionist.isActive ? "Deactivate receptionist" : "Activate receptionist") : permissionDisabledTitle}
+                >
+                  {receptionist.isActive ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                 </button>
 
                 <button

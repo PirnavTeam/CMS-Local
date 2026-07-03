@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bell, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { fetchNotifications, markNotificationRead, deleteNotification } from "../pages/SUPERADMIN/superAdminApi";
+import { fetchNotifications, markNotificationRead } from "../pages/SUPERADMIN/superAdminApi";
 import { Trash2 } from "lucide-react";
 import "./NotificationPopup.css";
 
@@ -31,6 +31,7 @@ const getCurrentUserKey = () =>
     .replace(/[^a-z0-9]+/g, "_") || "current_user";
 
 const getReadStorageKey = () => `read_notifications_${getCurrentUserKey()}`;
+const getDeletedStorageKey = () => `deleted_notifications_${getCurrentUserKey()}`;
 
 const getNotificationKey = (notification = {}) =>
   String(
@@ -52,11 +53,32 @@ const readNotificationKeys = () => {
   }
 };
 
+const readDeletedNotificationKeys = () => {
+  try {
+    const value = JSON.parse(localStorage.getItem(getDeletedStorageKey()) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+};
+
 const saveReadNotificationKey = (notification) => {
   const key = getNotificationKey(notification);
   const keys = new Set(readNotificationKeys());
   keys.add(key);
   localStorage.setItem(getReadStorageKey(), JSON.stringify(Array.from(keys)));
+};
+
+const saveDeletedNotificationKey = (notification) => {
+  const key = getNotificationKey(notification);
+  const keys = new Set(readDeletedNotificationKeys());
+  keys.add(key);
+  localStorage.setItem(getDeletedStorageKey(), JSON.stringify(Array.from(keys)));
+};
+
+const isDeletedNotification = (notification = {}) => {
+  const deletedKeys = new Set(readDeletedNotificationKeys());
+  return deletedKeys.has(getNotificationKey(notification));
 };
 
 const isSentNotification = (notification = {}) =>
@@ -128,7 +150,12 @@ function NotificationPopup({ isSuperAdmin = false }) {
       const items = await fetchNotifications();
       const readKeys = new Set(readNotificationKeys());
       const filtered = items
-        .filter((item) => isVisibleNotification(item) && (isSuperAdmin || matchesTargetUsers(item, role)))
+        .filter(
+          (item) =>
+            !isDeletedNotification(item) &&
+            isVisibleNotification(item) &&
+            (isSuperAdmin || matchesTargetUsers(item, role))
+        )
         .map((item) =>
           readKeys.has(getNotificationKey(item)) && !isReadNotification(item)
             ? { ...item, status: "Read" }
@@ -286,12 +313,13 @@ function NotificationPopup({ isSuperAdmin = false }) {
                         <button
                           type="button"
                           className="notification-delete-icon"
-                          onClick={async () => {
-                            try {
-                              if (activeNotification?.id) await deleteNotification(activeNotification.id);
-                              setNotifications((current) => current.filter((n) => getNotificationKey(n) !== getNotificationKey(activeNotification)));
-                              setActiveNotification(null);
-                            } catch {}
+                          onClick={() => {
+                            if (!activeNotification) return;
+                            saveDeletedNotificationKey(activeNotification);
+                            setNotifications((current) =>
+                              current.filter((n) => getNotificationKey(n) !== getNotificationKey(activeNotification))
+                            );
+                            setActiveNotification(null);
                           }}
                           aria-label="Delete notification"
                           title="Delete"

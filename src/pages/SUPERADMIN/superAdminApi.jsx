@@ -743,6 +743,9 @@ const normalizeNotificationTarget = (target = "") => {
   const normalized = value.toLowerCase();
 
   if (normalized.includes("admin")) return "Active Admins";
+  if (normalized.includes("active user") || normalized === "active users" || normalized.includes("user"))
+    return "All Active Users";
+
   return "All Active Users";
 };
 
@@ -760,7 +763,11 @@ const getNotificationTarget = (notification = {}) => {
     notification.sendTo,
   ].filter(hasValue);
 
-  if (targetValues.some((value) => String(value).toLowerCase().includes("admin"))) {
+  const candidate = targetValues.find((value) =>
+    String(value || "").toLowerCase().includes("admin")
+  );
+
+  if (candidate) {
     return "Active Admins";
   }
 
@@ -793,9 +800,9 @@ const buildNotificationPayload = (notification = {}) => {
     title: String(pick(notification, ["title", "subject"], "")).trim(),
     message: String(pick(notification, ["message", "body", "description"], "")).trim(),
     targetUsers,
-    audience: targetUsers,
-    target: targetUsers,
-    recipient: targetUsers,
+    audience: audienceCode,
+    target: audienceCode,
+    recipient: audienceCode,
     targetAudience: audienceCode,
     targetRole: audienceCode,
     targetType: audienceCode,
@@ -1001,6 +1008,9 @@ const getMonthLabel = (value) => {
   const monthOnlyMatch = text.match(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*$/i);
   const date = monthOnlyMatch ? new Date(`${text} 1, ${new Date().getFullYear()}`) : value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) return "Unknown";
+  if (date.getFullYear() < 2020) {
+    date.setFullYear(new Date().getFullYear());
+  }
   return date.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
 };
 
@@ -2054,17 +2064,18 @@ export const markNotificationRead = async (id) => {
 export const deleteNotification = async (id) => {
   if (!id) return null;
 
+  const local = readLocalList(LOCAL_NOTIFICATIONS_KEY).filter((n) => n.id !== id);
+
   try {
     const result = await superAdminRequest(`${SUPER_ADMIN_API.notifications}/${id}`, {
       method: "DELETE",
     });
+    writeLocalList(LOCAL_NOTIFICATIONS_KEY, local);
     return result;
   } catch (error) {
     // fallback: remove local notification
     try {
-      const local = readLocalList(LOCAL_NOTIFICATIONS_KEY);
-      const updated = local.filter((n) => n.id !== id);
-      writeLocalList(LOCAL_NOTIFICATIONS_KEY, updated);
+      writeLocalList(LOCAL_NOTIFICATIONS_KEY, local);
       return { id };
     } catch {
       throw error;
@@ -2568,6 +2579,50 @@ export const updatePaymentSettings = async (settings) => {
   return result;
 };
 
+const isAdminType = (value = "") => {
+  const role = String(value || "").trim().toLowerCase();
+  return role === "admin" || role === "clinic admin";
+};
+
+const getUserAdminRole = (user = {}) =>
+  [user.type, user.role, user.raw?.type, user.raw?.role, user.raw?.roleName].find(isAdminType) || "";
+
+const getDashboardAdminKey = (item = {}) =>
+  String(item.email || item.id || item.name || item.raw?.email || item.raw?.id || "")
+    .trim()
+    .toLowerCase();
+
+const countDashboardAdmins = async () => {
+  try {
+    const [adminsResult, usersResult] = await Promise.allSettled([
+      superAdminRequest(SUPER_ADMIN_API.admins),
+      superAdminRequest(SUPER_ADMIN_API.users),
+    ]);
+
+    const adminRows = adminsResult.status === "fulfilled" ? asArray(adminsResult.value) : [];
+    const userRows = usersResult.status === "fulfilled" ? asArray(usersResult.value) : [];
+    const rows = new Map();
+
+    adminRows.forEach((admin) => {
+      const key = getDashboardAdminKey(admin);
+      if (!key) return;
+      rows.set(key, admin);
+    });
+
+    userRows
+      .filter((user) => !user.isDeleted && getUserAdminRole(user))
+      .forEach((user) => {
+        const key = getDashboardAdminKey(user);
+        if (!key) return;
+        rows.set(key, user);
+      });
+
+    return rows.size;
+  } catch {
+    return 0;
+  }
+};
+
 export const fetchDashboardData = async () => {
   const [dashboard, summary, reportsSummary, revenueTrend, userActivity, auditLogs, loginHistory] = await Promise.allSettled([
     superAdminRequestFirst([SUPER_ADMIN_API.dashboard, SUPER_ADMIN_API.dashboardCompat]),
@@ -2591,15 +2646,27 @@ export const fetchDashboardData = async () => {
   const loginActivityRows =
     loginHistory.status === "fulfilled" ? asArray(loginHistory.value).map(normalizeLoginLog).map(auditLogToDashboardActivity) : [];
   const localActivityRows = readLocalList(LOCAL_AUDIT_LOGS_KEY).map(normalizeAuditLog).map(auditLogToDashboardActivity);
+  const adminCount = await countDashboardAdmins();
   const nextSummary = {
     ...summaryData,
     totalRevenue: getDashboardMetric({ ...dashboardData, ...summaryData }, ["totalRevenue", "revenue", "revenueSummary"]),
+    totalAdmins: adminCount,
+    admins: adminCount,
+    adminCount,
   };
+  const dashboardRevenueData = buildMonthlyRevenueRows(asArray(revenueData));
+  const totalUsers = getDashboardMetric(
+    { ...dashboardData, ...nextSummary },
+    ["totalUsers", "users", "userCount"]
+  );
 
   return {
     dashboard: dashboardData,
     summary: nextSummary,
-    revenueData: buildMonthlyRevenueRows(asArray(revenueData)),
+    revenueData: dashboardRevenueData.map((point) => ({
+      ...point,
+      users: toNumber(point.users) || totalUsers,
+    })),
     activities: buildDashboardActivities(
       localActivityRows,
       auditActivityRows,

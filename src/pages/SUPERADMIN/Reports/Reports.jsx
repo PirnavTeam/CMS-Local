@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { BarChart3, Download, FileText, Receipt, Search, Users } from "lucide-react";
+import { BarChart3, Download, Receipt, Search, Users } from "lucide-react";
 import Header from "../../../components/superadmin/Header";
 import Charts from "../../../components/superadmin/Charts";
 import DashboardCards from "../../../components/superadmin/DashboardCards";
@@ -18,7 +18,6 @@ const downloadFile = (filename, content, type) => {
   URL.revokeObjectURL(url);
 };
 
-const csvEscape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
 const htmlEscape = (value) =>
   String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -134,20 +133,18 @@ function Reports() {
   };
 
   const columns = [
+    {
+      key: "serial",
+      label: "S.No.",
+      width: "minmax(60px, 0.4fr)",
+      render: (_item, index) => index + 1,
+    },
     { key: "adminName", label: "Admin" },
     { key: "name", label: "Clinic" },
     {
       key: "revenue",
       label: "Total Revenue",
       render: (clinic) => formatIndianCurrency(clinic.revenue),
-    },
-    {
-      key: "invoiceCount",
-      label: "Invoices",
-      render: (clinic) =>
-        clinic.invoiceCount !== undefined && clinic.invoiceCount !== null && clinic.invoiceCount !== ""
-          ? Number(clinic.invoiceCount).toLocaleString("en-IN")
-          : "-",
     },
     {
       key: "users",
@@ -199,13 +196,11 @@ function Reports() {
     const revenueRows = filteredRows.filter((row) => toNumber(row.revenue) > 0);
     const userRows = revenueRows.length ? revenueRows : filteredRows;
     const totalRevenue = filteredRows.reduce((sum, row) => sum + toNumber(row.revenue), 0);
-    const invoiceCount = filteredRows.reduce((sum, row) => sum + toNumber(row.invoiceCount), 0);
     const userCount = userRows.reduce((sum, row) => sum + toNumber(row.users), 0);
     const activeClinics = filteredRows.filter((row) => row.status === "Active").length;
 
     return {
       totalRevenue,
-      invoiceCount,
       userCount,
       activeClinics,
       clinicCount: filteredRows.length,
@@ -219,12 +214,6 @@ function Reports() {
         value: formatIndianCurrency(reportSummary.totalRevenue),
         icon: Receipt,
         tone: "teal",
-      },
-      {
-        label: "Invoices",
-        value: reportSummary.invoiceCount.toLocaleString("en-IN"),
-        icon: FileText,
-        tone: "blue",
       },
       {
         label: "Users",
@@ -249,7 +238,6 @@ function Reports() {
         "Admin Email": row.adminEmail || "-",
         Clinic: row.name || "-",
         Revenue: formatIndianCurrency(row.revenue),
-        Invoices: row.invoiceCount || 0,
         Users: row.users || 0,
         Status: row.status || "-",
         Performance: getPerformance(row),
@@ -262,7 +250,6 @@ function Reports() {
       filteredChartData.map((point) => ({
         Period: point.name || "-",
         Revenue: formatIndianCurrency(point.revenue),
-        Invoices: point.invoices || 0,
         Users: point.users || 0,
       })),
     [filteredChartData]
@@ -271,7 +258,6 @@ function Reports() {
   const summaryRows = useMemo(
     () => [
       { Metric: "Total Revenue", Value: formatIndianCurrency(reportSummary.totalRevenue) },
-      { Metric: "Invoices", Value: reportSummary.invoiceCount.toLocaleString("en-IN") },
       { Metric: "Users", Value: reportSummary.userCount.toLocaleString("en-IN") },
       { Metric: "Active Clinics", Value: `${reportSummary.activeClinics}/${reportSummary.clinicCount}` },
       { Metric: "Date Range", Value: `${startDate || "All"} to ${endDate || "All"}` },
@@ -285,13 +271,12 @@ function Reports() {
 
   const exportExcel = () => {
     const summaryHtml = buildRowsHtml(summaryRows, ["Metric", "Value"]);
-    const chartHtml = buildRowsHtml(chartRows, ["Period", "Revenue", "Invoices", "Users"]);
+    const chartHtml = buildRowsHtml(chartRows, ["Period", "Revenue", "Users"]);
     const detailHtml = buildRowsHtml(exportRows, [
       "Admin",
       "Admin Email",
       "Clinic",
       "Revenue",
-      "Invoices",
       "Users",
       "Status",
       "Performance",
@@ -305,11 +290,11 @@ function Reports() {
           <h3>Summary Metrics</h3>
           <table border="1"><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>${summaryHtml}</tbody></table>
           <h3>Usage Analytics</h3>
-          <table border="1"><thead><tr><th>Period</th><th>Revenue</th><th>Invoices</th><th>Users</th></tr></thead><tbody>${chartHtml || '<tr><td colspan="4">No chart data found.</td></tr>'}</tbody></table>
+          <table border="1"><thead><tr><th>Period</th><th>Revenue</th><th>Users</th></tr></thead><tbody>${chartHtml || '<tr><td colspan="3">No chart data found.</td></tr>'}</tbody></table>
           <h3>Filtered Report Data</h3>
           <table border="1">
-            <thead><tr><th>Admin</th><th>Admin Email</th><th>Clinic</th><th>Revenue</th><th>Invoices</th><th>Users</th><th>Status</th><th>Performance</th></tr></thead>
-            <tbody>${detailHtml || '<tr><td colspan="8">No report records found.</td></tr>'}</tbody>
+            <thead><tr><th>Admin</th><th>Admin Email</th><th>Clinic</th><th>Revenue</th><th>Users</th><th>Status</th><th>Performance</th></tr></thead>
+            <tbody>${detailHtml || '<tr><td colspan="7">No report records found.</td></tr>'}</tbody>
           </table>
         </body>
       </html>
@@ -317,31 +302,14 @@ function Reports() {
     downloadFile("superadmin-reports.xls", workbook, "application/vnd.ms-excel;charset=utf-8");
   };
 
-  const exportCsv = () => {
-    const header = ["Admin", "Admin Email", "Clinic", "Revenue", "Invoices", "Users", "Status", "Performance"];
-    const body = filteredRows.map((row) => [
-      row.adminName,
-      row.adminEmail,
-      row.name,
-      row.revenue,
-      row.invoiceCount,
-      row.users,
-      row.status,
-      getPerformance(row),
-    ]);
-    const csv = [header, ...body].map((line) => line.map(csvEscape).join(",")).join("\n");
-    downloadFile("superadmin-reports.csv", csv, "text/csv;charset=utf-8");
-  };
-
   const exportPdf = () => {
     const summaryHtml = buildRowsHtml(summaryRows, ["Metric", "Value"]);
-    const chartHtml = buildRowsHtml(chartRows, ["Period", "Revenue", "Invoices", "Users"]);
+    const chartHtml = buildRowsHtml(chartRows, ["Period", "Revenue", "Users"]);
     const rowsHtml = buildRowsHtml(exportRows, [
       "Admin",
       "Admin Email",
       "Clinic",
       "Revenue",
-      "Invoices",
       "Users",
       "Status",
       "Performance",
@@ -361,7 +329,7 @@ function Reports() {
             table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
             th, td { border: 1px solid #dbe3ed; padding: 10px; text-align: left; font-size: 12px; }
             th { background: #f1f5f9; }
-            .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
+            .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
             .metric { border: 1px solid #dbe3ed; padding: 12px; border-radius: 8px; }
             .metric b { display: block; font-size: 16px; }
             .metric span { color: #475569; font-size: 11px; }
@@ -376,7 +344,6 @@ function Reports() {
           <p>Generated ${new Date().toLocaleString("en-IN")}</p>
           <div class="metrics">
             <div class="metric"><b>${formatIndianCurrency(reportSummary.totalRevenue)}</b><span>Total Revenue</span></div>
-            <div class="metric"><b>${reportSummary.invoiceCount.toLocaleString("en-IN")}</b><span>Invoices</span></div>
             <div class="metric"><b>${reportSummary.userCount.toLocaleString("en-IN")}</b><span>Users</span></div>
             <div class="metric"><b>${reportSummary.activeClinics}/${reportSummary.clinicCount}</b><span>Active Clinics</span></div>
           </div>
@@ -399,8 +366,8 @@ function Reports() {
             }
           </div>
           <table>
-            <thead><tr><th>Period</th><th>Revenue</th><th>Invoices</th><th>Users</th></tr></thead>
-            <tbody>${chartHtml || '<tr><td colspan="4">No chart data found.</td></tr>'}</tbody>
+            <thead><tr><th>Period</th><th>Revenue</th><th>Users</th></tr></thead>
+            <tbody>${chartHtml || '<tr><td colspan="3">No chart data found.</td></tr>'}</tbody>
           </table>
           <h2>Filtered Report Data</h2>
           <table>
@@ -410,13 +377,12 @@ function Reports() {
                 <th>Email</th>
                 <th>Clinic</th>
                 <th>Revenue</th>
-                <th>Invoices</th>
                 <th>Users</th>
                 <th>Status</th>
                 <th>Performance</th>
               </tr>
             </thead>
-            <tbody>${rowsHtml || '<tr><td colspan="8">No report records found.</td></tr>'}</tbody>
+            <tbody>${rowsHtml || '<tr><td colspan="7">No report records found.</td></tr>'}</tbody>
           </table>
         </body>
       </html>
@@ -492,7 +458,7 @@ function Reports() {
             ? "Date-filtered revenue chart and table."
             : activeTab === "User Activity"
               ? "Recent platform user and admin activity."
-              : "Platform revenue, users, invoices, and active clinic summary."}
+              : "Platform revenue, users, and active clinic summary."}
         </p>
         {loading ? <div className="sa-state">Loading reports...</div> : null}
         {!loading && error ? <div className="sa-state sa-state--error">{error}</div> : null}

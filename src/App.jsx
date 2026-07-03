@@ -32,7 +32,6 @@ import PatientDetails from "./pages/PATIENTS/PatientDetails";
 import PatientDashboard from "./pages/PATIENTS/PatientDashboard";
 import PatientDashboardDemo from "./pages/PATIENTS/PatientDashboardDemo";
 import PatientRegister from "./pages/PATIENTS/PatientRegister";
-
 // Optional
 import Appointments from "./pages/APPOINTMENTS/Appointments";
 import NewAppointment from "./pages/APPOINTMENTS/NewAppointment";
@@ -90,7 +89,6 @@ function App() {
           <Route path="DoctorSchedule/schedule" element={<Doctorschedulepage />} />
           <Route path="receptionists" element={<Receptionists />} />
 
-          {/* ✅ PATIENTS */}
           <Route path="patients" element={<Patients />} />
           <Route path="patients/dashboard" element={<PatientDashboard />} />
           <Route path="patients/:id" element={<PatientDetails />} /> {/* ✅ IMPORTANT */}

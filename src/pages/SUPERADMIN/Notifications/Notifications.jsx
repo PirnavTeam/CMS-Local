@@ -15,6 +15,53 @@ const defaultTargetOptions = [
   { value: "Active Admins", label: "Active Admins" },
 ];
 
+const getCurrentUserKey = () =>
+  [
+    localStorage.getItem("userEmail"),
+    localStorage.getItem("adminEmail"),
+    localStorage.getItem("doctorEmail"),
+    localStorage.getItem("receptionistEmail"),
+    localStorage.getItem("email"),
+    localStorage.getItem("superAdminRole"),
+    localStorage.getItem("adminRole"),
+    localStorage.getItem("doctorRole"),
+    localStorage.getItem("receptionistRole"),
+    localStorage.getItem("userRole"),
+  ]
+    .filter(Boolean)
+    .join("_")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_") || "current_user";
+
+const getDeletedStorageKey = () => `deleted_notifications_${getCurrentUserKey()}`;
+
+const getNotificationKey = (notification = {}) =>
+  String(
+    notification.id ||
+      [notification.title, notification.message, notification.targetUsers, notification.createdAt].join("|")
+  );
+
+const readDeletedNotificationKeys = () => {
+  try {
+    const value = JSON.parse(localStorage.getItem(getDeletedStorageKey()) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveDeletedNotificationKey = (notification = {}) => {
+  const key = getNotificationKey(notification);
+  const keys = new Set(readDeletedNotificationKeys());
+  keys.add(key);
+  localStorage.setItem(getDeletedStorageKey(), JSON.stringify(Array.from(keys)));
+};
+
+const isDeletedNotification = (notification = {}) => {
+  const keys = new Set(readDeletedNotificationKeys());
+  return keys.has(getNotificationKey(notification));
+};
+
 const emptyNotification = {
   title: "",
   targetUsers: "All Active Users",
@@ -78,7 +125,9 @@ function Notifications() {
       const role = normalizeRole(getCurrentRole());
       const isSuper = role === "superadmin";
 
-      const filtered = items.filter((it) => isVisibleNotification(it) && (isSuper || matchesTargetUsers(it, role)));
+      const filtered = items.filter(
+        (it) => !isDeletedNotification(it) && isVisibleNotification(it) && (isSuper || matchesTargetUsers(it, role))
+      );
 
       setNotifications(filtered);
     } catch (requestError) {
@@ -223,10 +272,12 @@ function Notifications() {
             onDelete={async (item) => {
               try {
                 if (item.id) await deleteNotification(item.id);
-                setNotifications((current) => current.filter((n) => n.id !== item.id));
               } catch (err) {
-                setError(err.message || "Unable to delete notification.");
+                // still hide the notification for this user if remote delete fails
+                saveDeletedNotificationKey(item);
               }
+              saveDeletedNotificationKey(item);
+              setNotifications((current) => current.filter((n) => getNotificationKey(n) !== getNotificationKey(item)));
             }}
           />
         ) : null}

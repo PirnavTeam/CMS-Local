@@ -213,10 +213,10 @@
 
 
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./Modal.css";
 import { useNavigate } from "react-router-dom";
-import { X } from "lucide-react";
+import { Camera, X } from "lucide-react";
 import { apiUrl } from "../../config/api";
 import { useToast } from "../../components/ToastProvider";
 import { getClinicDisplayName } from "../../utils/clinicDisplay";
@@ -226,6 +226,7 @@ import {
   onlyNumberValue,
   validateAlpha,
   validateGmail,
+  validateImageFile,
   validateMobile,
   validateNumeric,
   validateRequired,
@@ -355,10 +356,19 @@ const formatFeeValue = (value) => {
   return Number.isNaN(numberValue) ? text : numberValue.toFixed(2);
 };
 
+const appendDoctorFormData = (body, values) => {
+  Object.entries(values).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      body.append(key, value);
+    }
+  });
+};
+
 function AddDoctor() {
   const navigate = useNavigate();
   const toast = useToast();
   const clinicName = getClinicDisplayName({}, "Clinic");
+  const imageInputRef = useRef(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -375,6 +385,8 @@ function AddDoctor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [specializationOptions, setSpecializationOptions] =
     useState(SPECIALIZATION_OPTIONS);
   const [qualificationOptions, setQualificationOptions] =
@@ -384,6 +396,18 @@ function AddDoctor() {
   const [permissionsLoading, setPermissionsLoading] = useState(true);
   const [permissionRecord, setPermissionRecord] = useState(null);
   const canCreateDoctor = !permissionsLoading && canUsePermission(permissionRecord, "create");
+
+  const doctorInitials = useMemo(
+    () =>
+      (form.name || "D")
+        .split(" ")
+        .filter(Boolean)
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase() || "D",
+    [form.name]
+  );
 
   useEffect(() => {
     let active = true;
@@ -455,6 +479,14 @@ function AddDoctor() {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  useEffect(() => {
     let active = true;
 
     const loadPermissions = async () => {
@@ -507,6 +539,27 @@ function AddDoctor() {
     }));
   };
 
+  const handleImageChange = (event) => {
+    const nextFile = event.target.files?.[0];
+    if (!nextFile) return;
+
+    const imageError = validateImageFile(nextFile, "Profile image");
+    if (imageError) {
+      setFieldErrors((previous) => ({ ...previous, image: imageError }));
+      setError("");
+      toast.error(imageError);
+      return;
+    }
+
+    if (imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setImageFile(nextFile);
+    setImagePreview(URL.createObjectURL(nextFile));
+    setFieldErrors((previous) => ({ ...previous, image: "" }));
+  };
+
   const parseErrorMessage = async (response) => {
     const fallback = "Unable to add doctor right now.";
 
@@ -536,9 +589,10 @@ function AddDoctor() {
         integer: true,
         max: 99,
       }),
-      fees: validateNumeric(values.fees, "Fees"),
+      fees: validateNumeric(values.fees, "Consultation fee"),
       email: validateGmail(values.email, 'Email', { strict: false }),
       phone: validateMobile(values.phone, "Phone"),
+      image: validateImageFile(imageFile, "Profile image"),
     };
 
     Object.keys(nextErrors).forEach((key) => {
@@ -589,14 +643,38 @@ function AddDoctor() {
       phoneNumber: form.phone.trim(),
       isActive: form.isActive === "true",
     };
-
-    try {
-      const response = await fetch(DOCTORS_API_URL, {
+    const requestOptions = imageFile
+      ? (() => {
+        const formData = new FormData();
+        appendDoctorFormData(formData, {
+          ...body,
+          Name: body.name,
+          Specialization: body.specialization,
+          Experience: body.experience,
+          Qualification: body.qualification,
+          ConsultationFee: body.consultationFee,
+          AreaofExpertise: body.areaofExpertise,
+          Email: body.email,
+          PhoneNumber: body.phoneNumber,
+          IsActive: String(body.isActive),
+        });
+        formData.append("Image", imageFile);
+        return {
+          method: "POST",
+          body: formData,
+        };
+      })()
+      : {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
+      };
+
+    try {
+      const response = await fetch(DOCTORS_API_URL, {
+        ...requestOptions,
       });
 
       if (!response.ok) {
@@ -639,6 +717,39 @@ function AddDoctor() {
         </div>
 
         <form className="add-doctor-form" onSubmit={handleSubmit} noValidate>
+          <div className="doctor-image-upload-area">
+            <div className="doctor-image-circle">
+              {imagePreview ? (
+                <img
+                  src={imagePreview}
+                  alt="Doctor profile preview"
+                  className="doctor-image-preview"
+                />
+              ) : (
+                <span>{doctorInitials}</span>
+              )}
+              <button
+                type="button"
+                className="doctor-image-picker-btn"
+                onClick={() => imageInputRef.current?.click()}
+                title="Upload profile image"
+                aria-label="Upload profile image"
+              >
+                <Camera size={18} />
+              </button>
+              <input
+                ref={imageInputRef}
+                type="file"
+                className="doctor-image-input"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+            </div>
+          </div>
+          {fieldErrors.image ? (
+            <p className="add-doctor-form-error">{fieldErrors.image}</p>
+          ) : null}
+
           <div className="add-doctor-grid">
 
             <div className="add-doctor-input-group">
@@ -742,7 +853,7 @@ function AddDoctor() {
             </div>
 
             <div className="add-doctor-input-group">
-              <label>Doctor Fees</label>
+              <label>Consultation Fee</label>
               <input
                 name="fees"
                 type="text"
@@ -801,8 +912,8 @@ function AddDoctor() {
                 value={form.isActive}
                 onChange={handleChange}
               >
-                <option value="true">True</option>
-                <option value="false">False</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
               </select>
             </div>
 

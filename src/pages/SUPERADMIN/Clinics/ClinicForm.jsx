@@ -22,9 +22,10 @@ import {
 } from "../../../utils/indianLocations";
 import {
   onlyAlpha,
+  onlyClinicName,
   onlyAddressText,
   onlyIndianMobileValue,
-  validateAlpha,
+  validateClinicName,
   validateGmail,
   validateMobile,
   validateSelected,
@@ -170,7 +171,7 @@ function ClinicForm({ mode }) {
     let nextValue = value;
 
     if (name === "name") {
-      nextValue = onlyAlpha(value);
+      nextValue = onlyClinicName(value);
     }
 
     if (name === "contactNumber") {
@@ -288,7 +289,7 @@ function ClinicForm({ mode }) {
   const validateForm = () => {
     const addressParts = form.addressParts || emptyAddressParts;
     const nextErrors = {
-      name: validateAlpha(form.name, "Clinic name"),
+      name: validateClinicName(form.name, "Clinic name"),
       contactNumber: validateMobile(form.contactNumber, "Contact number"),
       email: validateGmail(form.email),
       status: validateSelected(form.status, "a status"),
