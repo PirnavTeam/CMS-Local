@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import Header from "../../../components/superadmin/Header";
 import DataTable from "../../../components/superadmin/DataTable";
 import SearchFilter from "../../../components/superadmin/SearchFilter";
@@ -11,6 +11,7 @@ import {
   fetchUsers,
   saveAdmin,
   syncAdminStaffClinic,
+  updateUserStatus,
 } from "../superAdminApi";
 import PasswordField from "../../../components/PasswordField";
 import { useToast } from "../../../components/ToastProvider";
@@ -31,6 +32,8 @@ const emptyAdmin = {
   role: "Admin",
   assignedClinicId: "",
   sendWelcomeEmail: true,
+  // on create we require a temporary password; on edit the form will set resetPassword:false
+  resetPassword: true,
 };
 
 const emptyAdminClinic = {
@@ -129,6 +132,36 @@ function Admins() {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
 
+  const ADMIN_SECRETS_KEY = "admin_secrets";
+
+  const readAdminSecrets = () => {
+    try {
+      const raw = localStorage.getItem(ADMIN_SECRETS_KEY) || "{}";
+      return JSON.parse(raw) || {};
+    } catch {
+      return {};
+    }
+  };
+
+  const saveAdminSecret = (email, { temporaryPassword = "", phone = "" } = {}) => {
+    if (!email) return;
+    try {
+      const key = String(email).trim().toLowerCase();
+      const all = readAdminSecrets();
+      all[key] = { temporaryPassword: String(temporaryPassword || ""), phone: String(phone || "") };
+      localStorage.setItem(ADMIN_SECRETS_KEY, JSON.stringify(all));
+    } catch {
+      // ignore
+    }
+  };
+
+  const getAdminSecret = (email) => {
+    if (!email) return null;
+    const key = String(email).trim().toLowerCase();
+    const all = readAdminSecrets();
+    return all[key] || null;
+  };
+
   const loadAdmins = async () => {
     setLoading(true);
     setError("");
@@ -142,7 +175,17 @@ function Admins() {
       const userRows = usersResult.status === "fulfilled" ? usersResult.value : [];
       const mergedRows = mergeAdmins(adminRows, userRows);
 
-      setAdmins(mergedRows);
+      // Merge locally stored admin secrets (temporary password, phone) so
+      // table and edit views can display phone numbers provided at creation
+      const mergedWithSecrets = mergedRows.map((admin) => {
+        const secret = getAdminSecret(admin.email) || {};
+        return {
+          ...admin,
+          phone: admin.phone || admin.mobileNumber || admin.raw?.phone || admin.raw?.mobileNumber || secret.phone || "",
+        };
+      });
+
+      setAdmins(mergedWithSecrets);
 
       if (!mergedRows.length && adminsResult.status === "rejected" && usersResult.status === "rejected") {
         setError(adminsResult.reason?.message || "Unable to load admins.");
@@ -182,12 +225,28 @@ function Admins() {
   const openEditForm = async (admin) => {
     setSelectedAdmin(null);
     setEditingAdminId(admin.id);
+    // prefer secrets stored locally (from create) when backend doesn't provide them
+    const secrets = getAdminSecret(admin.email) || {};
     setForm({
       fullName: admin.name || "",
       email: admin.email || "",
-      phone: admin.phone || "",
-      temporaryPassword: "",
+        phone:
+        admin.phone ||
+        admin.mobileNumber ||
+        admin.raw?.phone ||
+        admin.raw?.mobileNumber ||
+        secrets.phone ||
+        "",
+      temporaryPassword:
+        admin.temporaryPassword ||
+        admin.password ||
+        admin.raw?.temporaryPassword ||
+        admin.raw?.TemporaryPassword ||
+        secrets.temporaryPassword ||
+        "",
       role: admin.role || "Admin",
+      // don't require password change by default when editing
+      resetPassword: false,
       assignedClinicId: getAdminClinicId(admin, clinics) || "",
       sendWelcomeEmail: false,
     });
@@ -231,9 +290,11 @@ function Admins() {
       fullName: validateAlpha(form.fullName, "Full name"),
       email: validateGmail(form.email),
       phone: validateMobile(form.phone, "Phone"),
-      temporaryPassword: editingAdminId && !form.temporaryPassword
-        ? ""
-        : validateStrongPassword(form.temporaryPassword, "Temporary password"),
+      temporaryPassword: !editingAdminId
+        ? validateStrongPassword(form.temporaryPassword, "Temporary password")
+        : form.resetPassword
+        ? validateStrongPassword(form.temporaryPassword, "Temporary password")
+        : "",
       role: validateAlpha(form.role, "Role"),
       assignedClinicId: form.assignedClinicId ? "" : "Assigned clinic is required.",
     };
@@ -279,12 +340,13 @@ function Admins() {
         fullName: adminName,
         phone: adminPhone,
         email: adminEmail,
-        password: temporaryPassword,
-        temporaryPassword,
+        ...( !editingAdminId || form.resetPassword ? { password: temporaryPassword, temporaryPassword } : {} ),
         role: form.role,
         hospitalId: clinicId,
         sendWelcomeEmail: form.sendWelcomeEmail,
       }, editingAdminId || undefined);
+      // Persist temporary password and phone locally so edit view can show them
+      saveAdminSecret(adminEmail, { temporaryPassword, phone: adminPhone });
       updateCurrentAdminClinicSession(
         previousAdmin || { email: adminEmail },
         clinicId,
@@ -330,9 +392,10 @@ function Admins() {
     return admins.map((admin) => ({
       ...admin,
       assignedClinic: getAdminClinicName(admin, clinics),
-      role: "Admin",
+      phone:
+        admin.phone || admin.mobileNumber || admin.raw?.phone || admin.raw?.mobileNumber || "",
     })).filter((admin) => {
-      const matchesSearch = [admin.name, admin.email, admin.assignedClinic, admin.role]
+      const matchesSearch = [admin.name, admin.email, admin.assignedClinic, admin.phone]
         .some((value) => String(value).toLowerCase().includes(query));
       const matchesStatus = status === "All" || admin.status === status;
       return matchesSearch && matchesStatus;
@@ -362,21 +425,65 @@ function Admins() {
     }
   };
 
+  const toggleAdminStatus = async (admin) => {
+    const currentStatus = String(admin.status || "").trim().toLowerCase();
+    const nextStatus = currentStatus === "active" ? "Inactive" : "Active";
+    setError("");
+
+    try {
+      if (admin.source === "users") {
+        await updateUserStatus(admin.id, nextStatus);
+      } else {
+        await saveAdmin({
+          ...admin,
+          status: nextStatus,
+          Status: nextStatus,
+          isActive: nextStatus === "Active",
+          IsActive: nextStatus === "Active",
+          active: nextStatus === "Active",
+        }, admin.id);
+      }
+
+      setAdmins((currentAdmins) =>
+        currentAdmins.map((item) =>
+          String(item.id) === String(admin.id)
+            ? { ...item, status: nextStatus }
+            : item
+        )
+      );
+      if (selectedAdmin?.id === admin.id) {
+        setSelectedAdmin((current) =>
+          current ? { ...current, status: nextStatus } : current
+        );
+      }
+      await loadAdmins();
+    } catch (requestError) {
+      setError(requestError.message || "Unable to update admin status.");
+      toast.error(requestError.message || "Unable to update admin status.");
+    }
+  };
+
   const columns = [
+    {
+      key: "serial",
+      label: "S.No.",
+      width: "minmax(60px, 0.4fr)",
+      render: (_admin, index) => index + 1,
+    },
     { key: "name", label: "Name" },
     { key: "email", label: "Email", width: "minmax(220px, 1.5fr)", cellClassName: "sa-table-cell--wrap" },
-    { key: "assignedClinic", label: "Assigned Clinic" },
-    { key: "role", label: "Role" },
-    {
-      key: "status",
-      label: "Status",
-      width: "minmax(90px, 0.6fr)",
-      render: (admin) => (
-        <span className={`sa-badge ${admin.status === "Active" ? "is-active" : "is-danger"}`}>
-          {admin.status}
-        </span>
-      ),
-    },
+            { key: "assignedClinic", label: "Assigned Clinic" },
+            { key: "phone", label: "Mobile Number", render: (admin) => (admin.phone || admin.raw?.phone || admin.raw?.mobileNumber || "-") },
+            {
+              key: "status",
+              label: "Status",
+              width: "minmax(90px, 0.6fr)",
+              render: (admin) => (
+                <span className={`sa-badge ${admin.status === "Active" ? "is-active" : "is-danger"}`}>
+                  {admin.status}
+                </span>
+              ),
+            },
     {
       key: "actions",
       label: "Actions",
@@ -388,6 +495,13 @@ function Admins() {
           </button>
           <button className="sa-icon-btn" onClick={() => openEditForm(admin)} title="Edit admin">
             <Pencil size={15} />
+          </button>
+          <button
+            className="sa-icon-btn"
+            onClick={() => toggleAdminStatus(admin)}
+            title={admin.status === "Active" ? "Deactivate admin" : "Activate admin"}
+          >
+            {admin.status === "Active" ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
           </button>
           <button className="sa-icon-btn" onClick={() => handleDelete(admin)} title="Delete admin">
             <Trash2 size={15} />
@@ -489,7 +603,8 @@ function Admins() {
                 className={fieldErrors.temporaryPassword ? "is-invalid" : ""}
                 placeholder="Enter temporary password"
                 autoComplete="new-password"
-                required={!editingAdminId}
+                required={!editingAdminId || !!form.resetPassword}
+                disabled={editingAdminId && !form.resetPassword}
               />
               {fieldErrors.temporaryPassword ? (
                 <span className="sa-field-error">
@@ -497,6 +612,20 @@ function Admins() {
                 </span>
               ) : null}
             </div>
+            {editingAdminId ? (
+              <label className="sa-toggle-row sa-form-field-full">
+                <span>
+                  <b>Reset password</b>
+                  <small>Allow changing the password for this admin</small>
+                </span>
+                <input
+                  type="checkbox"
+                  name="resetPassword"
+                  checked={!!form.resetPassword}
+                  onChange={handleChange}
+                />
+              </label>
+            ) : null}
             <div className="sa-form-field">
               <label htmlFor="admin-role">Role</label>
               <input

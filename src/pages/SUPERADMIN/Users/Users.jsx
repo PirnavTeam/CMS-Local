@@ -15,7 +15,7 @@ import {
   onlyIndianMobileValue,
   validateAlpha,
   validateMobile,
-  validateEmailCom,
+  validateGmail,
 } from "../../../utils/validation";
 import { formatTitleCase } from "../../../utils/format";
 
@@ -36,9 +36,9 @@ const emptyUser = {
 const normalizeRoleText = (value = "") =>
   String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
 
-const isManageableAdminUser = (user = {}) => {
+const isAdminRoleUser = (user = {}) => {
   const role = normalizeRoleText(user.role || user.type || user.raw?.role || user.raw?.roleName);
-  return role === "admin" || role === "clinicadmin";
+  return role === "admin";
 };
 
 function Users() {
@@ -49,6 +49,7 @@ function Users() {
   const [showForm, setShowForm] = useState(false);
   const [editingUserId, setEditingUserId] = useState("");
   const [form, setForm] = useState(emptyUser);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -74,16 +75,12 @@ function Users() {
     setEditingUserId("");
     setSelectedUser(null);
     setForm(emptyUser);
+    setFieldErrors({});
     setShowForm(true);
     setError("");
   };
 
   const openUserDetails = async (user) => {
-    if (!isManageableAdminUser(user)) {
-      setError("Actions are available only for Admin users.");
-      return;
-    }
-
     setSelectedUser(user);
     setShowForm(false);
     setEditingUserId("");
@@ -97,7 +94,7 @@ function Users() {
   };
 
   const openEditForm = async (user) => {
-    if (!isManageableAdminUser(user)) {
+    if (!isAdminRoleUser(user)) {
       setError("Actions are available only for Admin users.");
       return;
     }
@@ -105,6 +102,7 @@ function Users() {
     setEditingUserId(user.id);
     setSelectedUser(null);
     setForm({ ...emptyUser, ...user });
+    setFieldErrors({});
     setShowForm(true);
     setError("");
 
@@ -119,6 +117,7 @@ function Users() {
     setShowForm(false);
     setEditingUserId("");
     setForm(emptyUser);
+    setFieldErrors({});
   };
 
   const handleChange = (event) => {
@@ -138,41 +137,38 @@ function Users() {
       [name]: nextValue,
       ...(name === "mobileNumber" ? { phone: nextValue } : {}),
     }));
+    setFieldErrors((current) => ({ ...current, [name]: "" }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     const nameError = validateAlpha(form.name, "Name");
-    if (nameError) {
-      setError(nameError);
-      return;
-    }
-
-    if (!form.email.trim() || (!editingUserId && !form.password)) {
-      setError(
-        editingUserId
-          ? "Email is required."
-          : "Email and password are required."
-      );
-      return;
-    }
-
+    const emailRequiredError = !form.email.trim()
+      ? "Email is required."
+      : "";
+    const passwordRequiredError = !editingUserId && !form.password
+      ? "Password is required."
+      : "";
+    const emailError = emailRequiredError || validateGmail(form.email, "Email");
     const mobileError = form.mobileNumber
       ? validateMobile(form.mobileNumber, "Mobile number")
       : "";
 
-    const emailError = validateEmailCom(form.email, "Email");
+    const nextFieldErrors = {
+      ...(nameError ? { name: nameError } : {}),
+      ...(emailError ? { email: emailError } : {}),
+      ...(mobileError ? { mobileNumber: mobileError } : {}),
+      ...(passwordRequiredError ? { password: passwordRequiredError } : {}),
+    };
 
-    if (emailError) {
-      setError(emailError);
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError("Please fix the highlighted fields.");
       return;
     }
 
-    if (mobileError) {
-      setError(mobileError);
-      return;
-    }
+    setFieldErrors({});
 
     setSaving(true);
     setError("");
@@ -203,7 +199,7 @@ function Users() {
   }, [search, status, users]);
 
   const toggleStatus = async (user) => {
-    if (!isManageableAdminUser(user)) {
+    if (!isAdminRoleUser(user)) {
       setError("Actions are available only for Admin users.");
       return;
     }
@@ -233,7 +229,7 @@ function Users() {
   };
 
   const handleDelete = async (user) => {
-    if (!isManageableAdminUser(user)) {
+    if (!isAdminRoleUser(user)) {
       setError("Actions are available only for Admin users.");
       return;
     }
@@ -263,8 +259,14 @@ function Users() {
 
   const columns = [
     {
+      key: "serial",
+      label: "S.No.",
+      width: "minmax(60px, 0.4fr)",
+      render: (_user, index) => index + 1,
+    },
+    {
       key: "name",
-      label: "User",
+      label: "Name",
       render: (user) => formatTitleCase(user.name) || "-",
     },
     { key: "email", label: "Email", width: "minmax(170px, 1.2fr)" },
@@ -289,7 +291,7 @@ function Users() {
       render: (user) => (
         <div className="sa-actions">
           {(() => {
-            const canUseRowActions = isManageableAdminUser(user);
+            const canUseRowActions = isAdminRoleUser(user);
             const disabledTitle = "Actions are available only for Admin users";
 
             return (
@@ -297,8 +299,7 @@ function Users() {
           <button
             className="sa-icon-btn"
             onClick={() => openUserDetails(user)}
-            disabled={!canUseRowActions}
-            title={canUseRowActions ? "User details" : disabledTitle}
+            title="User details"
           >
             <Eye size={15} />
           </button>
@@ -391,11 +392,30 @@ function Users() {
               <div className="sa-form-grid">
                 <div className="sa-form-field">
                   <label>Name</label>
-                  <input name="name" value={form.name} onChange={handleChange} required />
+                  <input
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                    className={fieldErrors.name ? "is-invalid" : ""}
+                  />
+                  {fieldErrors.name ? (
+                    <span className="sa-field-error">{fieldErrors.name}</span>
+                  ) : null}
                 </div>
                 <div className="sa-form-field">
                   <label>Email</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} required />
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                    className={fieldErrors.email ? "is-invalid" : ""}
+                  />
+                  {fieldErrors.email ? (
+                    <span className="sa-field-error">{fieldErrors.email}</span>
+                  ) : null}
                 </div>
                 <div className="sa-form-field">
                   <label>Clinic</label>
@@ -434,7 +454,7 @@ function Users() {
                   >
                     <option>Patient</option>
                     <option>Doctor</option>
-                    <option>Clinic Admin</option>
+                    <option>Admin</option>
                     <option>Receptionist</option>
                   </select>
                 </div>
@@ -462,7 +482,11 @@ function Users() {
                     onChange={handleChange}
                     autoComplete="new-password"
                     required={!editingUserId}
+                    className={fieldErrors.password ? "is-invalid" : ""}
                   />
+                  {fieldErrors.password ? (
+                    <span className="sa-field-error">{fieldErrors.password}</span>
+                  ) : null}
                 </div>
               </div>
               <div className="sa-page-actions" style={{ marginTop: 14 }}>
@@ -522,7 +546,7 @@ function Users() {
                 <button
                   className="sa-btn sa-btn-primary"
                   onClick={() => openEditForm(selectedUser)}
-                  disabled={!isManageableAdminUser(selectedUser)}
+                  disabled={!isAdminRoleUser(selectedUser)}
                 >
                   Edit User
                 </button>

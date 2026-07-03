@@ -23,7 +23,7 @@ import {
   Stethoscope,
   Users,
   Calendar,
-  DollarSign,
+  IndianRupee,
   CalendarCheck,
   CheckCircle,
   Clock,
@@ -375,7 +375,7 @@ function Dashboard() {
           totalRevenue
         ),
       icon:
-        DollarSign,
+        IndianRupee,
       color:
         "orange",
     },

@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, DollarSign, Stethoscope } from "lucide-react";
+import { CalendarDays, IndianRupee, Stethoscope } from "lucide-react";
 import "./Reports.css";
 
 function Reports() {
@@ -16,7 +16,7 @@ function Reports() {
     {
       title: "Revenue Report",
       desc: "Earnings, refunds, net revenue",
-      icon: <DollarSign />,
+      icon: <IndianRupee />,
       route: "/RevenueReport/daily",
 
     },

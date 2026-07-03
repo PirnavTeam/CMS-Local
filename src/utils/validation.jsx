@@ -1,4 +1,4 @@
-export const GMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@gmail\.com$/;
+export const GMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@gmail\.com$/i;
 export const INDIAN_MOBILE_PATTERN = /^[6-9]\d{9}$/;
 export const ALPHA_PATTERN = /^[A-Za-z\s.'-]+$/;
 export const STRONG_PASSWORD_PATTERN =
@@ -25,6 +25,9 @@ export const onlyAlpha = (value) =>
 
 export const onlyAddressText = (value) =>
   String(value ?? "").replace(/[^A-Za-z0-9\s.,/#-]/g, "");
+
+export const onlyClinicName = (value) =>
+  String(value ?? "").replace(/[^A-Za-z0-9\s.,'&()\-]/g, "");
 
 export const onlyNumberValue = (value) =>
   String(value ?? "").replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1");
@@ -95,6 +98,24 @@ export const validateAlpha = (value, label) => {
     : `${label} must be valid text, not random characters.`;
 };
 
+export const validateClinicName = (value, label) => {
+  const required = validateRequired(value, label);
+  if (required) return required;
+  const text = String(value).trim();
+  if (!/^[A-Za-z0-9\s.,'&()\-]+$/.test(text)) {
+    return `${label} must be valid text, not random characters.`;
+  }
+
+  if (!/\bclinic\b$/i.test(text)) {
+    return `Enter a valid clinic name (e.g., RJS Clinic, SLS clinic etc.).`;
+  }
+
+  const lettersOnly = text.replace(/[^A-Za-z]/g, "");
+  return lettersOnly.length >= 2
+    ? ""
+    : `${label} must be valid text, not random characters.`;
+};
+
 export const validateText = (value, label) => {
   const required = validateRequired(value, label);
   if (required) return required;
@@ -112,13 +133,13 @@ export const validateGmail = (value, label = "Email", { strict = true } = {}) =>
   return "";
 };
 
+const EMAIL_COM_PATTERN = /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\.com$/i;
+
 export const validateEmailCom = (value, label = "Email") => {
   const required = validateRequired(value, label);
   if (required) return required;
   const text = String(value || "").trim();
-  const basicEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!basicEmail.test(text)) return `${label} must be a valid email address.`;
-  if (!text.toLowerCase().endsWith(".com")) return `${label} must use a .com domain.`;
+  if (!EMAIL_COM_PATTERN.test(text)) return `Please enter a valid email address.`;
   return "";
 };
 
