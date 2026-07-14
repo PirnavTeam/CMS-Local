@@ -1,0 +1,323 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+@import url('./variables.css');
+@import url('./animations.css');
+@import url('./forms.css');
+
+.auth-container {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1rem;
+  position: relative;
+  overflow: auto;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+}
+
+.auth-container::before,
+.auth-container::after {
+  max-width: 100%;
+}
+
+.auth-card {
+  position: relative;
+  z-index: 3;
+  background: var(--card-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 2.4rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-card),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+  animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: calc(100vh - 3rem);
+  overflow: hidden;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.auth-card h2,
+.auth-card p.subtitle,
+.success-message,
+.auth-actions-row,
+.auth-register-row {
+  text-align: center;
+}
+
+@media (max-width: 540px) {
+  .auth-container {
+    padding: 1.2rem 0.9rem;
+  }
+
+  .auth-card {
+    padding: 1.75rem 1.4rem;
+    max-width: 100%;
+  }
+}
+
+body.auth-page-no-scroll {
+  overflow: hidden;
+}
+
+/* Background image layer */
+.auth-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: 24% center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  transform: scale(1.05);
+  filter: blur(2px) saturate(0.95);
+  opacity: 0.72;
+}
+
+/* Animated colored veil over background */
+.auth-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(-45deg,
+      rgba(15, 23, 42, 0.62),
+      rgba(19, 78, 74, 0.58),
+      rgba(14, 165, 164, 0.5),
+      rgba(34, 211, 238, 0.42));
+  background-size: 400% 400%;
+  animation: gradientBG 18s ease infinite;
+  z-index: 1;
+}
+
+/* Floating glow orbs */
+.auth-container::before,
+.auth-container::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  z-index: 2;
+  pointer-events: none;
+  animation: float 14s infinite ease-in-out alternate;
+}
+
+.auth-container::before {
+  width: 520px;
+  height: 420px;
+  background: rgba(34, 211, 238, 0.35);
+  top: -150px;
+  left: -120px;
+}
+
+.auth-container::after {
+  width: 440px;
+  height: 340px;
+  background: rgba(14, 165, 164, 0.35);
+  bottom: -120px;
+  right: -80px;
+  animation-delay: -7s;
+}
+
+/* Glassmorphic card */
+.auth-card {
+  position: relative;
+  z-index: 3;
+  background: var(--card-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 1.3rem 1.5rem 1.1rem;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: var(--shadow-card),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.6);
+  animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: none;
+  overflow: visible;
+}
+
+.auth-logo {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 0.8rem;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: #fff;
+  box-shadow: 0 10px 25px -8px rgba(14, 165, 164, 0.6);
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+.auth-card h2 {
+  margin: 0 0 0.25rem 0;
+  color: rgba(15, 23, 42, 0.55);
+  font-size: 1.38rem;
+  font-weight: 700;
+  text-align: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--primary-deep) 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-card p.subtitle {
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0 0 0.95rem;
+  font-size: 0.8rem;
+}
+
+.success-message {
+  margin: 0 0 0.9rem;
+  color: var(--success);
+  font-size: 0.82rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.forgot-password-link {
+  display: block;
+  text-align: center;
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.forgot-password-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.auth-register-row {
+  margin-top: 0.6rem;
+  text-align: center;
+}
+
+.auth-actions-row {
+  margin-top: 1rem;
+}
+
+.auth-register {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.create-account-link {
+  color: var(--primary);
+  font-weight: 700;
+  margin-left: 6px;
+  text-decoration: none;
+}
+
+.create-account-link:hover {
+  text-decoration: underline;
+}
+
+/* Wide card variant for registration pages */
+.auth-card--wide {
+  /* Narrower, centered card to match the register layout */
+  max-width: 640px;
+  padding: 2rem 2rem;
+  margin: 2rem auto;
+  border-radius: 14px;
+}
+
+/* Register grid used by patient registration (wide card) */
+.register-grid {
+  display: grid;
+  /* Two-column layout on desktop to match reference */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem 1.6rem;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .auth-card--wide {
+    max-width: 760px;
+    padding: 1.6rem;
+  }
+
+  .register-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-card--wide {
+    max-width: 420px;
+    padding: 1rem;
+  }
+
+  .register-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Slightly stronger card tint for register page to match first image */
+.auth-card--wide {
+  background: linear-gradient(180deg, rgba(248, 253, 255, 0.92), rgba(236, 251, 250, 0.9));
+  border: 1px solid rgba(255,255,255,0.45);
+}
+
+/* Full-width submit for register */
+.submit-btn--block {
+  display: block;
+  width: 100%;
+  padding: 0.95rem 1rem;
+  font-size: 1rem;
+  border-radius: 12px;
+}
+
+/* Tighter form-group spacing on wide card */
+.auth-card--wide .form-group {
+  margin-bottom: 0.6rem;
+}
+
+/* Ensure subtitle aligns nicely on wide card */
+.auth-card--wide .subtitle {
+  text-align: left;
+}
+
+/* Create account as button */
+.create-account-btn {
+  display: inline-block;
+  min-width: 132px;
+  padding: 0.48rem 0.7rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  box-shadow: 0 10px 25px -8px rgba(14,165,164,0.55);
+  transition: transform 0.18s ease, box-shadow 0.2s ease, opacity 0.18s ease;
+}
+
+.create-account-btn:hover {
+  transform: translateY(-2px);
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 1.15rem 1rem 1rem;
+    max-width: 320px;
+    border-radius: 18px;
+  }
+
+  .auth-card h2 {
+    font-size: 1.28rem;
+  }
+}

@@ -1,0 +1,248 @@
+.doctor-settings-page {
+  color: var(--app-text);
+}
+
+.doctor-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.doctor-settings-header h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.doctor-settings-header p,
+.doctor-settings-section-head p,
+.doctor-settings-profile p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+.doctor-settings-badge {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #d9e6e6;
+  background: #fff;
+  color: #0f9d9d;
+  font-weight: 700;
+  box-shadow: 0 2px 5px rgba(12, 23, 38, 0.07);
+}
+
+.doctor-settings-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.doctor-settings-profile,
+.doctor-settings-card {
+  background: #fff;
+  border: 1px solid #d8e0ea;
+  border-radius: 14px;
+  box-shadow: 0 2px 7px rgba(12, 23, 38, 0.08);
+}
+
+.doctor-settings-profile {
+  padding: 20px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.doctor-settings-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: #dff3f3;
+  color: #0f9d9d;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.doctor-settings-profile h3,
+.doctor-settings-section-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.doctor-settings-meta {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.doctor-settings-meta span {
+  min-height: 38px;
+  border: 1px solid #dce8e8;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  color: #34435a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.doctor-settings-meta svg {
+  color: #0f9d9d;
+}
+
+.doctor-settings-card {
+  padding: 18px;
+  display: grid;
+  gap: 18px;
+}
+
+.doctor-settings-section-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.doctor-settings-section-head svg {
+  color: #0f9d9d;
+  margin-top: 1px;
+}
+
+.doctor-settings-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.doctor-settings-card label {
+  display: grid;
+  gap: 7px;
+}
+
+.doctor-settings-card label span {
+  color: #34435a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.doctor-settings-card input,
+.doctor-settings-card select,
+.doctor-settings-card textarea {
+  width: 100%;
+  border: 1px solid #d7dfeb;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--app-text);
+  font-size: 14px;
+  outline: 0;
+  box-sizing: border-box;
+}
+
+.doctor-settings-card input,
+.doctor-settings-card select {
+  height: 38px;
+  padding: 0 12px;
+}
+
+.doctor-settings-card textarea {
+  min-height: 94px;
+  resize: vertical;
+  padding: 10px 12px;
+}
+
+.doctor-settings-card input:focus,
+.doctor-settings-card select:focus,
+.doctor-settings-card textarea:focus {
+  border-color: #0f9d9d;
+  box-shadow: 0 0 0 3px rgba(15, 157, 157, 0.12);
+}
+
+.doctor-settings-card input[readonly] {
+  background: #f8fafc;
+  color: #475569;
+  cursor: not-allowed;
+  font-weight: 800;
+}
+
+.doctor-settings-toggles {
+  display: grid;
+  gap: 10px;
+}
+
+.doctor-settings-toggles label {
+  min-height: 42px;
+  border: 1px solid #dce8e8;
+  border-radius: 10px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.doctor-settings-toggles input {
+  width: 16px;
+  height: 16px;
+  accent-color: #0f9d9d;
+}
+
+.doctor-settings-message {
+  margin: 0;
+  color: #0f6f6f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.doctor-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.doctor-settings-save,
+.doctor-settings-reset {
+  height: 38px;
+  border-radius: 8px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.doctor-settings-save {
+  border: 1px solid #0f9d9d;
+  background: #0f9d9d;
+  color: #fff;
+}
+
+.doctor-settings-reset {
+  border: 1px solid #d9e1ec;
+  background: #fff;
+  color: #071120;
+}
+
+@media (max-width: 900px) {
+  .doctor-settings-header,
+  .doctor-settings-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .doctor-settings-grid,
+  .doctor-settings-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

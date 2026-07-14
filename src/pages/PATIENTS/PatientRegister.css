@@ -1,0 +1,354 @@
+.patient-register-header {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.patient-register-header h2 {
+  margin: 0 0 0.3rem;
+  text-align: center;
+  font-size: 1.8rem;
+  line-height: 1.1;
+}
+
+.patient-register-header .subtitle {
+  margin: 0;
+  text-align: center;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: rgba(15, 23, 42, 0.64);
+}
+
+.register-grid--spaced {
+  margin-top: 0.2rem;
+}
+
+.register-terms {
+  margin-top: 0.55rem;
+  font-size: 0.92rem;
+}
+
+.register-terms label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-size: 0.92rem;
+  color: rgba(15, 23, 42, 0.75);
+  cursor: pointer;
+}
+
+.register-terms input {
+  width: auto;
+  min-height: auto;
+  margin: 0;
+}
+
+.register-login-link {
+  margin-top: 0.85rem;
+  text-align: center;
+}
+
+.register-page {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(180deg, rgba(236, 251, 250, 0.95), rgba(255, 255, 255, 0.98));
+  padding: 24px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.register-bg {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: scale(1.05);
+  filter: saturate(1.05);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.register-veil {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(-45deg,
+      rgba(15, 23, 42, 0.55),
+      rgba(19, 78, 74, 0.5),
+      rgba(14, 165, 164, 0.45),
+      rgba(34, 211, 238, 0.4));
+  background-size: 400% 400%;
+  animation: gradientBG 18s ease infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.register-card {
+  position: relative;
+  z-index: 2;
+  width: min(1120px, 100%);
+  max-height: calc(100vh - 28px);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(8, 30, 42, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  padding: 20px 42px 26px;
+  box-sizing: border-box;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.register-header h1 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.register-header p {
+  margin: 5px 0 0;
+  color: #426078;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.register-section {
+  margin-top: 12px;
+}
+
+.register-section h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #1d3845;
+}
+
+.patient-register-card {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.auth-card--wide.patient-register-card {
+  width: min(940px, 100%);
+  max-width: 940px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem 2rem 1.8rem;
+  margin: 0 16px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 34px 70px rgba(15, 23, 42, 0.16);
+}
+
+.auth-container {
+  width: 100vw !important;
+  min-height: 100vh !important;
+  height: 100vh !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  position: relative;
+}
+
+html.auth-page-no-scroll,
+body.auth-page-no-scroll {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+.register-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+}
+
+.register-grid .wide {
+  grid-column: 1 / -1;
+}
+
+.form-group {
+  margin-bottom: 0.8rem;
+}
+
+.form-group label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+  display: block;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: 500 0.95rem -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  color: #0f172a;
+  background: #ffffff;
+  box-sizing: border-box;
+  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #0f766e;
+  background: #f0fdfa;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+}
+
+.form-group input.is-invalid,
+.form-group select.is-invalid,
+.form-group textarea.is-invalid {
+  border-color: #dc2626;
+  background: #fff7f7;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-group select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #0f172a 50%), linear-gradient(135deg, #0f172a 50%, transparent 50%);
+  background-position: calc(100% - 12px) center, calc(100% - 8px) center;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #94a3b8;
+}
+
+.error-message {
+  display: block;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.register-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 0.5rem;
+}
+
+.submit-btn--block {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  background: #0f766e;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.16s ease, box-shadow 0.16s ease;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.2);
+}
+
+.submit-btn--block:hover {
+  background: #0d5d5b;
+  box-shadow: 0 6px 16px rgba(15, 118, 110, 0.3);
+  transform: translateY(-1px);
+}
+
+.submit-btn--block:active {
+  transform: translateY(0);
+}
+
+.patient-register-card .register-login-link p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #64748b;
+}
+
+.patient-register-card .register-login-link a {
+  color: #0f766e;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.16s ease;
+}
+
+.patient-register-card .register-login-link a:hover {
+  color: #0d5d5b;
+  text-decoration: underline;
+}
+
+.register-success {
+  margin-top: 12px;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+}
+
+.register-field-error {
+  min-height: 12px;
+  color: #b42318;
+  font-size: 10px;
+  font-style: normal;
+  line-height: 1.25;
+}
+
+@media (max-width: 900px) {
+  .register-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .patient-register-card {
+    max-width: 760px;
+    padding: 1.1rem 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .register-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-register-card {
+    max-width: 100%;
+    padding: 1rem 0.9rem;
+  }
+}

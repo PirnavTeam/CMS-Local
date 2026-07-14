@@ -1,0 +1,147 @@
+.appointment-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  padding: 20px;
+}
+
+.appointment-modal-card {
+  width: min(640px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+  animation: modalShow 0.25s ease;
+}
+
+@keyframes modalShow {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.appointment-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.appointment-modal-header h3 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.appointment-modal-header button {
+  border: none;
+  background: #f1f5f9;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #334155;
+  transition: 0.2s;
+}
+
+.appointment-modal-header button:hover {
+  background: #e2e8f0;
+}
+
+.appointment-modal-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.appointment-modal-section {
+  border-top: 1px solid #e2e8f0;
+  padding: 12px 0;
+}
+
+.appointment-modal-section:first-child {
+  border-top: none;
+}
+
+.appointment-modal-section:last-child {
+  padding-bottom: 0;
+}
+
+.appointment-modal-section h4 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.appointment-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+}
+
+.appointment-modal-vitals {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.appointment-modal-detail-item {
+  min-width: 0;
+}
+
+.appointment-modal-detail-item label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.appointment-modal-detail-item p {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+@media (max-width: 700px) {
+  .appointment-modal-overlay {
+    padding: 14px;
+  }
+
+  .appointment-modal-card {
+    padding: 16px;
+  }
+
+  .appointment-modal-grid,
+  .appointment-modal-vitals {
+    grid-template-columns: 1fr;
+  }
+
+  .appointment-modal-header h3 {
+    font-size: 20px;
+  }
+
+  .appointment-modal-detail-item p {
+    font-size: 14px;
+  }
+}

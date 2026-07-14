@@ -1,0 +1,52 @@
+.reports-page {
+  padding: 24px;
+}
+
+.reports-page h1 {
+  font-size: 28px;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.report-card {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.report-card .icon {
+  background: #eef7f7;
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-card h3 {
+  margin-top: 12px;
+}
+
+.report-card p {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.link {
+  margin-top: 10px;
+  color: #0d9488;
+  background: none;
+  border: none;
+  cursor: pointer;
+}

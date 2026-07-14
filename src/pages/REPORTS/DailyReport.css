@@ -1,0 +1,320 @@
+.daily-report {
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* BACK */
+
+.daily-report .report-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+  padding: 7px 10px;
+  border: 1px solid #dbe2ea;
+  border-radius: 9px;
+  background: #fff;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.daily-report .report-back:hover {
+  color: #0f766e;
+  border-color: #99d9d2;
+  background: #f0fdfa;
+}
+
+/* HEADER */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 42px;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.header p {
+  color: #64748b;
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+.export {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #dbe2ea;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+/* FILTERS */
+
+.filters {
+  margin-top: 26px;
+
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 18px;
+
+  background: white;
+
+  padding: 22px;
+
+  border-radius: 18px;
+
+  align-items: flex-end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  flex: 1;
+  min-width: 220px;
+}
+
+.field label {
+  font-size: 15px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.field input,
+.field select {
+  height: 52px;
+
+  padding: 0 14px;
+
+  border-radius: 12px;
+
+  border: 1px solid #dbe2ea;
+
+  font-size: 15px;
+
+  outline: none;
+
+  background: white;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: #159a8c;
+}
+
+.daily-report .report-apply {
+  background: #159a8c;
+  color: white;
+  border: none;
+  height: 44px;
+  min-width: 112px;
+  padding: 0 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: 0.2s;
+  align-self: flex-end;
+}
+
+.daily-report .report-apply:hover {
+  background: #0f766e;
+}
+
+/* CHART */
+
+.chart-card {
+  margin-top: 26px;
+  background: white;
+  border-radius: 18px;
+  padding: 26px;
+}
+
+.chart-container {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+}
+
+/* Y AXIS */
+
+.y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 260px;
+  font-size: 13px;
+  color: #64748b;
+  min-width: 60px;
+}
+
+.y-axis h3 {
+  margin: 0 0 20px;
+  color: #475569;
+  font-size: 18px;
+}
+
+/* CHART */
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 26px;
+
+  flex: 1;
+
+  border-left: 1px dashed #dbe2ea;
+
+  padding-left: 20px;
+
+  min-height: 260px;
+}
+
+.bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.fill {
+  width: 44px;
+  background: #159a8c;
+  border-radius: 10px 10px 0 0;
+  transition: 0.3s;
+}
+
+.fill:hover {
+  opacity: 0.85;
+}
+
+.bar span {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #475569;
+}
+
+/* TABLE */
+
+.table {
+  margin-top: 24px;
+  background: white;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.thead {
+  display: grid;
+  grid-template-columns: minmax(60px, 0.4fr) 1fr 1fr 1fr;
+
+  padding: 18px 24px;
+
+  font-weight: 600;
+
+  color: #64748b;
+
+  border-bottom: 1px solid #eef2f7;
+
+  text-align: center;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(60px, 0.4fr) 1fr 1fr 1fr;
+
+  padding: 18px 24px;
+
+  border-bottom: 1px solid #f5f7fa;
+
+  align-items: center;
+
+  text-align: center;
+
+  color: #0f172a;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.empty,
+.empty-table {
+  color: #64748b;
+  padding: 30px;
+  font-size: 15px;
+  text-align: center;
+}
+
+/* MOBILE */
+
+@media (max-width: 900px) {
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header h1 {
+    font-size: 34px;
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .field {
+    width: 100%;
+  }
+
+  .daily-report .report-apply {
+    width: 100%;
+  }
+
+  .chart {
+    gap: 18px;
+  }
+
+  .fill {
+    width: 34px;
+  }
+}
+
+@media (max-width: 600px) {
+
+  .daily-report {
+    padding: 16px;
+  }
+
+  .thead,
+  .row {
+    grid-template-columns: 1fr 1fr 1fr;
+    font-size: 14px;
+    padding: 14px;
+  }
+
+  .header h1 {
+    font-size: 28px;
+  }
+
+  .chart-card {
+    padding: 18px;
+  }
+}

@@ -1,0 +1,482 @@
+/* ============================================================
+   PATIENT DETAILS — PatientDetails.css
+   ============================================================ */
+
+.pd-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pd-state-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.pd-state-card--error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-color: #fecaca;
+  color: #991b1b;
+  background: #fff7f7;
+}
+
+.pd-state-card button {
+  border: 1px solid #fecaca;
+  background: #fff;
+  border-radius: 8px;
+  color: #991b1b;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+/* ── Top row ── */
+.pd-toprow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pd-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.pd-back-btn:hover { background: #f1f5f9; }
+
+.pd-page-title {
+  flex: 1;
+  text-align: center;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pd-start-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pd-start-btn:hover { background: #1d4ed8; }
+
+/* ── Patient info row ── */
+.pd-info-row {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.pd-info-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.pd-avatar {
+  width: 72px;
+  height: 72px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 14px;
+  font-size: 22px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pd-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.pd-patient-name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pd-type-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.pd-meta {
+  margin: 3px 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+/* ── Action buttons ── */
+.pd-action-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.pd-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  min-width: 160px;
+  transition: background 0.15s;
+}
+.pd-action-btn:hover { background: #f8fafc; }
+
+/* ── Tabs ── */
+.pd-tabs {
+  display: flex;
+  border-bottom: 2px solid #e2e8f0;
+  gap: 0;
+}
+
+.pd-tab {
+  padding: 10px 18px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.pd-tab:hover { color: #2563eb; }
+.pd-tab--active {
+  color: #2563eb;
+  font-weight: 700;
+  border-bottom-color: #2563eb;
+}
+
+/* ── Overview grid ── */
+.pd-tab-content { display: flex; flex-direction: column; gap: 20px; }
+
+.pd-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.pd-overview-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.pd-card-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.pd-card-value {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* ── Bottom two-column grid ── */
+.pd-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.pd-section-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.pd-section-title {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Previous visits */
+.pd-visit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.pd-visit-row:last-of-type { border-bottom: none; }
+
+.pd-visit-date   { font-size: 14px; font-weight: 700; color: #0f172a; margin: 0 0 2px; }
+.pd-visit-doctor { font-size: 12px; color: #64748b; margin: 0 0 2px; }
+.pd-visit-complaints { font-size: 12px; color: #2563eb; font-weight: 600; margin: 0 0 2px; }
+.pd-visit-meds   { font-size: 12px; color: #64748b; margin: 0; }
+
+.pd-visit-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #fef9c3;
+  color: #a16207;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pd-visit-status.is-completed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.pd-view-link {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pd-view-all-link {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  display: block;
+}
+
+.pd-full-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pd-full-list .pd-section-card {
+  width: 100%;
+}
+
+.pd-visit-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.pd-visit-card:last-child {
+  border-bottom: none;
+}
+
+.pd-empty-state {
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 18px;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+}
+
+.pd-prescription-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.pd-prescription-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.pd-prescription-head h4 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.pd-prescription-head p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.pd-prescription-head span {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pd-prescription-card .pd-section-card {
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Prescriptions table */
+.pd-rx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.pd-rx-table th {
+  text-align: left;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.pd-rx-table td {
+  padding: 10px 0;
+  border-bottom: 1px solid #f8fafc;
+  color: #334155;
+}
+.pd-rx-dosage { color: #2563eb; font-weight: 600; }
+
+/* Placeholder */
+.pd-tab-placeholder {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.pd-doc-list {
+  display: grid;
+  gap: 12px;
+}
+
+.pd-doc-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pd-doc-card strong,
+.pd-doc-card span {
+  display: block;
+}
+
+.pd-doc-card strong {
+  color: #0f172a;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.pd-doc-card span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.pd-doc-card a {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pd-doc-muted {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .pd-toprow,
+  .pd-info-row,
+  .pd-info-left,
+  .pd-prescription-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pd-page-title {
+    text-align: left;
+  }
+
+  .pd-action-btns,
+  .pd-action-btn {
+    width: 100%;
+  }
+
+  .pd-tabs {
+    overflow-x: auto;
+  }
+
+  .pd-tab {
+    white-space: nowrap;
+  }
+
+  .pd-overview-grid,
+  .pd-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}

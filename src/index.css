@@ -1,0 +1,123 @@
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  color: #071120;
+  caret-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+:root {
+  --app-bg: #f8fafc;
+  --app-surface: #ffffff;
+  --app-border: #e5e7eb;
+  --app-text: #071120;
+  --app-muted: #40516a;
+  --app-accent: #0f9d9d;
+  --app-accent-soft: #dff3f3;
+  --app-heading-size: 24px;
+  --app-title-size: 16px;
+  --app-body-size: 14px;
+  --app-caption-size: 12px;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+input,
+textarea,
+[contenteditable]:not([contenteditable="false"]) {
+  caret-color: auto;
+}
+
+.is-invalid {
+  border-color: #dc2626 !important;
+}
+
+.is-invalid:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+}
+
+[class*="field-error"],
+.rx-field-error,
+.doctor-settings-field-error,
+.sa-field-error {
+  display: block;
+  margin-top: 4px;
+  color: #dc2626 !important;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+[class*="inline-error"],
+[class*="form-error"],
+[class*="state-card--error"] {
+  border-color: #fecaca !important;
+  background: #fff7f7 !important;
+  color: #b91c1c !important;
+}
+
+[class*="inline-success"],
+[class*="form-success"] {
+  border-color: #bbf7d0 !important;
+  background: #f0fdf4 !important;
+  color: #15803d !important;
+}
+
+.content h1,
+.content h2,
+.dr-layout-content h1,
+.dr-layout-content h2,
+.rc-content h1,
+.rc-content h2 {
+  font-size: var(--app-heading-size);
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+.content h3,
+.dr-layout-content h3,
+.rc-content h3 {
+  font-size: var(--app-title-size);
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.content p,
+.content span,
+.content label,
+.dr-layout-content p,
+.dr-layout-content span,
+.dr-layout-content label,
+.rc-content p,
+.rc-content span,
+.rc-content label {
+  letter-spacing: 0;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
