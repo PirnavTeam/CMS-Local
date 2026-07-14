@@ -1,0 +1,38 @@
+Patient portal APIs added according to Patient_Complete_Flow_Document.pdf
+
+New files:
+1. DTOs/PatientPortalDtos.cs
+2. Controllers/PatientPortalController.cs
+
+Existing flow not changed:
+- /api/Auth/login remains for SuperAdmin/Admin/Doctor/Receptionist.
+- Existing Admin, Doctor, Receptionist, Patient, Appointment, Billing, Prescription APIs are untouched.
+- New APIs are under /api/patient-portal only.
+
+Main new endpoints:
+- POST   /api/patient-portal/register
+- GET    /api/patient-portal/dashboard
+- GET    /api/patient-portal/profile
+- PUT    /api/patient-portal/profile
+- GET    /api/patient-portal/clinics
+- GET    /api/patient-portal/clinics/{clinicId}/departments
+- GET    /api/patient-portal/doctors?clinicId=1&department=Cardiology
+- GET    /api/patient-portal/doctors/{doctorId}/slots?date=2026-07-03
+- POST   /api/patient-portal/appointments
+- GET    /api/patient-portal/appointments
+- GET    /api/patient-portal/appointments/{id}
+- PATCH  /api/patient-portal/appointments/{id}/cancel
+- PUT    /api/patient-portal/appointments/{id}/reschedule
+- GET    /api/patient-portal/medical-history
+- GET    /api/patient-portal/prescriptions
+- GET    /api/patient-portal/prescriptions/{id}
+- GET    /api/patient-portal/bills
+- POST   /api/patient-portal/bills/{id}/pay
+- GET    /api/patient-portal/notifications
+- PATCH  /api/patient-portal/notifications/{id}/read
+- DELETE /api/patient-portal/notifications/{id}
+
+Important:
+- Patient registration creates both a Patient record and a User login with Role = Patient.
+- No new database columns were added, so a new migration is not required for these API additions.
+- Patient login returns JWT token. Use it as Bearer token for protected patient-portal APIs.

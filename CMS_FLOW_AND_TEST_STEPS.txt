@@ -1,0 +1,45 @@
+Clinical Management System backend changes
+
+1. SuperAdmin uses the same login API as Admin/Doctor/Receptionist:
+   POST /api/Auth/login
+   Default login: superadmin@gmail.com / Super@123
+
+2. SuperAdmin is seeded into Users table with Role = SuperAdmin on application startup.
+   SuperAdmins table/model may still exist from older migrations, but it is not used for login.
+
+3. SuperAdmin supported routes:
+   GET /api/SuperAdmin/dashboard
+   GET /api/SuperAdmin/summary
+   GET /api/dashboard/dashboard
+   GET /api/dashboard/summary
+
+4. Clinic routes support both frontend/backend names:
+   /api/clinics
+   /api/Clinic
+
+5. Admin routes support both frontend/backend names:
+   /api/admins
+   /api/AdminManagement
+
+6. Admin creation flow:
+   SuperAdmin creates Admin -> temporary password generated or accepted from frontend -> email sent when SendWelcomeEmail=true -> MustChangePassword=true.
+
+7. Admin first login:
+   POST /api/Auth/login returns mustChangePassword/forcePasswordChange.
+   Admin changes password through POST /api/Auth/change-password, then MustChangePassword=false.
+
+8. Doctor creation flow:
+   Admin creates doctor -> Doctor profile is saved -> User login is created with Role=Doctor -> email credentials are sent -> Doctor logs in through /api/Auth/login.
+
+9. JSON property collision fixes:
+   Removed duplicate properties that differ only by casing, such as ClinicName/clinicName, Hospital/hospital, Experience/experience.
+
+10. Billing decimal precision configured in AppDbContext for ConsultationCharge, LabCharge, MedicineCharge, TotalAmount.
+
+After replacing the backend folder:
+   dotnet restore
+   dotnet build
+   Add-Migration CmsFinalFlowFix   (only if model changes not already migrated)
+   Update-Database
+
+If only controllers changed, migration is not required.

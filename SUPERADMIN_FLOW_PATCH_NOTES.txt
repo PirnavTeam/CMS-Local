@@ -1,0 +1,57 @@
+CLINICAL MANAGEMENT SYSTEM - SUPERADMIN FLOW PATCH
+
+What was changed:
+1. SuperAdmin now uses the same login API as Admin:
+   POST /api/Auth/login
+
+2. Default SuperAdmin is seeded into Users table:
+   Email: superadmin@gmail.com
+   Password: Super@123
+   Role: SuperAdmin
+   MustChangePassword: false
+
+3. SuperAdmin table is no longer used for login.
+   Existing SuperAdmins table/model is left in project only to avoid breaking old migrations,
+   but AuthService now authenticates from Users table only.
+
+4. SuperAdmin can create clinics:
+   POST /api/clinics
+   Existing route /api/Clinic is also kept.
+
+5. SuperAdmin can create admins:
+   POST /api/admins
+   Existing route /api/AdminManagement is also kept.
+   Admin receives temporary password by email.
+   Admin MustChangePassword = true.
+
+6. Admin password change:
+   POST /api/Auth/change-password
+   After success MustChangePassword becomes false.
+
+7. SuperAdmin dashboard:
+   GET /api/dashboard/summary
+   Also supports existing /api/SuperAdmin/dashboard.
+   Returns totalClinics, totalAdmins, totalUsers, activeUsers, revenue.
+
+8. Missing SuperAdmin module APIs added/fixed:
+   /api/users
+   /api/roles
+   /api/settings
+   /api/notifications
+   /api/revenue
+   /api/reports/revenue
+   /api/activity
+   /api/reports/activity
+
+9. Doctor create now also creates login user:
+   POST /api/Doctor
+   Creates Doctor record + Users record with Role=Doctor.
+   Sends temporary password email.
+   Doctor can login through /api/Auth/login.
+
+Important:
+- Existing route names were kept where possible.
+- New compatibility routes were added for frontend, not replacing old APIs.
+- Run:
+  Add-Migration SuperAdminUsersSingleLoginFlow
+  Update-Database

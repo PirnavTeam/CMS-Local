@@ -1,0 +1,39 @@
+Patient registration/login changes
+==================================
+
+Changed requirement:
+- Patient registration should NOT ask for HospitalId.
+- Patient should log in using only POST /api/Auth/login.
+- Hospital/clinic list should be shown after patient logs in.
+
+Changed files:
+- DTOs/PatientPortalDtos.cs
+  - Removed HospitalId from PatientPortalRegisterDto.
+
+- Controllers/PatientPortalController.cs
+  - POST /api/patient-portal/register no longer reads or requires HospitalId.
+  - Registration creates Patient and User with HospitalId = null.
+  - Removed separate POST /api/patient-portal/login action from Swagger/API flow.
+  - GET /api/patient-portal/clinics remains protected with [Authorize(Roles = "Patient")], so hospital list is shown only after login.
+  - On first appointment booking, selected HospitalId is saved on the patient profile if it was empty.
+
+- Services/AuthService.cs
+  - POST /api/Auth/login now supports Patient also.
+  - Login accepts email or mobile number in the existing Email field.
+  - Response includes patientId and patientCode for Patient role.
+
+- Controllers/AuthController.cs
+  - POST /api/Auth/login response now returns patientId and patientCode.
+
+- Models/User.cs and Models/Patient.cs
+  - HospitalId is nullable because patient registration is not clinic-dependent.
+
+- Migrations/20260708000100_MakePatientHospitalOptional.cs
+  - Makes Users.HospitalId and Patients.HospitalId nullable in SQL Server.
+
+After copying/running this project:
+1. Run Update-Database in Package Manager Console.
+2. Use POST /api/patient-portal/register without hospitalId.
+3. Use POST /api/Auth/login for patient login.
+4. After login, call GET /api/patient-portal/clinics with Bearer token.
+5. During appointment booking, send hospitalId in POST /api/patient-portal/appointments.
