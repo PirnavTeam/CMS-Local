@@ -11,23 +11,23 @@ public class MedicalHistory
     public int PatientId
     { get; set; }
 
-    public Patient? Patient
+    public Patient Patient
     { get; set; }
 
     // =====================================================
     // MEDICAL HISTORY DETAILS
     // =====================================================
 
-    public string? Allergies
+    public string Allergies
     { get; set; }
 
-    public string? ChronicDiseases
+    public string ChronicDiseases
     { get; set; }
 
-    public string? CurrentMedications
+    public string CurrentMedications
     { get; set; }
 
-    public string? Surgeries
+    public string Surgeries
     { get; set; }
 
     // =====================================================
@@ -37,7 +37,7 @@ public class MedicalHistory
     public int HospitalId
     { get; set; }
 
-    public Hospital? Hospital
+    public Hospital Hospital
     { get; set; }
 
     // =====================================================

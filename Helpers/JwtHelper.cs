@@ -1,4 +1,4 @@
-using AuthDemo.Models;
+﻿using AuthDemo.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -57,16 +57,12 @@ public class JwtHelper
 
                 new Claim(
                     "role",
-                    user.Role)
-            };
+                    user.Role),
 
-        if (user.HospitalId != null)
-        {
-            claims.Add(
                 new Claim(
                     "HospitalId",
-                    user.HospitalId.ToString()!));
-        }
+                    user.HospitalId.ToString())
+            };
 
         if (user.DoctorId != null)
         {

@@ -1,4 +1,4 @@
-﻿using AuthDemo.Helpers;
+﻿
 
 using AuthDemo.DTOs;
 using AuthDemo.Services.Interfaces;
@@ -48,8 +48,7 @@ public class StaffController
     // =====================================================
     // GET ALL STAFF
     // =====================================================
-    
-    
+
     [HttpGet]
     public async Task<IActionResult>
         GetAll()
@@ -69,31 +68,13 @@ public class StaffController
     // =====================================================
     // CREATE STAFF
     // =====================================================
-   
-    
+
     [HttpPost]
     public async Task<IActionResult>
         Create(
             [FromForm]
             CreateStaffDto dto)
     {
-        if (!dto.Email.EndsWith("@gmail.com"))
-        {
-            return BadRequest(new
-            {
-                message = "Only Gmail addresses are allowed."
-            });
-        }
-
-        if (dto.Phone.Length != 10 ||
-            !dto.Phone.All(char.IsDigit) ||
-            !"6789".Contains(dto.Phone[0]))
-        {
-            return BadRequest(new
-            {
-                message = "Enter a valid mobile number."
-            });
-        }
         var hospitalId =
             GetHospitalId();
 
@@ -118,8 +99,7 @@ public class StaffController
     // =====================================================
     // UPDATE STAFF
     // =====================================================
-   
-    
+
     [HttpPut("{id}")]
     public async Task<IActionResult>
         Update(
@@ -159,7 +139,6 @@ public class StaffController
     // TOGGLE STATUS
     // =====================================================
 
-    
     [HttpPatch("{id}/toggle-status")]
     public async Task<IActionResult>
         ToggleStatus(
@@ -192,8 +171,7 @@ public class StaffController
     // =====================================================
     // DELETE STAFF
     // =====================================================
-    
-    
+
     [HttpDelete("{id}")]
     public async Task<IActionResult>
         Delete(int id)

@@ -1,8 +1,8 @@
 ﻿
 
-using AuthDemo.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Data;
+
+using AuthDemo.Models;
 
 namespace AuthDemo.Data;
 
@@ -16,16 +16,12 @@ public class AppDbContext
     {
     }
 
-
     // =====================================================
     // HOSPITALS
     // =====================================================
 
     public DbSet<Hospital>
         Hospitals
-    { get; set; }
-    public DbSet<AppointmentDocument>
-    AppointmentDocuments
     { get; set; }
 
     // =====================================================
@@ -88,10 +84,6 @@ public class AppDbContext
         MedicalHistories
     { get; set; }
 
-    public DbSet<InstructionTemplate> InstructionTemplates { get; set; }
-
-    public DbSet<MedicineNote> MedicineNotes { get; set; }
-
     // =====================================================
     // PATIENT VITALS
     // =====================================================
@@ -127,9 +119,6 @@ public class AppDbContext
     public DbSet<PrescriptionItem>
         PrescriptionItems
     { get; set; }
-    public DbSet<DoctorSpecialization> DoctorSpecializations { get; set; }
-
-    public DbSet<DoctorQualification> DoctorQualifications { get; set; }
 
     // =====================================================
     // SCHEDULES
@@ -152,7 +141,7 @@ public class AppDbContext
     public DbSet<Clinic>
     Clinics
     { get; set; }
-    
+
     // =====================================================
     // BILLINGS
     // =====================================================
@@ -177,24 +166,6 @@ public class AppDbContext
     Settings
     { get; set; }
 
-
-    public DbSet<Dosage> Dosages { get; set; }
-    public DbSet<Frequency> Frequencies { get; set; }
-
-    public DbSet<ChiefComplaint> ChiefComplaints { get; set; }
-
-    public DbSet<Medicine> Medicines { get; set; }
-
-    public DbSet<ClinicalNoteTemplate>
-    ClinicalNoteTemplates
-    { get; set; }
-
-
-    public DbSet<State> States { get; set; }
-
-    public DbSet<District> Districts { get; set; }
-
-    public DbSet<City> Cities { get; set; }
     // =====================================================
     // MODEL RELATIONSHIPS
     // =====================================================

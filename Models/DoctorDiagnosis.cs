@@ -12,14 +12,14 @@ public class DoctorDiagnosis
     public int DoctorId
     { get; set; }
 
-    public Doctor? Doctor
+    public Doctor Doctor
     { get; set; }
 
     // =====================================================
     // DIAGNOSIS NAME
     // =====================================================
 
-    public string? Name
+    public string Name
     { get; set; }
 
     // =====================================================
@@ -29,7 +29,7 @@ public class DoctorDiagnosis
     public int HospitalId
     { get; set; }
 
-    public Hospital? Hospital
+    public Hospital Hospital
     { get; set; }
 
     // =====================================================

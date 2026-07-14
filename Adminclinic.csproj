@@ -8,8 +8,10 @@
 
 	<ItemGroup>
 		<!-- Entity Framework Core -->
-		<PackageReference Include="MailKit" Version="4.17.0" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.26" />
+		<PackageReference Include="MailKit" Version="4.16.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0" />
 
 		<!-- JWT -->
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
@@ -17,22 +19,9 @@
 
 		<!-- Password Hash -->
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.26">
-		  <PrivateAssets>all</PrivateAssets>
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.26" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.26">
-		  <PrivateAssets>all</PrivateAssets>
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
 
 		<!-- Swagger -->
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="wwwroot\images\Doctors\" />
 	</ItemGroup>
 
 </Project>

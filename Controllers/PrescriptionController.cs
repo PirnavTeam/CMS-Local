@@ -3,7 +3,6 @@ using AuthDemo.DTOs;
 using AuthDemo.Models;
 
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 using Microsoft.EntityFrameworkCore;
@@ -217,185 +216,97 @@ public class PrescriptionController
     // GET ALL PRESCRIPTIONS
     // =====================================================
 
-    //[Authorize(Roles = "Doctor")]
-    //[HttpGet]
-    //public async Task<IActionResult>
-    //    GetAll()
-    //{
-    //    try
-    //    {
-    //        var hospitalId =
-    //            GetHospitalId();
-
-    //        var doctorId =
-    //            GetDoctorId();
-
-    //        var prescriptions =
-    //            await _context.Prescriptions
-
-    //                .Include(x =>
-    //                    x.Patient)
-
-    //                .Include(x =>
-    //                    x.Medicines)
-
-    //                .Include(x =>
-    //                    x.Appointment)
-
-    //                .Where(x =>
-
-    //                    x.HospitalId ==
-    //                    hospitalId &&
-
-    //                    x.Appointment.DoctorId ==
-    //                    doctorId
-    //                )
-
-    //                .OrderByDescending(x =>
-    //                    x.CreatedAt)
-
-    //                .ToListAsync();
-
-    //        return Ok(
-    //            prescriptions.Select(x =>
-    //                new
-    //                {
-    //                    x.Id,
-
-    //                    x.AppointmentId,
-
-    //                    x.PatientId,
-
-    //                    patientName =
-    //                        x.Patient == null
-    //                            ? ""
-    //                            : x.Patient.Name,
-
-    //                    diagnosis =
-    //                        x.Diagnosis,
-
-    //                    instructions =
-    //                        x.Instructions,
-
-    //                    followUpDate =
-    //                        x.FollowUpDate,
-
-    //                    status =
-    //                        x.Status,
-
-    //                    medicines =
-    //                        x.Medicines
-    //                            .Select(m =>
-    //                                new
-    //                                {
-    //                                    m.Id,
-
-    //                                    m.MedicineName,
-
-    //                                    m.Dosage,
-
-    //                                    m.Frequency,
-
-    //                                    m.Duration,
-
-    //                                    m.Notes
-    //                                })
-    //                }));
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        return StatusCode(
-    //            500,
-    //            ex.Message
-    //        );
-    //    }
-    //}
-
-    [Authorize(Roles = "Doctor,Admin")]
+    [Authorize(Roles = "Doctor")]
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult>
+        GetAll()
     {
         try
         {
-            var hospitalId = GetHospitalId();
+            var hospitalId =
+                GetHospitalId();
 
-            // ADMIN
-            if (User.IsInRole("Admin"))
-            {
-                var prescriptions =
-                    await _context.Prescriptions
-                        .Include(x => x.Patient)
-                        .Include(x => x.Medicines)
-                        .Include(x => x.Appointment)
-                            .ThenInclude(x => x.Doctor)
-                        .Where(x =>
-                            x.HospitalId == hospitalId)
-                        .OrderByDescending(x => x.CreatedAt)
-                        .ToListAsync();
+            var doctorId =
+                GetDoctorId();
 
-                return Ok(
-                    prescriptions.Select(x => new
-                    {
-                        x.Id,
-                        x.AppointmentId,
-                        x.PatientId,
-                        patientName = x.Patient?.Name,
-                        doctorName = x.Appointment.Doctor.Name,
-                        diagnosis = x.Diagnosis,
-                        instructions = x.Instructions,
-                        followUpDate = x.FollowUpDate,
-                        status = x.Status,
-                        medicines = x.Medicines.Select(m => new
-                        {
-                            m.Id,
-                            m.MedicineName,
-                            m.Dosage,
-                            m.Frequency,
-                            m.Duration,
-                            m.Notes
-                        })
-                    }));
-            }
-
-            // DOCTOR
-            var doctorId = GetDoctorId();
-
-            var doctorPrescriptions =
+            var prescriptions =
                 await _context.Prescriptions
-                    .Include(x => x.Patient)
-                    .Include(x => x.Medicines)
-                    .Include(x => x.Appointment)
+
+                    .Include(x =>
+                        x.Patient)
+
+                    .Include(x =>
+                        x.Medicines)
+
+                    .Include(x =>
+                        x.Appointment)
+
                     .Where(x =>
-                        x.HospitalId == hospitalId &&
-                        x.Appointment.DoctorId == doctorId)
-                    .OrderByDescending(x => x.CreatedAt)
+
+                        x.HospitalId ==
+                        hospitalId &&
+
+                        x.Appointment.DoctorId ==
+                        doctorId
+                    )
+
+                    .OrderByDescending(x =>
+                        x.CreatedAt)
+
                     .ToListAsync();
 
             return Ok(
-                doctorPrescriptions.Select(x => new
-                {
-                    x.Id,
-                    x.AppointmentId,
-                    x.PatientId,
-                    patientName = x.Patient?.Name,
-                    diagnosis = x.Diagnosis,
-                    instructions = x.Instructions,
-                    followUpDate = x.FollowUpDate,
-                    status = x.Status,
-                    medicines = x.Medicines.Select(m => new
+                prescriptions.Select(x =>
+                    new
                     {
-                        m.Id,
-                        m.MedicineName,
-                        m.Dosage,
-                        m.Frequency,
-                        m.Duration,
-                        m.Notes
-                    })
-                }));
+                        x.Id,
+
+                        x.AppointmentId,
+
+                        x.PatientId,
+
+                        patientName =
+                            x.Patient == null
+                                ? ""
+                                : x.Patient.Name,
+
+                        diagnosis =
+                            x.Diagnosis,
+
+                        instructions =
+                            x.Instructions,
+
+                        followUpDate =
+                            x.FollowUpDate,
+
+                        status =
+                            x.Status,
+
+                        medicines =
+                            x.Medicines
+                                .Select(m =>
+                                    new
+                                    {
+                                        m.Id,
+
+                                        m.MedicineName,
+
+                                        m.Dosage,
+
+                                        m.Frequency,
+
+                                        m.Duration,
+
+                                        m.Notes
+                                    })
+                    }));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return StatusCode(
+                500,
+                ex.Message
+            );
         }
     }
 
@@ -403,7 +314,7 @@ public class PrescriptionController
     // GET PRESCRIPTION BY APPOINTMENT
     // =====================================================
 
-    [Authorize(Roles = "Doctor,Admin")]
+    [Authorize(Roles = "Doctor")]
     [HttpGet("appointment/{appointmentId}")]
     public async Task<IActionResult>
         GetByAppointment(
@@ -488,158 +399,4 @@ public class PrescriptionController
             );
         }
     }
-    [HttpGet("dosages")]
-    public async Task<IActionResult> GetDosages()
-    {
-        var defaults = new List<string>
-{
-    "1 Tablet",
-    "1/2 Tablet",
-    "2 Tablets",
-    "5 ml",
-    "10 ml",
-    "1 Capsule",
-    "1 Sachet",
-    "15 ml",
-    "20 ml",
-    "1 Drop"    };
-
-        var dbValues = await _context.Dosages
-            .Select(x => x.Name)
-            .ToListAsync();
-
-        var result = defaults.Union(dbValues)
-            .OrderBy(x => x)
-            .ToList();
-
-        return Ok(result);
-    }
-    [HttpGet("frequencies")]
-    public async Task<IActionResult> GetFrequencies()
-
-    {
-
-        var defaults = new List<string>
-{
-
-    "1-0-0",
-
-    "0-1-0",
-
-    "0-0-1",
-
-    "1-0-1",
-
-    "1-1-0",
-
-    "1-1-1",
-
-    "SOS",
-
-    "Weekly",
-
-    "Alternate Day",
-
-    "Monthly"    };
-
-
-        var dbValues = await _context.Frequencies
-
-            .Select(x => x.Name)
-
-            .ToListAsync();
-
-
-        var result = defaults.Union(dbValues)
-
-            .OrderBy(x => x)
-
-            .ToList();
-
-
-        return Ok(result);
-
-    }
-    [HttpGet("medicineDropdown")]
-    public async Task<IActionResult> GetMedicines()
-    {
-        var defaults = new List<string>
-{
-    "Paracetamol",
-    "Dolo 650",
-    "Azithromycin",
-    "Amoxicillin",
-    "Cetirizine",
-    "Pantoprazole",
-    "Metformin",
-    "Amlodipine",
-    "Ibuprofen",
-    "Crocin"    };
-
-        var dbValues = await _context.Medicines
-            .Select(x => x.Name)
-            .ToListAsync();
-
-        var result = defaults.Union(dbValues)
-            .OrderBy(x => x)
-            .ToList();
-
-        return Ok(result);
-    }
-    [HttpGet("Instructiondropdown")]
-    public async Task<IActionResult> GetInstructions()
-    {
-        var defaults = new List<string>
- {
-     "Take medicines after food and complete the full course.",
-     "Drink plenty of water and take adequate rest.",
-     "Avoid oily and spicy food.",
-     "Return immediately if symptoms worsen.",
-     "Continue current diet and medication plan.",
-     "Take before food.",
-     "Take after breakfast.",
-     "Take after dinner.",
-     "Avoid alcohol.",
-     "Follow up after 7 days."    };
-
-        var dbValues = await _context.InstructionTemplates
-            .Select(x => x.Name)
-            .ToListAsync();
-
-        var result = defaults.Union(dbValues)
-            .OrderBy(x => x)
-            .ToList();
-
-        return Ok(result);
-    }
-    [HttpGet("medicine-notes")]
-    public async Task<IActionResult> GetMedicineNotes()
-    {
-        var defaults = new List<string>
-    {
-        "After food",
-        "Before food",
-        "With water",
-        "At bedtime",
-        "Morning only",
-        "Avoid driving",
-        "Complete full course",
-        "After breakfast",
-        "After dinner",
-        "Do not skip dose"    };
-
-        var dbValues = await _context.MedicineNotes
-            .Select(x => x.Name)
-            .ToListAsync();
-
-        var result = defaults.Union(dbValues)
-            .OrderBy(x => x)
-            .ToList();
-
-        return Ok(result);
-    }
 }
- 
- 
-
-

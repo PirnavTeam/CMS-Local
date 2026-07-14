@@ -1,5 +1,481 @@
-﻿
-using AuthDemo.Helpers;
+﻿//using System.Security.Claims;
+
+//using Microsoft.AspNetCore.Authorization;
+//using Microsoft.AspNetCore.Mvc;
+//using Microsoft.EntityFrameworkCore;
+
+//using AuthDemo.Data;
+//using AuthDemo.DTOs;
+
+//namespace AuthDemo.Controllers;
+
+//[ApiController]
+//[Route("api/[controller]")]
+//[Authorize(Roles = "Admin")]
+//public class DashboardController
+//    : ControllerBase
+//{
+//    private readonly AppDbContext
+//        _context;
+
+//    public DashboardController(
+//        AppDbContext context)
+//    {
+//        _context = context;
+//    }
+
+//    // =====================================================
+//    // GET HOSPITAL ID
+//    // =====================================================
+
+//    private int GetHospitalId()
+//    {
+//        return int.Parse(
+//            User.Claims.First(
+//                x => x.Type ==
+//                    "HospitalId"
+//            ).Value
+//        );
+//    }
+
+//    // =====================================================
+//    // ADMIN DASHBOARD
+//    // =====================================================
+
+//    [HttpGet]
+//    public async Task<IActionResult>
+//        GetDashboard()
+//    {
+//        // =================================================
+//        // HOSPITAL ID
+//        // =================================================
+
+//        var hospitalId =
+//            GetHospitalId();
+
+//        // =================================================
+//        // TODAY
+//        // =================================================
+
+//        var today =
+//            DateTime.Today;
+
+//        // =================================================
+//        // TOTAL DOCTORS
+//        // =================================================
+
+//        var totalDoctors =
+//            await _context.Doctors
+//                .CountAsync(x =>
+
+//                    x.HospitalId ==
+//                    hospitalId
+//                );
+
+//        // =================================================
+//        // TOTAL PATIENTS
+//        // =================================================
+
+//        var totalPatients =
+//            await _context.Patients
+//                .CountAsync(x =>
+
+//                    x.HospitalId ==
+//                    hospitalId
+//                );
+
+//        // =================================================
+//        // TODAY APPOINTMENTS
+//        // =================================================
+
+//        var todayAppointments =
+//            await _context.Appointments
+//                .CountAsync(x =>
+
+//                    x.HospitalId ==
+//                    hospitalId &&
+
+//                    x.Date.Date ==
+//                    today
+//                );
+
+//        // =================================================
+//        // TOTAL REVENUE
+//        // =================================================
+
+//        var totalRevenue =
+//            await _context.Appointments
+
+//                .Include(x =>
+//                    x.Doctor
+//                )
+
+//                .Where(x =>
+
+//                    x.HospitalId ==
+//                    hospitalId &&
+
+//                    x.Status ==
+//                    "Completed"
+//                )
+
+//                .SumAsync(x =>
+//                    (decimal?)x
+//                        .Doctor
+//                        .Fees
+//                ) ?? 0;
+
+//        // =================================================
+//        // GROWTH CHART
+//        // =================================================
+
+//        var patientData =
+//            await _context.Patients
+
+//                .Where(x =>
+//                    x.HospitalId ==
+//                    hospitalId
+//                )
+
+//                .GroupBy(x =>
+//                    new
+//                    {
+//                        x.CreatedAt.Year,
+//                        x.CreatedAt.Month
+//                    })
+
+//                .Select(g =>
+//                    new
+//                    {
+//                        g.Key.Year,
+//                        g.Key.Month,
+
+//                        Patients =
+//                            g.Count()
+//                    })
+
+//                .ToListAsync();
+
+//        var appointmentData =
+//            await _context.Appointments
+
+//                .Where(x =>
+//                    x.HospitalId ==
+//                    hospitalId
+//                )
+
+//                .GroupBy(x =>
+//                    new
+//                    {
+//                        x.CreatedAt.Year,
+//                        x.CreatedAt.Month
+//                    })
+
+//                .Select(g =>
+//                    new
+//                    {
+//                        g.Key.Year,
+//                        g.Key.Month,
+
+//                        Appointments =
+//                            g.Count()
+//                    })
+
+//                .ToListAsync();
+
+//        // =================================================
+//        // MERGE MONTHS
+//        // =================================================
+
+//        var allMonths =
+//            patientData
+
+//                .Select(x =>
+//                    new
+//                    {
+//                        x.Year,
+//                        x.Month
+//                    })
+
+//                .Union(
+//                    appointmentData
+//                        .Select(x =>
+//                            new
+//                            {
+//                                x.Year,
+//                                x.Month
+//                            })
+//                )
+
+//                .Distinct()
+
+//                .OrderBy(x =>
+//                    x.Year
+//                )
+
+//                .ThenBy(x =>
+//                    x.Month
+//                )
+
+//                .ToList();
+
+//        // =================================================
+//        // FINAL GROWTH CHART
+//        // =================================================
+
+//        var growthChart =
+//            allMonths
+
+//                .Select(m =>
+//                {
+//                    var patient =
+//                        patientData
+//                            .FirstOrDefault(x =>
+
+//                                x.Year ==
+//                                m.Year &&
+
+//                                x.Month ==
+//                                m.Month
+//                            );
+
+//                    var appointment =
+//                        appointmentData
+//                            .FirstOrDefault(x =>
+
+//                                x.Year ==
+//                                m.Year &&
+
+//                                x.Month ==
+//                                m.Month
+//                            );
+
+//                    return new ChartDto
+//                    {
+//                        Month =
+//                            new DateTime(
+//                                m.Year,
+//                                m.Month,
+//                                1
+//                            ).ToString("MMM"),
+
+//                        Patients =
+//                            patient?.Patients
+//                            ?? 0,
+
+//                        Appointments =
+//                            appointment?.Appointments
+//                            ?? 0
+//                    };
+//                })
+
+//                .ToList();
+
+//        // =================================================
+//        // REVENUE TREND
+//        // =================================================
+
+//        var revenueData =
+//            await _context.Appointments
+
+//                .Include(x =>
+//                    x.Doctor
+//                )
+
+//                .Where(x =>
+
+//                    x.HospitalId ==
+//                    hospitalId &&
+
+//                    x.Status ==
+//                    "Completed"
+//                )
+
+//                .GroupBy(x =>
+//                    new
+//                    {
+//                        x.Date.Year,
+//                        x.Date.Month
+//                    })
+
+//                .Select(g =>
+//                    new
+//                    {
+//                        g.Key.Year,
+//                        g.Key.Month,
+
+//                        Revenue =
+//                            g.Sum(x =>
+//                                x.Doctor.Fees)
+//                    })
+
+//                .Where(x =>
+//                    x.Revenue > 0
+//                )
+
+//                .OrderBy(x =>
+//                    x.Year
+//                )
+
+//                .ThenBy(x =>
+//                    x.Month
+//                )
+
+//                .ToListAsync();
+
+//        var revenueTrend =
+//            revenueData
+
+//                .Select(r =>
+//                    new RevenueTrendDto
+//                    {
+//                        Month =
+//                            new DateTime(
+//                                r.Year,
+//                                r.Month,
+//                                1
+//                            ).ToString("MMM"),
+
+//                        Revenue =
+//                            r.Revenue
+//                    })
+
+//                .ToList();
+
+//        // =================================================
+//        // CLINIC STATUS
+//        // =================================================
+
+//        var availableDoctors =
+//            await _context.Doctors
+//                .CountAsync(x =>
+
+//                    x.HospitalId ==
+//                    hospitalId &&
+
+//                    x.IsActive
+//                );
+
+//        var onLeaveDoctors =
+//            await _context.Doctors
+//                .CountAsync(x =>
+
+//                    x.HospitalId ==
+//                    hospitalId &&
+
+//                    !x.IsActive
+//                );
+
+//        var busyDoctors =
+//            await _context.Appointments
+//                .CountAsync(x =>
+
+//                    x.HospitalId ==
+//                    hospitalId &&
+
+//                    x.Date.Date ==
+//                    today &&
+
+//                    x.Status ==
+//                    "InProgress"
+//                );
+
+//        var clinicStatus =
+//            new ClinicStatusDto
+//            {
+//                Available =
+//                    availableDoctors,
+
+//                Busy =
+//                    busyDoctors,
+
+//                OnLeave =
+//                    onLeaveDoctors
+//            };
+
+//        // =================================================
+//        // RECENT ACTIVITIES
+//        // =================================================
+
+//        var recentAppointments =
+//            await _context.Appointments
+
+//                .Where(x =>
+//                    x.HospitalId ==
+//                    hospitalId
+//                )
+
+//                .Include(x =>
+//                    x.Doctor
+//                )
+
+//                .Include(x =>
+//                    x.Patient
+//                )
+
+//                .OrderByDescending(x =>
+//                    x.CreatedAt
+//                )
+
+//                .Take(5)
+
+//                .ToListAsync();
+
+//        var recentActivities =
+//            recentAppointments
+
+//                .Select(x =>
+//                    new ActivityDto
+//                    {
+//                        Title =
+//                            $"{x.Patient.Name} booked appointment with Dr. {x.Doctor.Name}",
+
+//                        Time =
+//                            x.CreatedAt
+//                                .ToString(
+//                                    "dd MMM yyyy hh:mm tt"
+//                                )
+//                    })
+
+//                .ToList();
+
+//        // =================================================
+//        // FINAL RESPONSE
+//        // =================================================
+
+//        var dashboard =
+//            new DashboardDto
+//            {
+//                TotalDoctors =
+//                    totalDoctors,
+
+//                TotalPatients =
+//                    totalPatients,
+
+//                TodayAppointments =
+//                    todayAppointments,
+
+//                Revenue =
+//                    totalRevenue,
+
+//                GrowthChart =
+//                    growthChart,
+
+//                RevenueTrend =
+//                    revenueTrend,
+
+//                ClinicStatus =
+//                    clinicStatus,
+
+//                RecentActivities =
+//                    recentActivities
+//            };
+
+//        return Ok(dashboard);
+//    }
+//}
+
+
 using System.Security.Claims;
 
 using Microsoft.AspNetCore.Authorization;
@@ -154,20 +630,27 @@ public class DashboardController
         // =================================================
 
         var totalRevenue =
-    await _context.Billings
+            await _context.Appointments
 
-        .Where(x =>
+                .Include(x =>
+                    x.Doctor
+                )
 
-            x.HospitalId ==
-            hospitalId &&
+                .Where(x =>
 
-            x.Status ==
-            "Paid"
-        )
+                    x.HospitalId ==
+                    hospitalId &&
 
-        .SumAsync(x =>
-            x.TotalAmount
-        );
+                    x.Status ==
+                    "Completed"
+                )
+
+                .SumAsync(x =>
+                    x.Doctor == null
+                        ? 0
+                        : x.Doctor.Fees
+                );
+
         // =================================================
         // GROWTH CHART
         // =================================================
@@ -317,59 +800,75 @@ public class DashboardController
         // =================================================
         // REVENUE TREND
         // =================================================
+
         var revenueData =
-    await _context.Billings
+            await _context.Appointments
 
-        .Where(x =>
+                .Include(x =>
+                    x.Doctor
+                )
 
-            x.HospitalId ==
-            hospitalId &&
+                .Where(x =>
 
-            x.Status ==
-            "Paid"
-        )
+                    x.HospitalId ==
+                    hospitalId &&
 
-        .GroupBy(x =>
-            new
-            {
-                x.CreatedAt.Year,
-                x.CreatedAt.Month
-            })
+                    x.Status ==
+                    "Completed"
+                )
 
-        .Select(g =>
-            new
-            {
-                g.Key.Year,
-                g.Key.Month,
+                .GroupBy(x =>
+                    new
+                    {
+                        x.Date.Year,
+                        x.Date.Month
+                    })
 
-                Revenue =
-                    g.Sum(x =>
-                        x.TotalAmount)
-            })
+                .Select(g =>
+                    new
+                    {
+                        g.Key.Year,
+                        g.Key.Month,
 
-        .OrderBy(x =>
-            x.Year)
+                        Revenue =
+                            g.Sum(x =>
+                                x.Doctor == null
+                                    ? 0
+                                    : x.Doctor.Fees)
+                    })
 
-        .ThenBy(x =>
-            x.Month)
+                .Where(x =>
+                    x.Revenue > 0
+                )
 
-        .ToListAsync();
+                .OrderBy(x =>
+                    x.Year
+                )
+
+                .ThenBy(x =>
+                    x.Month
+                )
+
+                .ToListAsync();
+
         var revenueTrend =
-    revenueData
-        .Select(r =>
-            new RevenueTrendDto
-            {
-                Month =
-                    new DateTime(
-                        r.Year,
-                        r.Month,
-                        1
-                    ).ToString("MMM"),
+            revenueData
 
-                Revenue =
-                    r.Revenue
-            })
-        .ToList();
+                .Select(r =>
+                    new RevenueTrendDto
+                    {
+                        Month =
+                            new DateTime(
+                                r.Year,
+                                r.Month,
+                                1
+                            ).ToString("MMM"),
+
+                        Revenue =
+                            r.Revenue
+                    })
+
+                .ToList();
 
         // =================================================
         // DOCTOR REPORTS
@@ -552,31 +1051,5 @@ public class DashboardController
             };
 
         return Ok(dashboard);
-    }
-    [Authorize(Roles = "Admin")]
-    [HttpGet("ClincData")]
-    public async Task<IActionResult> Dashboard()
-    {
-        var hospitalId = GetHospitalId();
-
-        var clinic = await _context.Hospitals
-            .FirstOrDefaultAsync(x => x.Id == hospitalId);
-
-        if (clinic == null)
-        {
-            return NotFound(new
-            {
-                message = "Clinic not found"
-            });
-        }
-
-        return Ok(new
-        {
-            clinicName = clinic.Name,
-            contactNumber = clinic.Phone,
-            email = clinic.Email,
-            status = clinic.IsActive ? "Active" : "Inactive",
-            address = clinic.Address
-        });
     }
 }

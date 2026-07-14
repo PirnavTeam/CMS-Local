@@ -1,5 +1,4 @@
-﻿using AuthDemo.Helpers;
-using AuthDemo.Data;
+﻿using AuthDemo.Data;
 using AuthDemo.DTOs;
 using AuthDemo.Models;
 
@@ -16,14 +15,13 @@ namespace AuthDemo.Controllers;
 public class ReceptionistController
     : ControllerBase
 {
-    private readonly AppDbContext _context;
-    private readonly EmailHelper _emailHelper;
+    private readonly AppDbContext
+        _context;
+
     public ReceptionistController(
-        AppDbContext context,
-        EmailHelper emailHelper)
+        AppDbContext context)
     {
         _context = context;
-        _emailHelper = emailHelper;
     }
 
     // =====================================================
@@ -51,88 +49,108 @@ public class ReceptionistController
     // =====================================================
     // CREATE RECEPTIONIST
     // =====================================================
+
     [HttpPost]
     public async Task<IActionResult>
-    Create(
-        RegisterReceptionistDto dto)
+        Create(
+            RegisterReceptionistDto dto)
     {
-        var temporaryPassword =
-            "Receptionist@" +
-            Guid.NewGuid()
-                .ToString("N")[..6];
+        var hospitalId =
+            GetHospitalId();
 
-        if (!dto.Email.EndsWith("@gmail.com"))
-        {
-            return BadRequest(new
-            {
-                message = "Only Gmail addresses are allowed."
-            });
-        }
-
-        if (dto.Phone.Length != 10 ||
-            !dto.Phone.All(char.IsDigit) ||
-            !"6789".Contains(dto.Phone[0]))
-        {
-            return BadRequest(new
-            {
-                message = "Enter a valid mobile number."
-            });
-        }
-
-        var hospitalId = GetHospitalId();
+        // =================================================
+        // EMAIL CHECK
+        // =================================================
 
         var exists =
             await _context.Users
-                .AnyAsync(x => x.Email == dto.Email);
+
+                .AnyAsync(x =>
+                    x.Email ==
+                    dto.Email
+                );
 
         if (exists)
         {
             return BadRequest(new
             {
-                message = "Email already exists"
+                message =
+                    "Email already exists"
             });
         }
 
+        // =================================================
+        // HASH PASSWORD
+        // =================================================
+
         var passwordHash =
             BCrypt.Net.BCrypt
-                .HashPassword(temporaryPassword);
+                .HashPassword(
+                    dto.Password
+                );
+
+        // =================================================
+        // CREATE RECEPTIONIST
+        // =================================================
 
         var receptionist =
             new Receptionist
             {
-                Name = dto.Name,
-                Email = dto.Email,
-                Phone = dto.Phone,
-                PasswordHash = passwordHash,
-                HospitalId = hospitalId
+                Name =
+                    dto.Name,
+
+                Email =
+                    dto.Email,
+
+                Phone =
+                    dto.Phone,
+
+                PasswordHash =
+                    passwordHash,
+
+                HospitalId =
+                    hospitalId
             };
 
-        _context.Receptionists.Add(receptionist);
+        _context.Receptionists
+            .Add(receptionist);
+
+        // =================================================
+        // CREATE LOGIN USER
+        // =================================================
 
         var user =
             new User
             {
-                Name = dto.Name,
-                Email = dto.Email,
-                MobileNumber = dto.Phone,
-                PasswordHash = passwordHash,
-                Role = "Receptionist",
-                HospitalId = hospitalId
+                Name =
+                    dto.Name,
+
+                Email =
+                    dto.Email,
+
+                MobileNumber =
+                    dto.Phone,
+
+                PasswordHash =
+                    passwordHash,
+
+                Role =
+                    "Receptionist",
+
+                HospitalId =
+                    hospitalId
             };
 
-        _context.Users.Add(user);
+        _context.Users
+            .Add(user);
 
-        await _context.SaveChangesAsync();
-
-        await _emailHelper.SendAdminCredentials(
-    dto.Email,
-    temporaryPassword);
+        await _context
+            .SaveChangesAsync();
 
         return Ok(new
         {
-            message = "Receptionist created successfully",
-            temporaryPassword = temporaryPassword,
-            receptionistId = receptionist.Id
+            message =
+                "Receptionist created successfully"
         });
     }
 
@@ -140,7 +158,6 @@ public class ReceptionistController
     // GET ALL RECEPTIONISTS
     // =====================================================
 
-    
     [HttpGet]
     public async Task<IActionResult>
         GetAll()
@@ -180,8 +197,7 @@ public class ReceptionistController
     // =====================================================
     // GET RECEPTIONIST BY ID
     // =====================================================
-    
-    
+
     [HttpGet("{id}")]
     public async Task<IActionResult>
         GetById(
@@ -230,8 +246,7 @@ public class ReceptionistController
     // =====================================================
     // UPDATE RECEPTIONIST
     // =====================================================
-    
-   
+
     [HttpPut("{id}")]
     public async Task<IActionResult>
         Update(
@@ -308,8 +323,7 @@ public class ReceptionistController
     // =====================================================
     // DELETE RECEPTIONIST
     // =====================================================
-    
-   
+
     [HttpDelete("{id}")]
     public async Task<IActionResult>
         Delete(

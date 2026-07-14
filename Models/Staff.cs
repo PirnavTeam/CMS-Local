@@ -13,7 +13,7 @@ public class Staff
     public int UserId
     { get; set; }
 
-    public User? User
+    public User User
     { get; set; }
 
     // =====================================================
@@ -21,7 +21,7 @@ public class Staff
     // =====================================================
 
     [Required]
-    public string? Role
+    public string Role
     { get; set; }
 
 
@@ -40,7 +40,7 @@ public class Staff
     public int HospitalId
     { get; set; }
 
-    public Hospital? Hospital
+    public Hospital Hospital
     { get; set; }
 
     // =====================================================

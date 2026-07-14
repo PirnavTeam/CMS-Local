@@ -1,4 +1,375 @@
-﻿using AuthDemo.Helpers;
+﻿
+//using Microsoft.AspNetCore.Authorization;
+//using Microsoft.AspNetCore.Mvc;
+
+//using Microsoft.EntityFrameworkCore;
+
+//using AuthDemo.Data;
+
+//namespace AuthDemo.Controllers;
+
+//[ApiController]
+//[Route("api/[controller]")]
+//[Authorize]
+//public class OverviewController
+//    : ControllerBase
+//{
+//    private readonly AppDbContext
+//        _context;
+
+//    public OverviewController(
+//        AppDbContext context)
+//    {
+//        _context = context;
+//    }
+
+//    [HttpGet("patient/{patientId}")]
+//    public async Task<IActionResult>
+//        PatientOverview(
+//            int patientId)
+//    {
+//        try
+//        {
+//            // =====================================
+//            // HOSPITAL ID
+//            // =====================================
+
+//            var hospitalId =
+//                int.Parse(
+//                    User.Claims.First(
+//                        x => x.Type ==
+//                            "HospitalId"
+//                    ).Value
+//                );
+
+//            // =====================================
+//            // DOCTOR ID
+//            // =====================================
+
+//            var doctorClaim =
+//                User.Claims.FirstOrDefault(
+//                    x => x.Type ==
+//                        "DoctorId"
+//                );
+
+//            int? doctorId =
+//                doctorClaim == null
+//                    ? null
+//                    : int.Parse(
+//                        doctorClaim.Value
+//                    );
+
+//            // =====================================
+//            // PATIENT
+//            // =====================================
+
+//            var patient =
+//                await _context.Patients
+
+//                    .FirstOrDefaultAsync(x =>
+
+//                        x.Id ==
+//                        patientId &&
+
+//                        x.HospitalId ==
+//                        hospitalId
+//                    );
+
+//            if (patient == null)
+//            {
+//                return NotFound(
+//                    "Patient not found"
+//                );
+//            }
+
+//            // =====================================
+//            // APPOINTMENTS
+//            // =====================================
+
+//            var appointmentsQuery =
+//                _context.Appointments
+
+//                    .Include(x =>
+//                        x.Doctor)
+
+//                    .Where(x =>
+
+//                        x.PatientId ==
+//                        patientId &&
+
+//                        x.HospitalId ==
+//                        hospitalId
+//                    );
+
+//            // =====================================
+//            // FILTER DOCTOR
+//            // =====================================
+
+//            if (doctorId != null)
+//            {
+//                appointmentsQuery =
+//                    appointmentsQuery
+//                        .Where(x =>
+//                            x.DoctorId ==
+//                            doctorId
+//                        );
+//            }
+
+//            // =====================================
+//            // APPOINTMENTS
+//            // =====================================
+
+//            var appointments =
+//                await appointmentsQuery
+
+//                    .OrderByDescending(x =>
+//                        x.Date)
+
+//                    .ToListAsync();
+
+//            // =====================================
+//            // LAST VISIT
+//            // =====================================
+
+//            var lastVisit =
+//                appointments
+//                    .FirstOrDefault();
+
+//            // =====================================
+//            // PRESCRIPTIONS
+//            // =====================================
+
+//            var prescriptions =
+//                await _context.Prescriptions
+
+//                    .Include(x =>
+//                        x.Medicines)
+
+//                    .Include(x =>
+//                        x.Appointment)
+
+//                    .Where(x =>
+
+//                        x.PatientId ==
+//                        patientId &&
+
+//                        x.HospitalId ==
+//                        hospitalId
+//                    )
+
+//                    .OrderByDescending(x =>
+//                        x.CreatedAt)
+
+//                    .ToListAsync();
+
+//            // =====================================
+//            // FILTER PRESCRIPTIONS
+//            // =====================================
+
+//            if (doctorId != null)
+//            {
+//                prescriptions =
+//                    prescriptions
+
+//                        .Where(x =>
+
+//                            x.Appointment != null &&
+
+//                            x.Appointment.DoctorId ==
+//                            doctorId
+//                        )
+
+//                        .ToList();
+//            }
+
+//            // =====================================
+//            // RESPONSE
+//            // =====================================
+
+//            return Ok(new
+//            {
+//                patient.Id,
+
+//                patient.PatientCode,
+
+//                patient.Name,
+
+//                patient.Phone,
+
+//                patient.Age,
+
+//                patient.Gender,
+
+//                patient.BloodGroup,
+
+//                patient.Address,
+
+//                overallAppointments =
+//                    appointments.Count,
+
+//                // =================================
+//                // LAST VISIT
+//                // =================================
+
+//                lastVisit =
+//                    lastVisit == null
+//                        ? null
+//                        : new
+//                        {
+//                            appointmentId =
+//                                lastVisit.Id,
+
+//                            tokenNumber =
+//                                lastVisit.TokenNumber
+//                                    ?? "",
+
+//                            doctorName =
+//                                lastVisit.Doctor == null
+//                                    ? ""
+//                                    : lastVisit.Doctor.Name
+//                                        ?? "",
+
+//                            symptoms =
+//                                lastVisit.ChiefComplaints
+//                                    ?? "",
+
+//                            bloodPressure =
+//                                lastVisit.BloodPressure
+//                                    ?? "",
+
+//                            sugarLevel =
+//                                lastVisit.SugarLevel
+//                                    ?? "",
+
+//                            temperature =
+//                                lastVisit.Temperature
+//                                    ?? "",
+
+//                            weight =
+//                                lastVisit.Weight
+//                                    ?? "",
+
+//                            pulseRate =
+//                                lastVisit.PulseRate
+//                                    ?? "",
+
+//                            respiratoryRate =
+//                                lastVisit.RespiratoryRate
+//                                    ?? "",
+
+//                            status =
+//                                lastVisit.Status
+//                                    ?? ""
+//                        },
+
+//                // =================================
+//                // PREVIOUS VISITS
+//                // =================================
+
+//                previousVisits =
+//                    appointments.Select(x =>
+//                        new
+//                        {
+//                            appointmentId =
+//                                x.Id,
+
+//                            tokenNumber =
+//                                x.TokenNumber
+//                                    ?? "",
+
+//                            doctorName =
+//                                x.Doctor == null
+//                                    ? ""
+//                                    : x.Doctor.Name
+//                                        ?? "",
+
+//                            symptoms =
+//                                x.ChiefComplaints
+//                                    ?? "",
+
+//                            bloodPressure =
+//                                x.BloodPressure
+//                                    ?? "",
+
+//                            sugarLevel =
+//                                x.SugarLevel
+//                                    ?? "",
+
+//                            temperature =
+//                                x.Temperature
+//                                    ?? "",
+
+//                            status =
+//                                x.Status
+//                                    ?? ""
+//                        }),
+
+//                // =================================
+//                // PAST PRESCRIPTIONS
+//                // =================================
+
+//                pastPrescriptions =
+//                    prescriptions.Select(x =>
+//                        new
+//                        {
+//                            x.Id,
+
+//                            diagnosis =
+//                                x.Diagnosis
+//                                    ?? "",
+
+//                            instructions =
+//                                x.Instructions
+//                                    ?? "",
+
+//                            status =
+//                                x.Status
+//                                    ?? "",
+
+//                            medicines =
+//                                x.Medicines.Select(m =>
+//                                    new
+//                                    {
+//                                        medicineName =
+//                                            m.MedicineName
+//                                                ?? "",
+
+//                                        dosage =
+//                                            m.Dosage
+//                                                ?? "",
+
+//                                        frequency =
+//                                            m.Frequency
+//                                                ?? "",
+
+//                                        duration =
+//                                            m.Duration
+//                                                ?? "",
+
+//                                        notes =
+//                                            m.Notes
+//                                                ?? ""
+//                                    })
+//                        })
+//            });
+//        }
+//        catch (Exception ex)
+//        {
+//            return StatusCode(
+//                500,
+//                new
+//                {
+//                    error =
+//                        ex.Message,
+
+//                    inner =
+//                        ex.InnerException == null
+//                            ? ""
+//                            : ex.InnerException.Message
+//                });
+//        }
+//    }
+//}
 
 
 using Microsoft.AspNetCore.Authorization;
@@ -24,20 +395,6 @@ public class OverviewController
     {
         _context = context;
     }
-    private int GetHospitalId()
-    {
-        var claim =
-            User.Claims.FirstOrDefault(
-                x => x.Type == "HospitalId"
-            );
-
-        if (claim == null)
-        {
-            return 0;
-        }
-
-        return int.Parse(claim.Value);
-    }
 
     [HttpGet("patient/{patientId}")]
     public async Task<IActionResult>
@@ -58,20 +415,13 @@ public class OverviewController
                     ).Value
                 );
 
-            var doctorClaim =
-    User.Claims.FirstOrDefault(
-        x => x.Type == "DoctorId"
-    );
-
-            int? doctorId = null;
-
-            if (doctorClaim != null)
-            {
-                doctorId =
-                    int.Parse(
-                        doctorClaim.Value
-                    );
-            }
+            var doctorId =
+                int.Parse(
+                    User.Claims.First(
+                        x => x.Type ==
+                            "DoctorId"
+                    ).Value
+                );
 
             // =====================================
             // PATIENT
@@ -126,47 +476,31 @@ public class OverviewController
 
                     .Include(x =>
                         x.Doctor)
-.Where(x =>
 
-    x.PatientId ==
-    patientId &&
+                    .Where(x =>
 
-    x.HospitalId ==
-    hospitalId &&
+                        x.PatientId ==
+                        patientId &&
 
-    (
-        doctorId == null ||
-        x.DoctorId == doctorId
-    )
-)
+                        x.DoctorId ==
+                        doctorId &&
+
+                        x.HospitalId ==
+                        hospitalId
+                    )
 
                     .OrderByDescending(x =>
                         x.Date)
 
                     .ToListAsync();
 
-           
-
-            // =====================================
-            // PREVIOUS COMPLETED VISITS
-            // =====================================
-
-            var previousVisitsData =
-                appointments
-                    .Where(x =>
-                        x.Status == "Completed")
-                    .OrderByDescending(x =>
-                        x.Date)
-                    .ToList();
-
             // =====================================
             // LAST VISIT
             // =====================================
 
             var lastVisit =
-                previousVisitsData
+                appointments
                     .FirstOrDefault();
-
 
             // =====================================
             // PRESCRIPTIONS
@@ -183,17 +517,15 @@ public class OverviewController
 
                     .Where(x =>
 
-    x.PatientId ==
-    patientId &&
+                        x.PatientId ==
+                        patientId &&
 
-    x.HospitalId ==
-    hospitalId &&
+                        x.HospitalId ==
+                        hospitalId &&
 
-    (
-        doctorId == null ||
-        x.Appointment.DoctorId == doctorId
-    )
-)
+                        x.Appointment.DoctorId ==
+                        doctorId
+                    )
 
                     .OrderByDescending(x =>
                         x.CreatedAt)
@@ -281,52 +613,84 @@ public class OverviewController
                 // =================================
 
                 lastVisit =
-    lastVisit == null
-        ? null
-        : new
-        {
-            appointmentId = lastVisit.Id,
-            tokenNumber = lastVisit.TokenNumber,
-            doctorName = lastVisit.Doctor == null
-                ? ""
-                : lastVisit.Doctor.Name,
-            date = lastVisit.Date.ToString("dd MMM yyyy"),
-            symptoms = lastVisit.ChiefComplaints,
-            bloodPressure = lastVisit.BloodPressure,
-            sugarLevel = lastVisit.SugarLevel,
-            temperature = lastVisit.Temperature,
-            weight = lastVisit.Weight,
-            pulseRate = lastVisit.PulseRate,
-            respiratoryRate = lastVisit.RespiratoryRate,
-            status = lastVisit.Status
-        },
+                    lastVisit == null
+                        ? null
+                        : new
+                        {
+                            appointmentId =
+                                lastVisit.Id,
+
+                            tokenNumber =
+                                lastVisit.TokenNumber,
+
+                            doctorName =
+                                lastVisit.Doctor == null
+                                    ? ""
+                                    : lastVisit.Doctor.Name,
+
+                            date =
+                                lastVisit.Date
+                                    .ToString(
+                                        "dd MMM yyyy"
+                                    ),
+
+                            symptoms =
+                                lastVisit.ChiefComplaints,
+
+                            bloodPressure =
+                                lastVisit.BloodPressure,
+
+                            sugarLevel =
+                                lastVisit.SugarLevel,
+
+                            temperature =
+                                lastVisit.Temperature,
+
+                            weight =
+                                lastVisit.Weight,
+
+                            pulseRate =
+                                lastVisit.PulseRate,
+
+                            respiratoryRate =
+                                lastVisit.RespiratoryRate,
+
+                            status =
+                                lastVisit.Status
+                        },
 
                 // =================================
                 // PREVIOUS VISITS
                 // =================================
 
-                hasPreviousVisits =
-    previousVisitsData.Any(),
-
-                previousVisitMessage =
-    previousVisitsData.Any()
-        ? ""
-        : "No previous visits found",
-
                 previousVisits =
-    previousVisitsData
-        .Select(x =>
-            new
-            {
-                appointmentId = x.Id,
-                tokenNumber = x.TokenNumber,
-                doctorName = x.Doctor == null
-                    ? ""
-                    : x.Doctor.Name,
-                date = x.Date.ToString("dd MMM yyyy"),
-                symptoms = x.ChiefComplaints,
-                status = x.Status
-            }),
+                    appointments.Select(x =>
+                        new
+                        {
+                            appointmentId =
+                                x.Id,
+
+                            tokenNumber =
+                                x.TokenNumber,
+
+                            doctorName =
+                                x.Doctor == null
+                                    ? ""
+                                    : x.Doctor.Name,
+
+                            date =
+                                x.Date
+                                    .ToString(
+                                        "dd MMM yyyy"
+                                    ),
+
+                            symptoms =
+                                x.ChiefComplaints,
+
+                            status =
+                                x.Status
+                        }),
+
                 // =================================
                 // PAST PRESCRIPTIONS
                 // =================================
@@ -372,37 +736,5 @@ public class OverviewController
                         ex.Message
                 });
         }
-
-    }
-
-    [HttpGet("{appointmentId}/documents")]
-    public async Task<IActionResult>
- GetDocuments(int appointmentId)
-    {
-        var hospitalId =
-            GetHospitalId();
-
-        var data =
-            await _context.AppointmentDocuments
-
-                .Where(x =>
-                    x.AppointmentId == appointmentId &&
-                    x.HospitalId == hospitalId)
-
-                .Select(x => new
-                {
-                    x.Id,
-
-                    x.FileName,
-
-                    x.UploadedAt,
-
-                    DocumentUrl =
-                        $"{Request.Scheme}://{Request.Host}{x.FilePath}"
-                })
-
-                .ToListAsync();
-
-        return Ok(data);
     }
 }

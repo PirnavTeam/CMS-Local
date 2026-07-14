@@ -1,4 +1,4 @@
-//using Microsoft.EntityFrameworkCore;
+﻿//using Microsoft.EntityFrameworkCore;
 
 //using BCrypt.Net;
 
@@ -803,7 +803,11 @@ public class AuthService
                 Phone =
                     dto.Phone,
 
-                
+                PasswordHash =
+                    BCrypt.Net.BCrypt
+                        .HashPassword(
+                            dto.Password
+                        ),
 
                 HospitalId =
                     dto.HospitalId
@@ -856,8 +860,8 @@ public class AuthService
             await _context.Users
                 .Include(x => x.Hospital)
                 .FirstOrDefaultAsync(x =>
-                    x.IsActive &&
-                    (x.Email == dto.Email || x.MobileNumber == dto.Email));
+                    x.Email == dto.Email &&
+                    x.IsActive);
 
         if (user == null)
         {
@@ -874,11 +878,6 @@ public class AuthService
             return null;
         }
 
-        var patient = user.Role == "Patient"
-            ? await _context.Patients.FirstOrDefaultAsync(x =>
-                x.Email == user.Email || x.Phone == user.MobileNumber)
-            : null;
-
         var token =
             _jwtHelper.GenerateToken(user);
 
@@ -891,8 +890,6 @@ public class AuthService
             DoctorId = user.DoctorId,
             HospitalId = user.HospitalId,
             HospitalName = user.Hospital == null ? "" : user.Hospital.Name,
-            PatientId = patient?.Id,
-            PatientCode = patient?.PatientCode,
             MustChangePassword = user.MustChangePassword
         };
     }

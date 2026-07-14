@@ -8,7 +8,7 @@ public class Hospital
     // HOSPITAL DETAILS
     // =====================================================
 
-    public string? Name
+    public string Name
     { get; set; }
 
     public string? Address
@@ -19,16 +19,6 @@ public class Hospital
 
     public string? Email
     { get; set; }
-
-    public string? City { get; set; }
-
-    public string? State { get; set; }
-    public string? District { get; set; }
-
-    public string? Country { get; set; }
-
-    public string? PostalCode { get; set; }
-
 
     // =====================================================
     // ACTIVE STATUS

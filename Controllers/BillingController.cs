@@ -1,4 +1,4 @@
-﻿using AuthDemo.Helpers;
+﻿
 using AuthDemo.Data;
 using AuthDemo.DTOs;
 using AuthDemo.Models;
@@ -49,7 +49,7 @@ public class BillingController
     // =====================================
     // APPOINTMENT DROPDOWN
     // =====================================
-    
+
     [HttpGet("appointments")]
     public async Task<IActionResult>
         GetAppointments()
@@ -118,7 +118,7 @@ public class BillingController
     // =====================================
     // APPOINTMENT DETAILS
     // =====================================
-    
+
     [HttpGet("appointment/{appointmentId}")]
     public async Task<IActionResult>
         GetAppointment(
@@ -187,8 +187,7 @@ public class BillingController
     // =====================================
     // GET ALL BILLS
     // =====================================
-   
-    
+
     [HttpGet]
     public async Task<IActionResult>
         GetAllBills()
@@ -240,8 +239,7 @@ public class BillingController
     // =====================================
     // CREATE BILL
     // =====================================
-    
-   
+
     [HttpPost]
     public async Task<IActionResult>
         CreateBill(
@@ -324,8 +322,7 @@ public class BillingController
     // =====================================
     // UPDATE BILL
     // =====================================
-   
-    
+
     [HttpPut("{id}")]
     public async Task<IActionResult>
         UpdateBill(
@@ -369,8 +366,7 @@ public class BillingController
     // =====================================
     // DELETE BILL
     // =====================================
-   
-   
+
     [HttpDelete("{id}")]
     public async Task<IActionResult>
         DeleteBill(

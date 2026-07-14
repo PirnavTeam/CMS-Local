@@ -1,4 +1,4 @@
-namespace AuthDemo.Models;
+﻿namespace AuthDemo.Models;
 
 public class User
 {
@@ -9,23 +9,23 @@ public class User
     // BASIC DETAILS
     // =====================================================
 
-    public string? Name
+    public string Name
     { get; set; }
 
-    public string? MobileNumber
+    public string MobileNumber
     { get; set; }
 
-    public string? Email
+    public string Email
     { get; set; }
 
     // =====================================================
     // AUTH
     // =====================================================
 
-    public string? PasswordHash
+    public string PasswordHash
     { get; set; }
 
-    public string? Role
+    public string Role
     { get; set; }
 
     // =====================================================
@@ -39,10 +39,10 @@ public class User
     // MULTI HOSPITAL
     // =====================================================
 
-    public int? HospitalId
+    public int HospitalId
     { get; set; }
 
-    public Hospital? Hospital
+    public Hospital Hospital
     { get; set; }
 
     // =====================================================

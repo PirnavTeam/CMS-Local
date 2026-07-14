@@ -6,23 +6,23 @@ public class RegisterDto
     // ADMIN DETAILS
     // =====================================================
 
-    public string? Name
+    public string Name
     { get; set; }
 
-    public string? MobileNumber
+    public string MobileNumber
     { get; set; }
 
-    public string? Email
+    public string Email
     { get; set; }
 
-    public string? Password
+    public string Password
     { get; set; }
 
     // =====================================================
     // ROLE
     // =====================================================
 
-    public string? Role
+    public string Role
     { get; set; }
         = "Admin";
 
@@ -30,7 +30,7 @@ public class RegisterDto
     // HOSPITAL DETAILS
     // =====================================================
 
-    public string? HospitalName
+    public string HospitalName
     { get; set; }
 
     public string? HospitalAddress

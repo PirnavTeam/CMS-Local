@@ -6,9 +6,9 @@ public class LoginDto
     // LOGIN DETAILS
     // =====================================================
 
-    public string? Email
+    public string Email
     { get; set; }
 
-    public string? Password
+    public string Password
     { get; set; }
 }

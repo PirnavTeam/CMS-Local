@@ -1,12 +1,10 @@
-﻿namespace AuthDemo.Models;
-
-public class RolePermission
+﻿public class RolePermission
 {
     public int Id { get; set; }
 
-    public string? RoleName { get; set; }
+    public string RoleName { get; set; }
 
-  
+    public string Module { get; set; }
 
     public bool CanView { get; set; }
 

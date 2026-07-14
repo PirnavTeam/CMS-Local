@@ -1,4 +1,4 @@
-﻿using AuthDemo.Helpers;
+﻿
 
 using AuthDemo.Data;
 using AuthDemo.DTOs;
@@ -96,43 +96,17 @@ public class PatientController
 
     [Authorize(Roles =
         "Admin,Receptionist")]
-   
-    
     [HttpPost]
     public async Task<IActionResult>
         Create(
             CreatePatientDto dto)
     {
-        if (!dto.Email.EndsWith("@gmail.com"))
-        {
-            return BadRequest(new
-            {
-                message = "Only Gmail addresses are allowed."
-            });
-        }
-
-        if (dto.Phone.Length != 10 ||
-            !dto.Phone.All(char.IsDigit) ||
-            !"6789".Contains(dto.Phone[0]))
-        {
-            return BadRequest(new
-            {
-                message = "Enter a valid mobile number."
-            });
-        }
         var hospitalId =
             GetHospitalId();
 
         var patientCode =
             $"P-{new Random()
                 .Next(10000, 99999)}";
-        var age = DateTime.Today.Year - dto.DateOfBirth.Value.Year;
-
-        if (dto.DateOfBirth.Value.Date >
-            DateTime.Today.AddYears(-age))
-        {
-            age--;
-        }
 
         var patient =
             new Patient
@@ -146,7 +120,9 @@ public class PatientController
                 Phone =
                     dto.Phone,
 
-                Age = age,
+                Age =
+                    dto.Age,
+
                 Gender =
                     dto.Gender,
 
@@ -193,8 +169,7 @@ public class PatientController
     // =====================================================
     // GET ALL PATIENTS
     // =====================================================
-   
-   
+
     [HttpGet]
     public async Task<IActionResult>
         GetAll()
@@ -312,8 +287,7 @@ var patients =
     // =====================================================
     // GET PATIENT DETAILS
     // =====================================================
-   
-    
+
     [HttpGet("{id}")]
     public async Task<IActionResult>
         GetById(
@@ -480,7 +454,6 @@ var patients =
 
     [Authorize(Roles =
         "Admin,Receptionist")]
-   
     [HttpPut("{id}")]
     public async Task<IActionResult>
         Update(
@@ -514,15 +487,9 @@ var patients =
 
         patient.Phone =
             dto.Phone;
-        var age = DateTime.Today.Year - dto.DateOfBirth.Value.Year;
 
-        if (dto.DateOfBirth.Value.Date >
-            DateTime.Today.AddYears(-age))
-        {
-            age--;
-        }
-
-        patient.Age = age;
+        patient.Age =
+            dto.Age;
 
         patient.Gender =
             dto.Gender;
@@ -559,21 +526,18 @@ var patients =
     // DELETE PATIENT
     // =====================================================
 
-    [Authorize(Roles = "Admin,Receptionist")]
-    
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult>
-    Delete(int id)
+        Delete(
+            int id)
     {
         var hospitalId =
             GetHospitalId();
 
-        // =====================================
-        // GET PATIENT
-        // =====================================
-
         var patient =
             await _context.Patients
+
                 .FirstOrDefaultAsync(x =>
 
                     x.Id == id &&
@@ -584,39 +548,10 @@ var patients =
 
         if (patient == null)
         {
-            return NotFound(new
-            {
-                message =
-                    "Patient not found"
-            });
+            return NotFound(
+                "Patient not found"
+            );
         }
-
-        // =====================================
-        // CHECK APPOINTMENTS
-        // =====================================
-
-        var hasAppointments =
-            await _context.Appointments
-                .AnyAsync(x =>
-
-                    x.PatientId == id &&
-
-                    x.HospitalId ==
-                    hospitalId
-                );
-
-        if (hasAppointments)
-        {
-            return BadRequest(new
-            {
-                message =
-                    "Patient cannot be deleted because appointments are associated with this patient."
-            });
-        }
-
-        // =====================================
-        // DELETE PATIENT
-        // =====================================
 
         _context.Patients
             .Remove(patient);
@@ -630,16 +565,4 @@ var patients =
                 "Patient deleted successfully"
         });
     }
-    [HttpGet("blood-groupsDropdown")]
-    public IActionResult GetBloodGroups()
-    {
-        return Ok(new[]
-        {
-        "A+","A-",
-        "B+","B-",
-        "AB+","AB-",
-        "O+","O-"
-    });
-    }
-
 }

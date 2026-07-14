@@ -1,4 +1,4 @@
-namespace AuthDemo.DTOs;
+﻿namespace AuthDemo.DTOs;
 
 public class LoginResponseDto
 {
@@ -6,20 +6,20 @@ public class LoginResponseDto
     // JWT TOKEN
     // =====================================================
 
-    public string? Token
+    public string Token
     { get; set; }
 
     // =====================================================
     // USER DETAILS
     // =====================================================
 
-    public string? Role
+    public string Role
     { get; set; }
 
-    public string? Name
+    public string Name
     { get; set; }
 
-    public string? Email
+    public string Email
     { get; set; }
 
     // =====================================================
@@ -33,16 +33,10 @@ public class LoginResponseDto
     // MULTI HOSPITAL
     // =====================================================
 
-    public int? HospitalId
+    public int HospitalId
     { get; set; }
 
-    public string? HospitalName
-    { get; set; }
-
-    public int? PatientId
-    { get; set; }
-
-    public string? PatientCode
+    public string HospitalName
     { get; set; }
 
     public bool MustChangePassword

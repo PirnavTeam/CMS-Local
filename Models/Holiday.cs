@@ -11,7 +11,7 @@ public class Holiday
     // =========================================
 
     [Required]
-    public string? Name { get; set; }
+    public string Name { get; set; }
 
     [Required]
     public DateTime Date { get; set; }
@@ -22,7 +22,7 @@ public class Holiday
 
     public int HospitalId { get; set; }
 
-    public Hospital? Hospital { get; set; }
+    public Hospital Hospital { get; set; }
 
     // =========================================
     // CREATED DATE

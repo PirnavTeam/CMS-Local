@@ -1,4 +1,4 @@
-namespace AuthDemo.Models;
+﻿namespace AuthDemo.Models;
 
 public class Patient
 {
@@ -53,10 +53,10 @@ public class Patient
     // MULTI HOSPITAL SUPPORT
     // =====================================================
 
-    public int? HospitalId
+    public int HospitalId
     { get; set; }
 
-    public Hospital? Hospital
+    public Hospital Hospital
     { get; set; }
 
     // =====================================================

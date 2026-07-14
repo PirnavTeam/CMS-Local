@@ -1,6 +1,5 @@
 ﻿using AuthDemo.Data;
 using AuthDemo.DTOs;
-using AuthDemo.Helpers;
 using AuthDemo.Models;
 using AuthDemo.Services.Interfaces;
 
@@ -11,17 +10,13 @@ namespace AuthDemo.Services;
 public class AppointmentService
     : IAppointmentService
 {
-    private readonly AppDbContext _context;
-
-    private readonly EmailHelper _emailHelper;
-
+    private readonly AppDbContext
+        _context;
 
     public AppointmentService(
-    AppDbContext context,
-    EmailHelper emailHelper)
+        AppDbContext context)
     {
         _context = context;
-        _emailHelper = emailHelper;
     }
 
     // =====================================================
@@ -138,7 +133,6 @@ public class AppointmentService
 
                 StartTime =
                     dto.StartTime,
-               
 
                 TokenNumber =
                     tokenNumber,
@@ -170,62 +164,13 @@ public class AppointmentService
                 HospitalId =
                     hospitalId
             };
-        _context.Appointments.Add(appointment);
 
-        await _context.SaveChangesAsync();
+        _context.Appointments
+            .Add(appointment);
 
-        var hospital =
-
-            await _context.Hospitals
-
-                .FirstOrDefaultAsync(x =>
-
-                    x.Id == hospitalId);
-
-        if (patient != null &&
-
-            !string.IsNullOrWhiteSpace(patient.Email))
-
-        {
-
-            await _context.SaveChangesAsync();
-
-            var hospitalData =
-    await _context.Hospitals
-        .FirstOrDefaultAsync(x =>
-            x.Id == hospitalId);
-
-            if (patient != null &&
-
-                !string.IsNullOrWhiteSpace(patient.Email))
-
-            {
-
-                await _emailHelper.SendAppointmentConfirmation(
-
-                    patient.Email,
-
-                    patient.Name,
-
-                    hospitalData?.Name ?? "Clinic",
-
-                    doctor.Name,
-
-                    appointment.TokenNumber,
-
-                    appointment.Date,
-
-                    appointment.StartTime
-
-                );
-
-            }
-
-
-        }
-
+        await _context
+            .SaveChangesAsync();
     }
-
 
     // =====================================================
     // GET ALL APPOINTMENTS

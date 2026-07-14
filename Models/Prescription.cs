@@ -8,32 +8,32 @@ public class Prescription
     public int AppointmentId
     { get; set; }
 
-    public Appointment? Appointment
+    public Appointment Appointment
     { get; set; }
 
     public int PatientId
     { get; set; }
 
-    public Patient? Patient
+    public Patient Patient
     { get; set; }
 
-    public string? Diagnosis
+    public string Diagnosis
     { get; set; }
 
-    public string? Instructions
+    public string Instructions
     { get; set; }
 
     public DateTime FollowUpDate
     { get; set; }
 
-    public string? Status
+    public string Status
     { get; set; }
         = "Draft";
 
     public int HospitalId
     { get; set; }
 
-    public Hospital? Hospital
+    public Hospital Hospital
     { get; set; }
 
     public ICollection<PrescriptionItem>

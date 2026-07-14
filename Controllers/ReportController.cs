@@ -1,4 +1,4 @@
-﻿using AuthDemo.Helpers;
+﻿
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -229,21 +229,21 @@ public class ReportController
             GetDoctorId();
 
         var query =
-      _context.Billings
+            _context.Appointments
 
-          .Include(x =>
-              x.Doctor)
+                .Include(x =>
+                    x.Doctor)
 
-          .Where(x =>
+                .Where(x =>
 
-              x.HospitalId ==
-              hospitalId &&
+                    x.HospitalId ==
+                    hospitalId &&
 
-              x.Status ==
-              "Paid"
-          )
+                    x.Status ==
+                    "Completed"
+                )
 
-          .AsQueryable();
+                .AsQueryable();
 
         // =================================================
         // DOCTOR ONLY OWN REVENUE
@@ -276,7 +276,7 @@ public class ReportController
         {
             query =
                 query.Where(x =>
-                   x.CreatedAt.Date >=
+                    x.Date.Date >=
                     fromDate.Value.Date
                 );
         }
@@ -285,7 +285,7 @@ public class ReportController
         {
             query =
                 query.Where(x =>
-                    x.CreatedAt.Date <=
+                    x.Date.Date <=
                     toDate.Value.Date
                 );
         }
@@ -299,8 +299,8 @@ public class ReportController
 
                 .GroupBy(x => new
                 {
-                    x.CreatedAt.Date.Year,
-                    x.CreatedAt.Date.Month
+                    x.Date.Year,
+                    x.Date.Month
                 })
 
                 .Select(g => new
@@ -316,8 +316,10 @@ public class ReportController
                         ).ToString("MMM"),
 
                     revenue =
-    g.Sum(x =>
-        x.TotalAmount)
+                        g.Sum(x =>
+                            x.Doctor == null
+                                ? 0
+                                : x.Doctor.Fees)
                 })
 
                 .OrderBy(x =>

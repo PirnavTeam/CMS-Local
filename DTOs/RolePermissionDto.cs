@@ -1,8 +1,9 @@
 ﻿public class RolePermissionDto
 {
-    public string? RoleName { get; set; }
+    public string RoleName { get; set; }
 
-    
+    public string Module { get; set; }
+
     public bool CanView { get; set; }
 
     public bool CanCreate { get; set; }

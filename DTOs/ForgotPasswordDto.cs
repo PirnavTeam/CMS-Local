@@ -6,6 +6,6 @@ public class ForgotPasswordDto
     // EMAIL
     // =====================================================
 
-    public string? Email
+    public string Email
     { get; set; }
 }

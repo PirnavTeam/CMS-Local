@@ -291,7 +291,6 @@
 //    }
 //}
 
-using AuthDemo.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -333,7 +332,6 @@ public class ScheduleSettingsController : ControllerBase
     // GET SETTINGS
     // =====================================================
 
-   
     [HttpGet]
     public async Task<IActionResult>
         GetSettings()
@@ -384,7 +382,6 @@ public class ScheduleSettingsController : ControllerBase
     // CREATE SETTINGS
     // =====================================================
 
-   
     [HttpPost]
     public async Task<IActionResult>
         CreateSettings(
@@ -415,7 +412,7 @@ public class ScheduleSettingsController : ControllerBase
 
         await _context
             .SaveChangesAsync();
-       
+
         return Ok(new
         {
             message =
@@ -427,7 +424,6 @@ public class ScheduleSettingsController : ControllerBase
     // UPDATE SETTINGS
     // =====================================================
 
-   
     [HttpPut("{id}")]
     public async Task<IActionResult>
         UpdateSettings(
@@ -465,7 +461,6 @@ public class ScheduleSettingsController : ControllerBase
 
         await _context
             .SaveChangesAsync();
-        
 
         return Ok(new
         {
@@ -478,7 +473,6 @@ public class ScheduleSettingsController : ControllerBase
     // DELETE SETTINGS
     // =====================================================
 
-   
     [HttpDelete("{id}")]
     public async Task<IActionResult>
         DeleteSettings(int id)
@@ -557,7 +551,6 @@ public class ScheduleSettingsController : ControllerBase
     // CREATE HOLIDAY
     // =====================================================
 
-    
     [HttpPost("holidays")]
     public async Task<IActionResult>
         CreateHoliday(
@@ -596,7 +589,6 @@ public class ScheduleSettingsController : ControllerBase
     // UPDATE HOLIDAY
     // =====================================================
 
-   
     [HttpPut("holidays/{id}")]
     public async Task<IActionResult>
         UpdateHoliday(
@@ -643,7 +635,6 @@ public class ScheduleSettingsController : ControllerBase
     // DELETE HOLIDAY
     // =====================================================
 
-    
     [HttpDelete("holidays/{id}")]
     public async Task<IActionResult>
         DeleteHoliday(int id)
@@ -680,5 +671,4 @@ public class ScheduleSettingsController : ControllerBase
                 "Holiday deleted"
         });
     }
-    
 }

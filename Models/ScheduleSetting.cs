@@ -26,7 +26,7 @@ public class ScheduleSetting
 
     public int HospitalId { get; set; }
 
-    public Hospital? Hospital { get; set; }
+    public Hospital Hospital { get; set; }
 
     // =========================================
     // CREATED DATE

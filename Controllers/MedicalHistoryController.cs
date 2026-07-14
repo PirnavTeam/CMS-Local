@@ -275,7 +275,7 @@ using Microsoft.EntityFrameworkCore;
 using AuthDemo.Data;
 using AuthDemo.DTOs;
 using AuthDemo.Models;
-using AuthDemo.Helpers;
+
 namespace AuthDemo.Controllers;
 
 [ApiController]
@@ -321,7 +321,6 @@ public class MedicalHistoryController
 
     [Authorize(Roles =
         "Admin,Receptionist")]
-    
     [HttpPost]
     public async Task<IActionResult>
         Create(
@@ -401,7 +400,6 @@ public class MedicalHistoryController
     // GET LATEST HISTORY
     // =====================================================
 
-    
     [HttpGet("{patientId}")]
     public async Task<IActionResult>
         GetLatest(
@@ -466,7 +464,6 @@ public class MedicalHistoryController
     // GET ALL HISTORY
     // =====================================================
 
-    
     [HttpGet("all/{patientId}")]
     public async Task<IActionResult>
         GetAll(
@@ -524,7 +521,6 @@ public class MedicalHistoryController
 
     [Authorize(Roles =
         "Admin,Receptionist")]
-    
     [HttpPut("{id}")]
     public async Task<IActionResult>
         Update(
@@ -583,7 +579,6 @@ public class MedicalHistoryController
 
     [Authorize(Roles =
         "Admin")]
-    
     [HttpDelete("{id}")]
     public async Task<IActionResult>
         Delete(

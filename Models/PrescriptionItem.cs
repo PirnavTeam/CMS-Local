@@ -11,25 +11,25 @@ public class PrescriptionItem
     public int PrescriptionId
     { get; set; }
 
-    public Prescription? Prescription
+    public Prescription Prescription
     { get; set; }
 
     // =====================================================
     // MEDICINE DETAILS
     // =====================================================
 
-    public string? MedicineName
+    public string MedicineName
     { get; set; }
 
-    public string? Dosage
+    public string Dosage
     { get; set; }
 
-    public string? Frequency
+    public string Frequency
     { get; set; }
 
-    public string? Duration
+    public string Duration
     { get; set; }
 
-    public string? Notes
+    public string Notes
     { get; set; }
 }

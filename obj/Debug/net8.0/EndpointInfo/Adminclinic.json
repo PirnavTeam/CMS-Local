@@ -46,6 +46,47 @@
         }
       }
     },
+    "/api/AdminManagement": {
+      "post": {
+        "tags": [
+          "AdminManagement"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "AdminManagement"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admins/{id}": {
       "get": {
         "tags": [
@@ -130,8 +171,8 @@
         }
       }
     },
-    "/api/admins/{id}/status": {
-      "patch": {
+    "/api/AdminManagement/{id}": {
+      "get": {
         "tags": [
           "AdminManagement"
         ],
@@ -144,12 +185,66 @@
               "type": "integer",
               "format": "int32"
             }
-          },
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AdminManagement"
+        ],
+        "parameters": [
           {
-            "name": "status",
-            "in": "query",
+            "name": "id",
+            "in": "path",
+            "required": true,
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AdminManagement"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -223,82 +318,6 @@
               "type": "string"
             }
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Appointment/{appointmentId}/documents": {
-      "post": {
-        "tags": [
-          "Appointment"
-        ],
-        "parameters": [
-          {
-            "name": "appointmentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              },
-              "encoding": {
-                "file": {
-                  "style": "form"
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Appointment"
-        ],
-        "parameters": [
-          {
-            "name": "appointmentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Appointment/chief-complaints": {
-      "get": {
-        "tags": [
-          "Appointment"
         ],
         "responses": {
           "200": {
@@ -813,7 +832,132 @@
         }
       }
     },
+    "/api/Clinic": {
+      "post": {
+        "tags": [
+          "Clinic"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClinicDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClinicDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClinicDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Clinic"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/clinics/{id}": {
+      "get": {
+        "tags": [
+          "Clinic"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Clinic"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClinicDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClinicDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClinicDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Clinic"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Clinic/{id}": {
       "get": {
         "tags": [
           "Clinic"
@@ -920,6 +1064,29 @@
         }
       }
     },
+    "/api/Clinic/{id}/status": {
+      "patch": {
+        "tags": [
+          "Clinic"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Consultation": {
       "post": {
         "tags": [
@@ -996,31 +1163,7 @@
         }
       }
     },
-    "/api/Consultation/clinical-note-templates": {
-      "get": {
-        "tags": [
-          "Consultation"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/Dashboard": {
-      "get": {
-        "tags": [
-          "Dashboard"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Dashboard/ClincData": {
       "get": {
         "tags": [
           "Dashboard"
@@ -1071,90 +1214,21 @@
         "tags": [
           "Doctor"
         ],
-        "parameters": [
-          {
-            "name": "Name",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Specialization",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Experience",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Qualification",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "ConsultationFee",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "minimum": 0.01,
-              "type": "number",
-              "format": "double"
-            }
-          },
-          {
-            "name": "AreaofExpertise",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "IsActive",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "PhoneNumber",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Email",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "Image": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              },
-              "encoding": {
-                "Image": {
-                  "style": "form"
-                }
+                "$ref": "#/components/schemas/DoctorCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorCreateDto"
               }
             }
           }
@@ -1201,90 +1275,23 @@
               "type": "integer",
               "format": "int32"
             }
-          },
-          {
-            "name": "Name",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Specialization",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Experience",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Qualification",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "ConsultationFee",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "minimum": 0.01,
-              "type": "number",
-              "format": "double"
-            }
-          },
-          {
-            "name": "AreaofExpertise",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "IsActive",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "PhoneNumber",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Email",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "requestBody": {
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "Image": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              },
-              "encoding": {
-                "Image": {
-                  "style": "form"
-                }
+                "$ref": "#/components/schemas/DoctorCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorCreateDto"
               }
             }
           }
@@ -1307,94 +1314,6 @@
             "schema": {
               "type": "integer",
               "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Doctor/specializations": {
-      "get": {
-        "tags": [
-          "Doctor"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Doctor/qualifications": {
-      "get": {
-        "tags": [
-          "Doctor"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Doctor/{id}/status": {
-      "patch": {
-        "tags": [
-          "Doctor"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateDoctorStatusDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateDoctorStatusDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateDoctorStatusDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Location/pincode/{pincode}": {
-      "get": {
-        "tags": [
-          "Location"
-        ],
-        "parameters": [
-          {
-            "name": "pincode",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
             }
           }
         ],
@@ -1652,29 +1571,6 @@
         }
       }
     },
-    "/api/Overview/{appointmentId}/documents": {
-      "get": {
-        "tags": [
-          "Overview"
-        ],
-        "parameters": [
-          {
-            "name": "appointmentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/Patient": {
       "post": {
         "tags": [
@@ -1800,485 +1696,6 @@
         }
       }
     },
-    "/api/Patient/blood-groupsDropdown": {
-      "get": {
-        "tags": [
-          "Patient"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/register": {
-      "post": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalRegisterDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalRegisterDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalRegisterDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/dashboard": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/profile": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientProfileUpdateDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientProfileUpdateDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientProfileUpdateDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/clinics": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/clinics/{clinicId}/departments": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "parameters": [
-          {
-            "name": "clinicId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/doctors": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "parameters": [
-          {
-            "name": "clinicId",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "department",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/doctors/{doctorId}/slots": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "parameters": [
-          {
-            "name": "doctorId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "date",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/appointments": {
-      "post": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalBookAppointmentDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalBookAppointmentDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalBookAppointmentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/appointments/{id}": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/appointments/{id}/cancel": {
-      "patch": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/appointments/{id}/reschedule": {
-      "put": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalRescheduleDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalRescheduleDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalRescheduleDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/medical-history": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/prescriptions": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/prescriptions/{id}": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/bills": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/bills/{id}/pay": {
-      "post": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalPaymentDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalPaymentDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatientPortalPaymentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/notifications": {
-      "get": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/notifications/{id}/read": {
-      "patch": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/patient-portal/notifications/{id}": {
-      "delete": {
-        "tags": [
-          "PatientPortal"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/Prescription": {
       "post": {
         "tags": [
@@ -2335,66 +1752,6 @@
               "format": "int32"
             }
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Prescription/dosages": {
-      "get": {
-        "tags": [
-          "Prescription"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Prescription/frequencies": {
-      "get": {
-        "tags": [
-          "Prescription"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Prescription/medicineDropdown": {
-      "get": {
-        "tags": [
-          "Prescription"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Prescription/Instructiondropdown": {
-      "get": {
-        "tags": [
-          "Prescription"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/Prescription/medicine-notes": {
-      "get": {
-        "tags": [
-          "Prescription"
         ],
         "responses": {
           "200": {
@@ -3935,7 +3292,19 @@
             "type": "string",
             "nullable": true
           },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
           "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "nullable": true
+          },
+          "temporaryPassword": {
             "type": "string",
             "nullable": true
           },
@@ -3946,6 +3315,11 @@
           "hospitalId": {
             "type": "integer",
             "format": "int32"
+          },
+          "clinicId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           },
           "sendWelcomeEmail": {
             "type": "boolean"
@@ -3976,25 +3350,31 @@
         "additionalProperties": false
       },
       "CreateClinicDto": {
-        "required": [
-          "email",
-          "phoneNumber"
-        ],
         "type": "object",
         "properties": {
           "clinicName": {
             "type": "string",
             "nullable": true
           },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
           "email": {
-            "minLength": 1,
-            "pattern": "^[a-zA-Z0-9._%+-]+@gmail\\.com$",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "phoneNumber": {
-            "minLength": 1,
-            "pattern": "^[6-9]\\d{9}$",
-            "type": "string"
+            "type": "string",
+            "nullable": true
+          },
+          "contactNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
           },
           "address": {
             "type": "string",
@@ -4009,10 +3389,6 @@
             "nullable": true
           },
           "state": {
-            "type": "string",
-            "nullable": true
-          },
-          "district": {
             "type": "string",
             "nullable": true
           },
@@ -4102,6 +3478,10 @@
           "phone": {
             "type": "string",
             "nullable": true
+          },
+          "age": {
+            "type": "integer",
+            "format": "int32"
           },
           "gender": {
             "type": "string",
@@ -4235,6 +3615,10 @@
           "breakEnd": {
             "type": "string",
             "format": "date-span"
+          },
+          "slotDuration": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -4309,6 +3693,52 @@
         },
         "additionalProperties": false
       },
+      "DoctorCreateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "specialization": {
+            "type": "string",
+            "nullable": true
+          },
+          "experience": {
+            "type": "string",
+            "nullable": true
+          },
+          "qualification": {
+            "type": "string",
+            "nullable": true
+          },
+          "fees": {
+            "type": "number",
+            "format": "double"
+          },
+          "consultationFee": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "phoneNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "ForgotPasswordDto": {
         "type": "object",
         "properties": {
@@ -4344,163 +3774,19 @@
             "type": "string",
             "nullable": true
           },
+          "recipient": {
+            "type": "string",
+            "nullable": true
+          },
           "targetUsers": {
             "type": "string",
             "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "PatientPortalBookAppointmentDto": {
-        "type": "object",
-        "properties": {
-          "hospitalId": {
-            "type": "integer",
-            "format": "int32"
           },
-          "doctorId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "startTime": {
-            "type": "string",
-            "format": "date-span"
-          },
-          "reasonForVisit": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "PatientPortalPaymentDto": {
-        "type": "object",
-        "properties": {
-          "paymentMode": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "PatientPortalRegisterDto": {
-        "type": "object",
-        "properties": {
-          "firstName": {
+          "status": {
             "type": "string",
             "nullable": true
           },
-          "lastName": {
-            "type": "string",
-            "nullable": true
-          },
-          "gender": {
-            "type": "string",
-            "nullable": true
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "mobileNumber": {
-            "type": "string",
-            "nullable": true
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "address": {
-            "type": "string",
-            "nullable": true
-          },
-          "password": {
-            "type": "string",
-            "nullable": true
-          },
-          "confirmPassword": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "PatientPortalRescheduleDto": {
-        "type": "object",
-        "properties": {
-          "date": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "startTime": {
-            "type": "string",
-            "format": "date-span"
-          }
-        },
-        "additionalProperties": false
-      },
-      "PatientProfileUpdateDto": {
-        "type": "object",
-        "properties": {
-          "firstName": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastName": {
-            "type": "string",
-            "nullable": true
-          },
-          "gender": {
-            "type": "string",
-            "nullable": true
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "bloodGroup": {
-            "type": "string",
-            "nullable": true
-          },
-          "mobileNumber": {
-            "type": "string",
-            "nullable": true
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "address": {
-            "type": "string",
-            "nullable": true
-          },
-          "emergencyContactName": {
-            "type": "string",
-            "nullable": true
-          },
-          "emergencyContactRelationship": {
-            "type": "string",
-            "nullable": true
-          },
-          "emergencyContactPhone": {
-            "type": "string",
-            "nullable": true
-          },
-          "allergies": {
-            "type": "string",
-            "nullable": true
-          },
-          "chronicDiseases": {
-            "type": "string",
-            "nullable": true
-          },
-          "currentMedications": {
+          "type": {
             "type": "string",
             "nullable": true
           }
@@ -4552,6 +3838,10 @@
             "type": "string",
             "nullable": true
           },
+          "password": {
+            "type": "string",
+            "nullable": true
+          },
           "hospitalId": {
             "type": "integer",
             "format": "int32"
@@ -4580,28 +3870,25 @@
             "type": "string",
             "nullable": true
           },
-          "name": {
+          "module": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
             "type": "string",
             "nullable": true
           },
           "canView": {
-            "type": "boolean",
-            "nullable": true
+            "type": "boolean"
           },
           "canCreate": {
-            "type": "boolean",
-            "nullable": true
+            "type": "boolean"
           },
           "canEdit": {
-            "type": "boolean",
-            "nullable": true
+            "type": "boolean"
           },
           "canDelete": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "permissions": {
-            "nullable": true
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -4643,16 +3930,6 @@
           },
           "smsNotificationsEnabled": {
             "type": "boolean",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "UpdateDoctorStatusDto": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
             "nullable": true
           }
         },

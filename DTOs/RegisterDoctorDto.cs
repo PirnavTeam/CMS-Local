@@ -9,23 +9,23 @@ public class RegisterDoctorDto
     public int DoctorId
     { get; set; }
 
-    public string? Name
+    public string Name
     { get; set; }
 
-    public string? MobileNumber
+    public string MobileNumber
     { get; set; }
 
-    public string? Email
+    public string Email
     { get; set; }
 
-    public string? Password
+    public string Password
     { get; set; }
 
     // =====================================================
     // ROLE
     // =====================================================
 
-    public string? Role
+    public string Role
     { get; set; }
         = "Doctor";
 }

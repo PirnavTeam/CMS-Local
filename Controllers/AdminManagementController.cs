@@ -10,6 +10,7 @@ namespace AuthDemo.Controllers;
 
 [ApiController]
 [Route("api/admins")]
+[Route("api/AdminManagement")]
 [Authorize(Roles = "SuperAdmin")]
 public class AdminManagementController : ControllerBase
 {
@@ -25,18 +26,9 @@ public class AdminManagementController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateAdmin(CreateAdminDto dto)
     {
-        if (!dto.Email.EndsWith("@gmail.com"))
-        {
-            return BadRequest(new
-            {
-                message = "Only Gmail addresses are allowed."
-            });
-        }
-
-  
-        var hospitalId = dto.HospitalId; ;
+        var hospitalId = dto.HospitalId > 0 ? dto.HospitalId : (dto.ClinicId ?? 0);
         var name = !string.IsNullOrWhiteSpace(dto.Name) ? dto.Name : (dto.FullName ?? string.Empty);
-            var phone = dto.MobileNumber; 
+        var phone = !string.IsNullOrWhiteSpace(dto.MobileNumber) ? dto.MobileNumber : (dto.Phone ?? string.Empty);
 
         if (hospitalId <= 0)
             return BadRequest(new { message = "Clinic is required" });
@@ -59,11 +51,11 @@ public class AdminManagementController : ControllerBase
             return BadRequest(new { message = "Email already exists" });
 
         var temporaryPassword =
-    "Admin@" +
-    Guid.NewGuid()
-        .ToString("N")
-        .Substring(0, 6);
-                    
+            !string.IsNullOrWhiteSpace(dto.Password)
+                ? dto.Password
+                : !string.IsNullOrWhiteSpace(dto.TemporaryPassword)
+                    ? dto.TemporaryPassword
+                    : "Admin@" + Guid.NewGuid().ToString("N")[..6];
 
         var admin = new User
         {
@@ -95,12 +87,9 @@ public class AdminManagementController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllAdmins()
     {
-
-       
-
         var admins = await _context.Users
             .Include(x => x.Hospital)
-            .Where(x => x.Role == "Admin" )
+            .Where(x => x.Role == "Admin" && x.IsActive)
             .OrderByDescending(x => x.CreatedAt)
             .Select(x => new
             {
@@ -168,7 +157,8 @@ public class AdminManagementController : ControllerBase
         if (admin == null)
             return NotFound(new { message = "Admin not found" });
 
-        var hospitalId = dto.HospitalId;
+        var hospitalId = dto.HospitalId > 0 ? dto.HospitalId : (dto.ClinicId ?? admin.HospitalId);
+
         var hospitalExists = await _context.Hospitals
             .AnyAsync(x => x.Id == hospitalId && x.IsActive);
 
@@ -177,7 +167,9 @@ public class AdminManagementController : ControllerBase
 
         admin.Name = !string.IsNullOrWhiteSpace(dto.Name) ? dto.Name : (dto.FullName ?? admin.Name);
         admin.Email = dto.Email;
-        admin.MobileNumber = dto.MobileNumber;
+        admin.MobileNumber = !string.IsNullOrWhiteSpace(dto.MobileNumber)
+            ? dto.MobileNumber
+            : (dto.Phone ?? admin.MobileNumber);
         admin.HospitalId = hospitalId;
 
         await _context.SaveChangesAsync();
@@ -194,42 +186,9 @@ public class AdminManagementController : ControllerBase
         if (admin == null)
             return NotFound(new { message = "Admin not found" });
 
-        _context.Users.Remove(admin);
-
+        admin.IsActive = false;
         await _context.SaveChangesAsync();
 
-        return Ok(new
-        {
-            message = "Admin deleted successfully"
-        });
+        return Ok(new { message = "Admin deactivated successfully" });
     }
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(int id,
-    [FromQuery] string status)
-    {
-        var admin = await _context.Users
-            .FirstOrDefaultAsync(x => x.Id == id && x.Role == "Admin");
-
-        if (admin == null)
-            return NotFound(new { message = "Admin not found" });
-
-        if (status != "Active" && status != "Inactive")
-        {
-            return BadRequest(new
-            {
-                message = "Status must be Active or Inactive"
-            });
-        }
-
-        admin.IsActive = status == "Active";
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            message = $"Admin {status.ToLower()} successfully"
-        });
-    }
-
 }
-

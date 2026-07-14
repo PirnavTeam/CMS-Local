@@ -11,6 +11,6 @@ public class CreateBillingDto
     public decimal LabCharge
     { get; set; }
 
-    public string? PaymentMode
+    public string PaymentMode
     { get; set; }
 }

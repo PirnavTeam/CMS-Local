@@ -1,15 +1,6 @@
 wwwroot\522410dc-3161-403f-8c7f-9b526b62597d.png
 wwwroot\92678f5b-2350-4278-adeb-0d7275a49a0f.png
 wwwroot\ac8fd2e0-c363-465a-b214-697af4e32e41_Screenshot 2026-05-12 112156.png
-wwwroot\documents\169d7948-a316-4405-9e75-10b093b6480f.csv
-wwwroot\documents\470dcc3a-55bf-42d0-9076-77f972b5253a.pdf
-wwwroot\documents\8574015e-140e-4769-b9b6-601e3fcd9c8a.png
-wwwroot\documents\9afceb0f-e73c-45d4-8df7-12ed1a5fb167.png
-wwwroot\documents\a877e9fe-f4e0-4576-a2ac-8503da935e0b.winmd
-wwwroot\documents\bc1119e5-ed49-4a38-81cd-170701c5879b.jpg
-wwwroot\documents\db45bf2a-3058-48b4-afee-702635a9b58b.png
-wwwroot\documents\f4f281f0-748b-4d90-93dc-5b98346de48d.png
-wwwroot\documents\f4fe8e6a-e4fd-4121-8973-900921810f8a.webp
 wwwroot\images.cs
 wwwroot\images\03c88045-ee55-4730-aa79-c9e3e795ed0f.png
 wwwroot\images\053c9326-46ee-4c8f-bc63-82bd518fc4e9.png
@@ -75,21 +66,6 @@ wwwroot\images\cde7812e-a588-4c0c-b16a-bb5984bae7ec.png
 wwwroot\images\cf264f91-cafe-417e-bc0c-e98f85856fbd.png
 wwwroot\images\d0b57f69-295a-4b76-841c-7203d1086675.png
 wwwroot\images\d4fea567-0b2b-4e56-8b21-d83ff20b4990.png
-wwwroot\images\Doctors\1130afc2-c5ca-407a-8542-30043028cb6d.jpeg
-wwwroot\images\Doctors\22a7dd7c-4034-46fe-a757-ed21f5643a77.ico
-wwwroot\images\Doctors\23e8d4d9-8243-4cf5-8340-6384e8b87580.png
-wwwroot\images\Doctors\34f9505f-e775-41b3-b094-1b09574e6e45.png
-wwwroot\images\Doctors\413f94b7-f456-4626-bd41-d9ffc30bb2a4.ico
-wwwroot\images\Doctors\691d437d-5732-478b-adc8-7fb1114679f3.webp
-wwwroot\images\Doctors\7993a1ad-d9c3-47b2-a200-a82efabc6fd1.png
-wwwroot\images\Doctors\7cafbe07-b6a8-4ee0-9520-011b5f38300f.png
-wwwroot\images\Doctors\c65cac75-3f85-4caa-87db-56cd02670c07.png
-wwwroot\images\Doctors\dc760340-11ab-4026-aea3-e81c5724ecaf.jpg
-wwwroot\images\Doctors\dfd9b3db-8377-4dda-9884-81c005849823.png
-wwwroot\images\Doctors\e6f698f5-0b25-473a-aef7-20a1830ff8de.jpg
-wwwroot\images\Doctors\e82bbb3f-66c1-480b-8fda-708b67084bf6.png
-wwwroot\images\Doctors\f026d754-4626-42a3-8fda-5d9ae6a7206e.ico
-wwwroot\images\Doctors\f912c933-5b14-48f4-a3b9-95824873b58d.png
 wwwroot\images\e2200a6a-0a4c-46e1-838b-ba4ceb6dbdcc.png
 wwwroot\images\e3c87d79-d400-44c6-86cf-ea5eb4e6b89a.png
 wwwroot\images\e4463258-0034-412b-b840-957c028682f6.png

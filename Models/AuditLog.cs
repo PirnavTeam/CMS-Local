@@ -4,13 +4,13 @@ public class AuditLog
 {
     public int Id { get; set; }
 
-    public string? UserName { get; set; }
+    public string UserName { get; set; }
 
-    public string? Action { get; set; }
+    public string Action { get; set; }
 
-    public string? SystemAction { get; set; }
+    public string SystemAction { get; set; }
 
-    public string? IpAddress { get; set; }
+    public string IpAddress { get; set; }
 
     public bool IsLoginActivity { get; set; }
 

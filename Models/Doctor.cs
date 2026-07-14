@@ -8,10 +8,10 @@ public class Doctor
     // BASIC DETAILS
     // =====================================================
 
-    public string? Name
+    public string Name
     { get; set; }
 
-    public string? Specialization
+    public string Specialization
     { get; set; }
 
     public int Experience
@@ -20,27 +20,19 @@ public class Doctor
     public decimal Fees
     { get; set; }
 
-    public string? Email
-    { get; set; }
-    public string? Image
-
+    public string Email
     { get; set; }
 
-
-    public string? Phone
+    public string Phone
     { get; set; }
-    public string? Qualification { get; set; }
-    public string? AreaofExpertise
-    {
-        get; set;
-    }
+
     // =====================================================
     // LOGIN
     // =====================================================
 
+    
 
-
-    public string? Role
+    public string Role
     { get; set; }
         = "Doctor";
 
@@ -65,7 +57,7 @@ public class Doctor
     public int HospitalId
     { get; set; }
 
-    public Hospital? Hospital
+    public Hospital Hospital
     { get; set; }
 
     // =====================================================

@@ -12,6 +12,85 @@
   {
     "ContainingType": "AuthDemo.Controllers.AdminManagementController",
     "Method": "CreateAdmin",
+    "RelativePath": "api/AdminManagement",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "AuthDemo.DTOs.CreateAdminDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.AdminManagementController",
+    "Method": "GetAllAdmins",
+    "RelativePath": "api/AdminManagement",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.AdminManagementController",
+    "Method": "GetAdmin",
+    "RelativePath": "api/AdminManagement/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.AdminManagementController",
+    "Method": "UpdateAdmin",
+    "RelativePath": "api/AdminManagement/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "AuthDemo.DTOs.CreateAdminDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.AdminManagementController",
+    "Method": "DeleteAdmin",
+    "RelativePath": "api/AdminManagement/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.AdminManagementController",
+    "Method": "CreateAdmin",
     "RelativePath": "api/admins",
     "HttpMethod": "POST",
     "IsController": true,
@@ -89,27 +168,6 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "AuthDemo.Controllers.AdminManagementController",
-    "Method": "UpdateStatus",
-    "RelativePath": "api/admins/{id}/status",
-    "HttpMethod": "PATCH",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      },
-      {
-        "Name": "status",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
     "ContainingType": "AuthDemo.Controllers.AppointmentController",
     "Method": "Create",
     "RelativePath": "api/Appointment",
@@ -137,43 +195,6 @@
   },
   {
     "ContainingType": "AuthDemo.Controllers.AppointmentController",
-    "Method": "UploadDocument",
-    "RelativePath": "api/Appointment/{appointmentId}/documents",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "appointmentId",
-        "Type": "System.Int32",
-        "IsRequired": true
-      },
-      {
-        "Name": "file",
-        "Type": "Microsoft.AspNetCore.Http.IFormFile",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.AppointmentController",
-    "Method": "GetDocuments",
-    "RelativePath": "api/Appointment/{appointmentId}/documents",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "appointmentId",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.AppointmentController",
     "Method": "UpdateStatus",
     "RelativePath": "api/Appointment/{id}/status",
     "HttpMethod": "PATCH",
@@ -191,16 +212,6 @@
         "IsRequired": false
       }
     ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.AppointmentController",
-    "Method": "GetChiefComplaints",
-    "RelativePath": "api/Appointment/chief-complaints",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -485,6 +496,101 @@
   {
     "ContainingType": "AuthDemo.Controllers.ClinicController",
     "Method": "Create",
+    "RelativePath": "api/Clinic",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "AuthDemo.DTOs.CreateClinicDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.ClinicController",
+    "Method": "GetAll",
+    "RelativePath": "api/Clinic",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.ClinicController",
+    "Method": "GetById",
+    "RelativePath": "api/Clinic/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.ClinicController",
+    "Method": "Update",
+    "RelativePath": "api/Clinic/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "AuthDemo.DTOs.CreateClinicDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.ClinicController",
+    "Method": "Delete",
+    "RelativePath": "api/Clinic/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.ClinicController",
+    "Method": "ChangeStatus",
+    "RelativePath": "api/Clinic/{id}/status",
+    "HttpMethod": "PATCH",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AuthDemo.Controllers.ClinicController",
+    "Method": "Create",
     "RelativePath": "api/clinics",
     "HttpMethod": "POST",
     "IsController": true,
@@ -621,16 +727,6 @@
   },
   {
     "ContainingType": "AuthDemo.Controllers.ConsultationController",
-    "Method": "GetTemplates",
-    "RelativePath": "api/Consultation/clinical-note-templates",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.ConsultationController",
     "Method": "DiagnosisDropdown",
     "RelativePath": "api/Consultation/diagnosis-dropdown",
     "HttpMethod": "GET",
@@ -643,16 +739,6 @@
     "ContainingType": "AuthDemo.Controllers.DashboardController",
     "Method": "GetDashboard",
     "RelativePath": "api/Dashboard",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.DashboardController",
-    "Method": "Dashboard",
-    "RelativePath": "api/Dashboard/ClincData",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
@@ -698,54 +784,9 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "Name",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Specialization",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Experience",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Qualification",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "ConsultationFee",
-        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
-        "IsRequired": false
-      },
-      {
-        "Name": "AreaofExpertise",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "IsActive",
-        "Type": "System.Boolean",
-        "IsRequired": false
-      },
-      {
-        "Name": "PhoneNumber",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Image",
-        "Type": "Microsoft.AspNetCore.Http.IFormFile",
-        "IsRequired": false
-      },
-      {
-        "Name": "Email",
-        "Type": "System.String",
-        "IsRequired": false
+        "Name": "dto",
+        "Type": "AuthDemo.DTOs.DoctorCreateDto",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": []
@@ -780,54 +821,9 @@
         "IsRequired": true
       },
       {
-        "Name": "Name",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Specialization",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Experience",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Qualification",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "ConsultationFee",
-        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
-        "IsRequired": false
-      },
-      {
-        "Name": "AreaofExpertise",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "IsActive",
-        "Type": "System.Boolean",
-        "IsRequired": false
-      },
-      {
-        "Name": "PhoneNumber",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Image",
-        "Type": "Microsoft.AspNetCore.Http.IFormFile",
-        "IsRequired": false
-      },
-      {
-        "Name": "Email",
-        "Type": "System.String",
-        "IsRequired": false
+        "Name": "dto",
+        "Type": "AuthDemo.DTOs.DoctorCreateDto",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": []
@@ -843,27 +839,6 @@
       {
         "Name": "id",
         "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.DoctorController",
-    "Method": "UpdateStatus",
-    "RelativePath": "api/Doctor/{id}/status",
-    "HttpMethod": "PATCH",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      },
-      {
-        "Name": "dto",
-        "Type": "AuthDemo.DTOs.UpdateDoctorStatusDto",
         "IsRequired": true
       }
     ],
@@ -887,42 +862,6 @@
     "IsController": true,
     "Order": 0,
     "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.DoctorController",
-    "Method": "GetQualifications",
-    "RelativePath": "api/Doctor/qualifications",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.DoctorController",
-    "Method": "GetSpecializations",
-    "RelativePath": "api/Doctor/specializations",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.LocationController",
-    "Method": "GetLocation",
-    "RelativePath": "api/Location/pincode/{pincode}",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "pincode",
-        "Type": "System.String",
-        "IsRequired": true
-      }
-    ],
     "ReturnTypes": []
   },
   {
@@ -1064,22 +1003,6 @@
   },
   {
     "ContainingType": "AuthDemo.Controllers.OverviewController",
-    "Method": "GetDocuments",
-    "RelativePath": "api/Overview/{appointmentId}/documents",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "appointmentId",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.OverviewController",
     "Method": "PatientOverview",
     "RelativePath": "api/Overview/patient/{patientId}",
     "HttpMethod": "GET",
@@ -1118,314 +1041,6 @@
     "IsController": true,
     "Order": 0,
     "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "BookAppointment",
-    "RelativePath": "api/patient-portal/appointments",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "dto",
-        "Type": "AuthDemo.DTOs.PatientPortalBookAppointmentDto",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetAppointments",
-    "RelativePath": "api/patient-portal/appointments",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetAppointmentDetails",
-    "RelativePath": "api/patient-portal/appointments/{id}",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "CancelAppointment",
-    "RelativePath": "api/patient-portal/appointments/{id}/cancel",
-    "HttpMethod": "PATCH",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "RescheduleAppointment",
-    "RelativePath": "api/patient-portal/appointments/{id}/reschedule",
-    "HttpMethod": "PUT",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      },
-      {
-        "Name": "dto",
-        "Type": "AuthDemo.DTOs.PatientPortalRescheduleDto",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetBills",
-    "RelativePath": "api/patient-portal/bills",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "PayBill",
-    "RelativePath": "api/patient-portal/bills/{id}/pay",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      },
-      {
-        "Name": "dto",
-        "Type": "AuthDemo.DTOs.PatientPortalPaymentDto",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetClinics",
-    "RelativePath": "api/patient-portal/clinics",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetDepartments",
-    "RelativePath": "api/patient-portal/clinics/{clinicId}/departments",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "clinicId",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "Dashboard",
-    "RelativePath": "api/patient-portal/dashboard",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetDoctors",
-    "RelativePath": "api/patient-portal/doctors",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "clinicId",
-        "Type": "System.Int32",
-        "IsRequired": false
-      },
-      {
-        "Name": "department",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetSlots",
-    "RelativePath": "api/patient-portal/doctors/{doctorId}/slots",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "doctorId",
-        "Type": "System.Int32",
-        "IsRequired": true
-      },
-      {
-        "Name": "date",
-        "Type": "System.DateTime",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetMedicalHistory",
-    "RelativePath": "api/patient-portal/medical-history",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetNotifications",
-    "RelativePath": "api/patient-portal/notifications",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "DeleteNotification",
-    "RelativePath": "api/patient-portal/notifications/{id}",
-    "HttpMethod": "DELETE",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "MarkNotificationAsRead",
-    "RelativePath": "api/patient-portal/notifications/{id}/read",
-    "HttpMethod": "PATCH",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetPrescriptions",
-    "RelativePath": "api/patient-portal/prescriptions",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetPrescriptionDetails",
-    "RelativePath": "api/patient-portal/prescriptions/{id}",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "GetProfile",
-    "RelativePath": "api/patient-portal/profile",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "UpdateProfile",
-    "RelativePath": "api/patient-portal/profile",
-    "HttpMethod": "PUT",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "dto",
-        "Type": "AuthDemo.DTOs.PatientProfileUpdateDto",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PatientPortalController",
-    "Method": "Register",
-    "RelativePath": "api/patient-portal/register",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "dto",
-        "Type": "AuthDemo.DTOs.PatientPortalRegisterDto",
-        "IsRequired": true
-      }
-    ],
     "ReturnTypes": []
   },
   {
@@ -1482,16 +1097,6 @@
     "ReturnTypes": []
   },
   {
-    "ContainingType": "AuthDemo.Controllers.PatientController",
-    "Method": "GetBloodGroups",
-    "RelativePath": "api/Patient/blood-groupsDropdown",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
     "ContainingType": "AuthDemo.Controllers.PrescriptionController",
     "Method": "Create",
     "RelativePath": "api/Prescription",
@@ -1531,56 +1136,6 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PrescriptionController",
-    "Method": "GetDosages",
-    "RelativePath": "api/Prescription/dosages",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PrescriptionController",
-    "Method": "GetFrequencies",
-    "RelativePath": "api/Prescription/frequencies",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PrescriptionController",
-    "Method": "GetInstructions",
-    "RelativePath": "api/Prescription/Instructiondropdown",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PrescriptionController",
-    "Method": "GetMedicineNotes",
-    "RelativePath": "api/Prescription/medicine-notes",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AuthDemo.Controllers.PrescriptionController",
-    "Method": "GetMedicines",
-    "RelativePath": "api/Prescription/medicineDropdown",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
     "ReturnTypes": []
   },
   {

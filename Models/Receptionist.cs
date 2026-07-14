@@ -5,16 +5,16 @@ public class Receptionist
     public int Id
     { get; set; }
 
-    public string? Name
+    public string Name
     { get; set; }
 
-    public string? Email
+    public string Email
     { get; set; }
 
-    public string? Phone
+    public string Phone
     { get; set; }
 
-    public string? PasswordHash
+    public string PasswordHash
     { get; set; }
 
     public bool IsActive
@@ -28,7 +28,7 @@ public class Receptionist
     public int HospitalId
     { get; set; }
 
-    public Hospital? Hospital
+    public Hospital Hospital
     { get; set; }
 
     public DateTime CreatedAt

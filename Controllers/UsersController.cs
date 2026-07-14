@@ -1,4 +1,3 @@
-using AuthDemo.Helpers;
 using AuthDemo.Data;
 using AuthDemo.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -34,7 +33,6 @@ public class UsersController : ControllerBase
         _context = context;
     }
 
-    
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -64,7 +62,6 @@ public class UsersController : ControllerBase
         return Ok(users);
     }
 
-   
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -97,7 +94,6 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
-    
     [HttpPost]
     public async Task<IActionResult> Create(CreateUserRequest dto)
     {
@@ -144,7 +140,6 @@ public class UsersController : ControllerBase
         });
     }
 
-   
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, CreateUserRequest dto)
     {
@@ -156,13 +151,7 @@ public class UsersController : ControllerBase
         }
 
         var hospitalId = dto.HospitalId ?? dto.ClinicId ?? user.HospitalId;
-
-        if (hospitalId == null)
-        {
-            return BadRequest(new { message = "Clinic is required" });
-        }
-
-        var hospitalExists = await _context.Hospitals.AnyAsync(x => x.Id == hospitalId.Value && x.IsActive);
+        var hospitalExists = await _context.Hospitals.AnyAsync(x => x.Id == hospitalId && x.IsActive);
 
         if (!hospitalExists)
         {
@@ -173,7 +162,7 @@ public class UsersController : ControllerBase
         user.Email = dto.Email;
         user.MobileNumber = !string.IsNullOrWhiteSpace(dto.MobileNumber) ? dto.MobileNumber : (dto.Phone ?? user.MobileNumber);
         user.Role = !string.IsNullOrWhiteSpace(dto.Role) ? dto.Role : dto.Type;
-        user.HospitalId = hospitalId.Value;
+        user.HospitalId = hospitalId;
         user.IsActive = string.IsNullOrWhiteSpace(dto.Status) || !dto.Status.Equals("inactive", StringComparison.OrdinalIgnoreCase);
 
         await _context.SaveChangesAsync();
@@ -181,7 +170,6 @@ public class UsersController : ControllerBase
         return Ok(new { message = "User updated successfully" });
     }
 
-    
     [HttpPut("{id}/status")]
     public async Task<IActionResult> UpdateStatus(int id, CreateUserRequest dto)
     {
@@ -199,7 +187,6 @@ public class UsersController : ControllerBase
         return Ok(new { message = "User status updated successfully", user.IsActive });
     }
 
-    
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

@@ -13,15 +13,15 @@ public class CreateMedicalHistoryDto
     // MEDICAL HISTORY DETAILS
     // =====================================================
 
-    public string? Allergies
+    public string Allergies
     { get; set; }
 
-    public string? ChronicDiseases
+    public string ChronicDiseases
     { get; set; }
 
-    public string? CurrentMedications
+    public string CurrentMedications
     { get; set; }
 
-    public string? Surgeries
+    public string Surgeries
     { get; set; }
 }

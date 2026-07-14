@@ -9,6 +9,7 @@ namespace AuthDemo.Controllers;
 
 [ApiController]
 [Route("api/clinics")]
+[Route("api/Clinic")]
 [Authorize(Roles = "SuperAdmin")]
 public class ClinicController : ControllerBase
 {
@@ -21,12 +22,12 @@ public class ClinicController : ControllerBase
 
     private static string GetClinicName(CreateClinicDto dto)
     {
-        return dto.ClinicName ??  string.Empty;
+        return dto.ClinicName ?? dto.Name ?? string.Empty;
     }
 
     private static string GetPhone(CreateClinicDto dto)
     {
-        return dto.PhoneNumber ??  string.Empty;
+        return dto.PhoneNumber ?? dto.ContactNumber ?? dto.Phone ?? string.Empty;
     }
 
     private static string GetAddress(CreateClinicDto dto)

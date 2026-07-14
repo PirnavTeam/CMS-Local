@@ -1,9 +1,235 @@
 
 
+//using System.Text;
+
+//using Microsoft.AspNetCore.Authentication.JwtBearer;
+
+//using Microsoft.EntityFrameworkCore;
+
+//using Microsoft.IdentityModel.Tokens;
+
+//using AuthDemo.Data;
+//using AuthDemo.Helpers;
+//using AuthDemo.Services;
+//using AuthDemo.Services.Interfaces;
+
+//var builder = WebApplication.CreateBuilder(args);
+
+//// =====================================================
+//// DATABASE
+//// =====================================================
+
+//builder.Services.AddDbContext<AppDbContext>(options =>
+//    options.UseSqlServer(
+//        builder.Configuration
+//            .GetConnectionString(
+//                "DefaultConnection"
+//            )
+//    )
+//);
+
+//// =====================================================
+//// SERVICES
+//// =====================================================
+
+//builder.Services.AddScoped<EmailHelper>();
+
+//builder.Services.AddScoped<JwtHelper>();
+
+//builder.Services.AddScoped<IAuthService,
+//    AuthService>();
+
+//builder.Services.AddScoped<IStaffService,
+//    StaffService>();
+
+//builder.Services.AddScoped<IAppointmentService,
+//    AppointmentService>();
+
+//// =====================================================
+//// CORS
+//// =====================================================
+
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy(
+//        "AllowLocalhost",
+//        policy =>
+//        {
+//            policy
+
+//                .AllowAnyOrigin()
+
+//                .AllowAnyHeader()
+
+//                .AllowAnyMethod();
+//        });
+//});
+
+//// =====================================================
+//// CONTROLLERS
+//// =====================================================
+
+//builder.Services.AddControllers();
+
+//builder.Services.AddEndpointsApiExplorer();
+
+//// =====================================================
+//// SWAGGER + JWT
+//// =====================================================
+
+//builder.Services.AddSwaggerGen(options =>
+//{
+//    options.SwaggerDoc(
+//        "v1",
+//        new()
+//        {
+//            Title = "Clinic API",
+//            Version = "v1"
+//        });
+
+//    options.AddSecurityDefinition(
+//        "Bearer",
+//        new Microsoft.OpenApi.Models
+//            .OpenApiSecurityScheme
+//        {
+//            Name = "Authorization",
+
+//            Type =
+//                Microsoft.OpenApi.Models
+//                    .SecuritySchemeType.Http,
+
+//            Scheme = "bearer",
+
+//            BearerFormat = "JWT",
+
+//            In = Microsoft.OpenApi.Models
+//                .ParameterLocation.Header,
+
+//            Description =
+//                "Enter JWT Token"
+//        });
+
+//    options.AddSecurityRequirement(
+//        new Microsoft.OpenApi.Models
+//            .OpenApiSecurityRequirement
+//        {
+//            {
+//                new Microsoft.OpenApi.Models
+//                    .OpenApiSecurityScheme
+//                {
+//                    Reference =
+//                        new Microsoft.OpenApi.Models
+//                            .OpenApiReference
+//                        {
+//                            Type =
+//                                Microsoft.OpenApi.Models
+//                                    .ReferenceType
+//                                        .SecurityScheme,
+
+//                            Id = "Bearer"
+//                        }
+//                },
+
+//                Array.Empty<string>()
+//            }
+//        });
+//});
+
+//// =====================================================
+//// JWT AUTH
+//// =====================================================
+
+//var jwtKey =
+//    builder.Configuration["Jwt:Key"];
+
+//var key =
+//    Encoding.UTF8.GetBytes(jwtKey);
+
+//builder.Services
+
+//    .AddAuthentication(
+//        JwtBearerDefaults
+//            .AuthenticationScheme)
+
+//    .AddJwtBearer(options =>
+//    {
+//        options.TokenValidationParameters =
+//            new TokenValidationParameters
+//            {
+//                ValidateIssuer = false,
+
+//                ValidateAudience = false,
+
+//                ValidateIssuerSigningKey = true,
+
+//                IssuerSigningKey =
+//                    new SymmetricSecurityKey(
+//                        key
+//                    ),
+
+//                ValidateLifetime = true,
+
+//                ClockSkew =
+//                    TimeSpan.Zero
+//            };
+//    });
+
+//// =====================================================
+//// BUILD APP
+//// =====================================================
+
+//var app = builder.Build();
+
+//// =====================================================
+//// SWAGGER
+//// =====================================================
+
+//app.UseSwagger();
+
+//app.UseSwaggerUI();
+
+//// =====================================================
+//// HTTPS
+//// =====================================================
+
+//app.UseHttpsRedirection();
+
+//// =====================================================
+//// STATIC FILES
+//// =====================================================
+
+//app.UseStaticFiles();
+
+//// =====================================================
+//// CORS
+//// =====================================================
+
+//app.UseCors("AllowLocalhost");
+
+//// =====================================================
+//// AUTH
+//// =====================================================
+
+//app.UseAuthentication();
+
+//app.UseAuthorization();
+
+//// =====================================================
+//// MAP CONTROLLERS
+//// =====================================================
+
+//app.MapControllers();
+
+//// =====================================================
+//// RUN
+//// =====================================================
+
+//app.Run();
 
 
 
-using Microsoft.EntityFrameworkCore;
+
+
 using AuthDemo.Data;
 using AuthDemo.Helpers;
 using AuthDemo.Models;
@@ -29,7 +255,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
-
 // =====================================================
 // SERVICES
 // =====================================================
@@ -48,14 +273,6 @@ builder.Services.AddScoped<IAppointmentService,
     AppointmentService>();
 builder.Services
     .AddScoped<NotificationService>();
-builder.Services.AddScoped<EmailHelper>();
-
-builder.Services
-    .AddControllers()
-    .ConfigureApiBehaviorOptions(options =>
-    {
-        options.SuppressModelStateInvalidFilter = false;
-    });
 
 // =====================================================
 // CORS
@@ -186,8 +403,7 @@ builder.Services
             };
     });
 
-Console.WriteLine(builder.Configuration.GetConnectionString("DefaultConnection"));
-
+    
 
 // =====================================================
 // BUILD APP
@@ -205,7 +421,6 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
     context.Database.Migrate();
-
 
     var platformHospital = await context.Hospitals
         .FirstOrDefaultAsync(x => x.Email == "platform@cms.local");
@@ -294,9 +509,6 @@ app.UseCors("AllowLocalhost");
 // =====================================================
 // AUTH
 // =====================================================
-app.UseHttpsRedirection();
-
-app.UseStaticFiles();
 
 app.UseAuthentication();
 

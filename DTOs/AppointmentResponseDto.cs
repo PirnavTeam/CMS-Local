@@ -22,7 +22,7 @@ public class AppointmentResponseDto
     // PATIENT
     // =====================================================
 
-    public string? PatientName
+    public string PatientName
     { get; set; }
 
     public string? PatientCode
@@ -31,10 +31,10 @@ public class AppointmentResponseDto
     public int Age
     { get; set; }
 
-    public string? Gender
+    public string Gender
     { get; set; }
 
-    public string? Phone
+    public string Phone
     { get; set; }
 
     public string? BloodGroup
@@ -44,7 +44,7 @@ public class AppointmentResponseDto
     // DOCTOR
     // =====================================================
 
-    public string? DoctorName
+    public string DoctorName
     { get; set; }
 
     public string? DoctorSpecialization
@@ -57,7 +57,7 @@ public class AppointmentResponseDto
     public DateTime Date
     { get; set; }
 
-    public string? Time
+    public string Time
     { get; set; }
 
     // =====================================================
@@ -89,6 +89,6 @@ public class AppointmentResponseDto
     // STATUS
     // =====================================================
 
-    public string? Status
+    public string Status
     { get; set; }
 }

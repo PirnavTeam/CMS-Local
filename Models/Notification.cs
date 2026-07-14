@@ -6,10 +6,9 @@
 
     public string Message { get; set; }
 
+    public string Recipient { get; set; }
 
-    public bool IsRead { get; set; }
-    = false;
-
+    public string Type { get; set; } // Email or SMS
 
     public bool IsSent { get; set; }
 

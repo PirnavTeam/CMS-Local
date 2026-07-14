@@ -1,4 +1,4 @@
-
+﻿
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +25,26 @@ public class AuthController
             authService;
     }
 
-    
+    // =====================================================
+    // REGISTER ADMIN + HOSPITAL
+    // =====================================================
+
+   // [HttpPost("register")]
+   // public async Task<IActionResult>
+      //  Register(
+        //    RegisterDto dto)
+    //{
+        //var result =
+            //await _authService
+                //.RegisterAsync(dto);
+
+        //return Ok(new
+        //{
+           // message =
+                //result
+       // });
+   // }
+
     // =====================================================
     // REGISTER DOCTOR
     // =====================================================
@@ -115,12 +134,6 @@ public class AuthController
 
             hospitalName =
                 result.HospitalName,
-
-            patientId =
-                result.PatientId,
-
-            patientCode =
-                result.PatientCode,
 
             mustChangePassword =
                 result.MustChangePassword,

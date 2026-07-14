@@ -4,21 +4,22 @@ using AuthDemo.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AuthDemo.Helpers;
+
 namespace AuthDemo.Controllers;
 
 public class NotificationRequest
 {
     public string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
-    
+    public string? Recipient { get; set; }
     public string? TargetUsers { get; set; }
-   
+    public string? Status { get; set; }
+    public string? Type { get; set; }
 }
 
 [ApiController]
 [Route("api/notifications")]
-[Authorize(Roles = "SuperAdmin,Admin,Doctor,Receptionist")]
+[Authorize(Roles = "SuperAdmin")]
 public class NotificationsController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -32,44 +33,60 @@ public class NotificationsController : ControllerBase
 
     [HttpPost]
     [HttpPost("send")]
-    public async Task<IActionResult> Send(
-     NotificationRequest model)
+    public async Task<IActionResult> Send(NotificationRequest model)
     {
-        var notification =
-            new Notification
-            {
-                Title = model.Title,
+        var recipient = !string.IsNullOrWhiteSpace(model.Recipient)
+            ? model.Recipient
+            : !string.IsNullOrWhiteSpace(model.TargetUsers)
+                ? model.TargetUsers
+                : "All Clinics";
 
-                Message = model.Message,
+        var shouldSend = string.IsNullOrWhiteSpace(model.Status) ||
+                         !model.Status.Equals("draft", StringComparison.OrdinalIgnoreCase);
 
-                IsSent = true,
+        if (shouldSend && recipient.Contains("@"))
+        {
+            await _service.SendEmail(recipient, model.Title, model.Message);
+        }
 
-                CreatedAt = DateTime.UtcNow
-            };
+        var notification = new Notification
+        {
+            Title = model.Title,
+            Message = model.Message,
+            Recipient = recipient,
+            Type = string.IsNullOrWhiteSpace(model.Type) ? "Platform" : model.Type,
+            IsSent = shouldSend,
+            CreatedAt = DateTime.UtcNow
+        };
 
-        _context.Notifications.Add(
-            notification);
-
+        _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
 
         return Ok(new
         {
-            message =
-                "Notification created successfully",
-
+            message = shouldSend ? "Notification sent successfully" : "Notification saved as draft",
             notification
         });
     }
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var notifications =
-            await _context.Notifications
-
-                .OrderByDescending(x =>
-                    x.CreatedAt)
-
-                .ToListAsync();
+        var notifications = await _context.Notifications
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new
+            {
+                x.Id,
+                x.Title,
+                x.Message,
+                targetUsers = x.Recipient,
+                recipient = x.Recipient,
+                type = x.Type,
+                status = x.IsSent ? "sent" : "draft",
+                x.IsSent,
+                x.CreatedAt
+            })
+            .ToListAsync();
 
         return Ok(notifications);
     }
@@ -77,14 +94,15 @@ public class NotificationsController : ControllerBase
     [HttpGet("stats")]
     public async Task<IActionResult> Stats()
     {
-        var total =
-            await _context.Notifications
-                .CountAsync();
+        var total = await _context.Notifications.CountAsync();
+        var delivered = await _context.Notifications.CountAsync(x => x.IsSent);
+        var drafts = await _context.Notifications.CountAsync(x => !x.IsSent);
 
         return Ok(new
         {
-            total
+            total,
+            delivered,
+            drafts
         });
     }
 }
-

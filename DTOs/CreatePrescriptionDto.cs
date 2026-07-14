@@ -20,10 +20,10 @@ public class CreatePrescriptionDto
     // PRESCRIPTION DETAILS
     // =====================================================
 
-    public string? Diagnosis
+    public string Diagnosis
     { get; set; }
 
-    public string? Instructions
+    public string Instructions
     { get; set; }
 
     public DateTime FollowUpDate
@@ -36,7 +36,7 @@ public class CreatePrescriptionDto
     // Draft
     // Completed
 
-    public string? Status
+    public string Status
     { get; set; }
 
     // =====================================================

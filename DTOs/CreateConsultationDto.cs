@@ -20,9 +20,9 @@ public class CreateConsultationDto
     // DOCTOR NOTES
     // =====================================================
 
-    public string? Diagnosis
+    public string Diagnosis
     { get; set; }
 
-    public string? ClinicalNotes
+    public string ClinicalNotes
     { get; set; }
 }

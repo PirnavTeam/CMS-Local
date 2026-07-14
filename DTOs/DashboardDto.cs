@@ -14,13 +14,13 @@ public class DashboardDto
 
     public decimal Revenue { get; set; }
 
-    public List<ChartDto>? GrowthChart { get; set; }
+    public List<ChartDto> GrowthChart { get; set; }
 
-    public List<RevenueTrendDto>? RevenueTrend { get; set; }
+    public List<RevenueTrendDto> RevenueTrend { get; set; }
 
-    public ClinicStatusDto? ClinicStatus { get; set; }
+    public ClinicStatusDto ClinicStatus { get; set; }
 
-    public List<ActivityDto>? RecentActivities { get; set; }
+    public List<ActivityDto> RecentActivities { get; set; }
 }
 
 // =====================================================
@@ -29,7 +29,7 @@ public class DashboardDto
 
 public class ChartDto
 {
-    public string? Month { get; set; }
+    public string Month { get; set; }
 
     public int Patients { get; set; }
 
@@ -42,7 +42,7 @@ public class ChartDto
 
 public class RevenueTrendDto
 {
-    public string? Month { get; set; }
+    public string Month { get; set; }
 
     public decimal Revenue { get; set; }
 }
@@ -66,7 +66,7 @@ public class ClinicStatusDto
 
 public class ActivityDto
 {
-    public string? Title { get; set; }
+    public string Title { get; set; }
 
-    public string? Time { get; set; }
+    public string Time { get; set; }
 }

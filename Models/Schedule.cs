@@ -10,7 +10,7 @@ public class Schedule
 
     public int DoctorId { get; set; }
 
-    public Doctor? Doctor { get; set; }
+    public Doctor Doctor { get; set; }
 
     // =========================================
     // DATE RANGE
@@ -26,7 +26,7 @@ public class Schedule
     // Mon,Tue,Wed
     // =========================================
 
-    public string? Days { get; set; }
+    public string Days { get; set; }
 
     // =========================================
     // WORKING HOURS
@@ -48,14 +48,15 @@ public class Schedule
     // SLOT DURATION
     // =========================================
 
-  
+    public int SlotDuration { get; set; }
+
     // =========================================
     // MULTI CLINIC SUPPORT
     // =========================================
 
     public int HospitalId { get; set; }
 
-    public Hospital? Hospital { get; set; }
+    public Hospital Hospital { get; set; }
 
     // =========================================
     // CREATED DATE
