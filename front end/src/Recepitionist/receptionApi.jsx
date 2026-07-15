@@ -60,3 +60,9 @@ export const requestJson = async (path, options = {}) => {
 
 export const formatToday = () => new Date().toISOString().slice(0, 10);
 
+export const getOnlineAppointments = async () =>
+  parseList(await requestJson("Appointment/online"));
+
+export const getOfflineAppointments = async () =>
+  parseList(await requestJson("Appointment/offline"));
+

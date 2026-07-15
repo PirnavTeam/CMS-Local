@@ -9,6 +9,8 @@ const TITLES = {
   "/reception/dashboard": "Reception Dashboard",
   "/reception/patients": "Patients",
   "/reception/medical-history": "Medical History",
+  "/reception/appointments/online": "Online Bookings",
+  "/reception/appointments/offline": "Offline Bookings",
   "/reception/appointments": "Appointment Booking",
   "/reception/billing": "Billing",
 };
