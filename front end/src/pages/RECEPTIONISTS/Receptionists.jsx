@@ -29,6 +29,7 @@ import {
   getClinicDisplayName,
   getStoredClinicName,
 } from "../../utils/clinicDisplay";
+import { validateUniqueMobileNumber } from "../../utils/mobileUniqueness";
 const RECEPTIONIST_API = apiUrl("Receptionist");
 
 const getAuthToken = () =>
@@ -310,6 +311,25 @@ function Receptionists() {
       }
       if (!isEditing && !canCreateReceptionist) {
         throw new Error("Create permission is disabled by Super Admin.");
+      }
+
+      const duplicateMobileError = await validateUniqueMobileNumber(
+        payload.phone,
+        {
+          current: isEditing
+            ? { id: editingReceptionist.id, source: "Receptionist" }
+            : {},
+          localRecords: receptionists,
+          localSource: "Receptionist",
+        }
+      );
+
+      if (duplicateMobileError) {
+        setFieldErrors((previous) => ({
+          ...previous,
+          phone: duplicateMobileError,
+        }));
+        throw new Error(duplicateMobileError);
       }
 
       const response = await fetch(
