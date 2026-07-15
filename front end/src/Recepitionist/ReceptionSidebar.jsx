@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Gauge,
   HeartPulse,
+  ListChecks,
   Stethoscope,
   UserPlus,
   X,
@@ -17,7 +18,15 @@ const items = [
   { to: "/reception/dashboard", label: "Reception Dashboard", icon: Gauge },
   { to: "/reception/patients", label: "Patients", icon: UserPlus },
   { to: "/reception/medical-history", label: "Medical History", icon: HeartPulse },
-  { to: "/reception/appointments", label: "Book Appointment", icon: CalendarPlus },
+  {
+    label: "Appointments",
+    icon: CalendarPlus,
+    children: [
+      { to: "/reception/appointments", label: "Book Appointment", icon: CalendarPlus },
+      { to: "/reception/appointments/online", label: "Online Bookings", icon: ListChecks },
+      { to: "/reception/appointments/offline", label: "Offline Bookings", icon: ListChecks },
+    ],
+  },
   { to: "/reception/billing", label: "Billing", icon: ClipboardList },
 ];
 
@@ -46,6 +55,33 @@ function ReceptionSidebar({ onClose = () => {} }) {
       <nav className="rc-nav">
         {items.map((item) => {
           const Icon = item.icon;
+          if (item.children) {
+            return (
+              <div className="rc-nav-group" key={item.label}>
+                <div className="rc-nav-group-title">
+                  <Icon size={17} />
+                  <span>{item.label}</span>
+                </div>
+                <div className="rc-nav-children">
+                  {item.children.map((child) => {
+                    const ChildIcon = child.icon;
+                    return (
+                      <NavLink
+                        key={child.to}
+                        to={child.to}
+                        end={child.to === "/reception/appointments"}
+                        className={({ isActive }) => `rc-nav-link rc-nav-child${isActive ? " active" : ""}`}
+                      >
+                        <ChildIcon size={16} />
+                        <span>{child.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+
           return (
             <NavLink
               key={item.to}

@@ -6,6 +6,8 @@ import ReceptionPatients from "./pages/ReceptionPatients";
 import ReceptionAppointments from "./pages/ReceptionAppointments";
 import ReceptionBilling from "./pages/ReceptionBilling";
 import ReceptionMedicalHistory from "./pages/ReceptionMedicalHistory";
+import ReceptionOnlineBookings from "./pages/ReceptionOnlineBookings";
+import ReceptionOfflineBookings from "./pages/ReceptionOfflineBookings";
 import UserProfilePage from "../profile/UserProfilePage";
 
 function ReceptionistApp() {
@@ -17,6 +19,8 @@ function ReceptionistApp() {
         <Route path="patients" element={<ReceptionPatients />} />
         <Route path="medical-history" element={<ReceptionMedicalHistory />} />
         <Route path="appointments" element={<ReceptionAppointments />} />
+        <Route path="appointments/online" element={<ReceptionOnlineBookings />} />
+        <Route path="appointments/offline" element={<ReceptionOfflineBookings />} />
         <Route path="billing" element={<ReceptionBilling />} />
         <Route path="profile" element={<UserProfilePage roleType="receptionist" />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
