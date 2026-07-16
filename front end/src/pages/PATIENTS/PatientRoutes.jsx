@@ -685,8 +685,8 @@ function PatientAppointmentsPage({ visits = [], onRefresh }) {
       subtitle="Book, review, and reschedule care visits from your portal."
       action={
         <button type="button" className="pd-header-btn pd-header-btn--primary" onClick={() => navigate("/patient/dashboard")}>
-          <Calendar size={16} />
-          Back to dashboard
+        
+          ← Back to dashboard
         </button>
       }
     >
@@ -1425,9 +1425,10 @@ function PatientBookingWizardPage({ visits = [], onRefresh }) {
             <section className="booking-panel booking-summary-panel">
               <div className="booking-panel-header">
                 <h2>Confirm</h2>
-                <p>Review your branch, department, doctor, and schedule.</p>
+                <p>Review your  branch, department, doctor, and schedule.</p>
               </div>
               <div className="booking-summary">
+                
                 <div className="booking-summary-row">
                   <span>Branch</span>
                   <strong>{selectedBranch?.name || 'Not selected'}</strong>
@@ -1504,7 +1505,21 @@ function PatientMedicalHistoryPage({ patient, visits = [], prescriptions = [] })
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyError, setHistoryError] = useState("");
 
+  const patientId = String(
+    patient?.id ||
+    patient?.patientId ||
+    localStorage.getItem("patientId") ||
+    ""
+  ).trim();
+
   useEffect(() => {
+    if (!patientId) {
+      setHistory(null);
+      setHistoryError("Patient ID is required to load medical history.");
+      return undefined;
+    }
+
+    let isCurrent = true;
     const token = localStorage.getItem('patientToken') || localStorage.getItem('token') || '';
     const headers = {
       'Content-Type': 'application/json',
@@ -1516,22 +1531,28 @@ function PatientMedicalHistoryPage({ patient, visits = [], prescriptions = [] })
       setLoadingHistory(true);
       setHistoryError("");
       try {
-        const historyUrl = patientApiUrl(PATIENT_API.medicalHistory);
+        const historyUrl = apiUrl(`MedicalHistory/${encodeURIComponent(patientId)}`);
         const response = await fetch(historyUrl, { headers });
         if (!response.ok) {
           throw new Error('Unable to load medical history.');
         }
-        const data = await response.json();
-        setHistory(data);
+        const data = await response.json().catch(() => null);
+        if (isCurrent) setHistory(data);
       } catch (error) {
-        setHistoryError(error.message || 'Unable to load medical history.');
+        if (isCurrent) setHistoryError(error.message || 'Unable to load medical history.');
       } finally {
-        setLoadingHistory(false);
+        if (isCurrent) setLoadingHistory(false);
       }
     };
 
     fetchHistory();
-  }, []);
+
+    const refreshTimer = window.setInterval(fetchHistory, 30000);
+    return () => {
+      isCurrent = false;
+      window.clearInterval(refreshTimer);
+    };
+  }, [patientId]);
 
   const normalizeList = (value) => {
     if (!value && value !== 0) return [];
@@ -1542,38 +1563,60 @@ function PatientMedicalHistoryPage({ patient, visits = [], prescriptions = [] })
       .filter(Boolean);
   };
 
+  const normalizeRecords = (value) => {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (Array.isArray(value?.data)) return value.data.filter(Boolean);
+    if (Array.isArray(value?.items)) return value.items.filter(Boolean);
+    return [];
+  };
+
+  const newestFirst = (records, dateReader) =>
+    [...records].sort((left, right) => {
+      const leftTime = new Date(dateReader(left) || left?.updatedAt || left?.createdAt || 0).getTime();
+      const rightTime = new Date(dateReader(right) || right?.updatedAt || right?.createdAt || 0).getTime();
+      return (Number.isNaN(rightTime) ? 0 : rightTime) - (Number.isNaN(leftTime) ? 0 : leftTime);
+    });
+
+  const currentPatientId = normalizeComparable(patientId);
+  const belongsToCurrentPatient = (record) => {
+    const recordPatientId = readFirst(record, ["patientId", "patient.id", "patient.patientId"]);
+    return !recordPatientId || normalizeComparable(recordPatientId) === currentPatientId;
+  };
+
+  const historyRecord = Array.isArray(history) ? history.find(belongsToCurrentPatient) || history[0] || null : history;
+
   const chronicConditions = normalizeList(
-    history?.chronicConditions ||
-    history?.chronicDiseases ||
-    history?.medicalConditions ||
-    history?.conditions ||
+    historyRecord?.chronicConditions ||
+    historyRecord?.chronicDiseases ||
     patient?.chronicDiseases ||
-    patient?.medicalConditions
+    patient?.chronicConditions
   );
-  const allergies = normalizeList(history?.allergies || history?.allergyList || history?.allergy || patient?.allergies);
+  const allergies = normalizeList(historyRecord?.allergies || historyRecord?.allergyList || historyRecord?.allergy || patient?.allergies);
   const currentMedications = normalizeList(
-    history?.currentMedications || history?.medications || history?.drugs || patient?.currentMedications
+    historyRecord?.currentMedications || historyRecord?.medications || historyRecord?.drugs || patient?.currentMedications
   );
 
-  const visitRecords = Array.isArray(history?.visits)
-    ? history.visits
-    : Array.isArray(history?.appointments)
-      ? history.appointments
-      : visits;
+  const medicalConditions = normalizeList(historyRecord?.medicalConditions || historyRecord?.conditions || historyRecord?.surgeries);
 
-  const reportRecords = Array.isArray(history?.reports)
-    ? history.reports
-    : Array.isArray(history?.labReports)
-      ? history.labReports
-      : visitRecords
+  const rawVisitRecords = normalizeRecords(historyRecord?.visits).length
+    ? normalizeRecords(historyRecord?.visits)
+    : normalizeRecords(historyRecord?.appointments).length
+      ? normalizeRecords(historyRecord?.appointments)
+      : normalizeRecords(visits).filter(belongsToCurrentPatient);
+
+  const reportRecords = [
+    ...normalizeRecords(historyRecord?.reports),
+    ...normalizeRecords(historyRecord?.labReports),
+    ...normalizeRecords(historyRecord?.scanReports),
+    ...normalizeRecords(historyRecord?.attachments),
+    ...rawVisitRecords
         .map((visit) => readFirst(visit, ['report', 'reportName', 'reportTitle', 'reportUrl', 'documentUrl']) ? visit : null)
-        .filter(Boolean);
+        .filter(Boolean),
+  ];
 
-  const prescriptionRecords = Array.isArray(history?.prescriptions) && history.prescriptions.length
-    ? history.prescriptions
-    : Array.isArray(prescriptions)
-      ? prescriptions
-      : [];
+  const prescriptionRecords = normalizeRecords(historyRecord?.prescriptions).length
+    ? normalizeRecords(historyRecord?.prescriptions)
+    : normalizeRecords(prescriptions).filter(belongsToCurrentPatient);
 
   const readVisitDate = (visit) =>
     readFirst(visit, ['date', 'visitDate', 'appointmentDate', 'createdAt', 'appointment?.date']) || 'Unknown date';
@@ -1581,11 +1624,17 @@ function PatientMedicalHistoryPage({ patient, visits = [], prescriptions = [] })
   const readVisitDoctor = (visit) =>
     readFirst(visit, ['doctor.name', 'doctorName', 'practitioner', 'provider']) || 'Doctor details unavailable';
 
-  const readVisitSpecialty = (visit) =>
-    readFirst(visit, ['specialty', 'departmentName', 'department', 'condition']) || '';
+  const readVisitDepartment = (visit) =>
+    readFirst(visit, ['specialty', 'departmentName', 'department', 'specialization', 'doctor.specialization']) || '-';
 
-  const readVisitSummary = (visit) =>
-    readFirst(visit, ['summary', 'reason', 'notes', 'diagnosis']) || '';
+  const readVisitDiagnosis = (visit) =>
+    readFirst(visit, ['diagnosis', 'condition', 'summary']) || '-';
+
+  const readVisitChiefComplaint = (visit) =>
+    readFirst(visit, ['chiefComplaint', 'chiefComplaints', 'reasonForVisit', 'reason', 'complaint']) || '-';
+
+  const readVisitNotes = (visit) =>
+    readFirst(visit, ['consultationNotes', 'notes', 'doctorNotes', 'description']) || '-';
 
   const readReportTitle = (report) =>
     readFirst(report, ['title', 'reportTitle', 'reportName', 'name', 'testName']) || 'Report';
@@ -1593,61 +1642,115 @@ function PatientMedicalHistoryPage({ patient, visits = [], prescriptions = [] })
   const readReportDate = (report) =>
     readFirst(report, ['date', 'reportDate', 'createdAt', 'appointmentDate']) || 'Unknown date';
 
-  const readReportStatus = (report) =>
-    readFirst(report, ['status', 'resultStatus', 'type', 'category']) || 'Available';
+  const readReportType = (report) =>
+    readFirst(report, ['type', 'category', 'reportType', 'documentType']) || 'Other Attachment';
 
-  const readPrescriptionDiagnosis = (prescription) =>
-    readFirst(prescription, ['diagnosis', 'condition', 'summary', 'title']) || 'Diagnosis not recorded';
+  const readPrescriptionDoctor = (prescription) =>
+    readFirst(prescription, ['doctor.name', 'doctorName', 'prescribedBy', 'providerName']) || 'Doctor details unavailable';
+
+  const readPrescriptionDate = (prescription) =>
+    readFirst(prescription, ['date', 'visitDate', 'prescriptionDate', 'prescribedOn', 'createdAt']) || 'Unknown date';
+
+  const normalizeMedicines = (prescription) => {
+    const medicines = prescription?.medicines || prescription?.medicineList || prescription?.items || prescription?.drugs;
+    if (Array.isArray(medicines)) return medicines.filter(Boolean);
+    const medicine = readFirst(prescription, ['medicine', 'medicineName', 'drugName', 'medication']);
+    return medicine ? [{ medicine, dosage: readFirst(prescription, ['dosage', 'dose']), instructions: readFirst(prescription, ['instructions', 'notes']) }] : [];
+  };
+
+  const visitRecords = newestFirst(rawVisitRecords, readVisitDate);
+  const sortedReports = newestFirst(reportRecords, readReportDate);
+  const sortedPrescriptions = newestFirst(prescriptionRecords, readPrescriptionDate);
+  const hasAnyHistory =
+    medicalConditions.length ||
+    allergies.length ||
+    chronicConditions.length ||
+    currentMedications.length ||
+    visitRecords.length ||
+    sortedReports.length ||
+    sortedPrescriptions.length;
 
   return (
     <PatientPageShell
       title="Medical History"
-      subtitle="Previous visits, medical conditions, reports, and prescriptions."
+      subtitle="Read-only medical records maintained by your care team."
     >
+      {historyError ? <div className="mh-error">{historyError}</div> : null}
+      {!historyError && loadingHistory ? <div className="mh-loading">Loading medical history...</div> : null}
+      {!historyError && !loadingHistory && !hasAnyHistory ? (
+        <div className="mh-empty">
+          <p>No medical history has been recorded for this patient yet.</p>
+        </div>
+      ) : null}
+
       <div className="mh-grid">
         <div className="mh-card">
           <h3>Medical Conditions</h3>
-          {loadingHistory ? (
-            <p>Loading...</p>
-          ) : chronicConditions.length || allergies.length || currentMedications.length ? (
-            <div className="mh-chip-list">
-              {[...chronicConditions, ...allergies, ...currentMedications].map((item, index) => (
-                <span key={index} className="mh-chip">
-                  {item}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p>No medical conditions recorded.</p>
-          )}
+          <div className="mh-condition-list">
+            {[
+              ["Medical Conditions", medicalConditions],
+              ["Allergies", allergies],
+              ["Chronic Diseases", chronicConditions],
+              ["Current Medications", currentMedications],
+            ].map(([label, values]) => (
+              <div className="mh-condition-row" key={label}>
+                <span>{label}</span>
+                {values.length ? (
+                  <div className="mh-chip-list">
+                    {values.map((item, index) => (
+                      <span key={`${label}-${item}-${index}`} className="mh-chip">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <strong>Not recorded</strong>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
         <div className="mh-card">
           <h3>Reports</h3>
-          {loadingHistory ? (
-            <p>Loading...</p>
-          ) : reportRecords.length ? (
+          {sortedReports.length ? (
             <div className="mh-mini-list">
-              {reportRecords.slice(0, 3).map((report, index) => (
+              {sortedReports.map((report, index) => (
                 <div className="mh-mini-item" key={report.id || report.reportId || index}>
                   <strong>{readReportTitle(report)}</strong>
-                  <span>{readReportDate(report)} - {readReportStatus(report)}</span>
+                  <span>{readReportDate(report)} - {readReportType(report)}</span>
+                  {readFirst(report, ['reportUrl', 'documentUrl', 'fileUrl', 'url']) ? (
+                    <a href={readFirst(report, ['reportUrl', 'documentUrl', 'fileUrl', 'url'])} target="_blank" rel="noreferrer">
+                      View attachment
+                    </a>
+                  ) : null}
                 </div>
               ))}
             </div>
           ) : (
-            <p>No reports recorded.</p>
+            <p>No reports or attachments recorded.</p>
           )}
         </div>
         <div className="mh-card">
           <h3>Prescriptions</h3>
-          {loadingHistory ? (
-            <p>Loading...</p>
-          ) : prescriptionRecords.length ? (
+          {sortedPrescriptions.length ? (
             <div className="mh-mini-list">
-              {prescriptionRecords.slice(0, 3).map((prescription, index) => (
+              {sortedPrescriptions.map((prescription, index) => (
                 <div className="mh-mini-item" key={prescription.id || prescription.prescriptionId || index}>
-                  <strong>{readPrescriptionDiagnosis(prescription)}</strong>
-                  <span>{readFirst(prescription, ['date', 'visitDate', 'prescribedOn', 'createdAt']) || 'Unknown date'}</span>
+                  <strong>{readPrescriptionDoctor(prescription)}</strong>
+                  <span>{readPrescriptionDate(prescription)}</span>
+                  {normalizeMedicines(prescription).length ? (
+                    <div className="mh-medicine-list">
+                      {normalizeMedicines(prescription).map((medicine, medicineIndex) => (
+                        <p key={`${index}-${medicineIndex}`}>
+                          <b>{readFirst(medicine, ['medicine', 'medicineName', 'name', 'drugName']) || String(medicine)}</b>
+                          <span>{readFirst(medicine, ['dosage', 'dose']) || 'Dosage not recorded'}</span>
+                          <em>{readFirst(medicine, ['instructions', 'notes', 'frequency']) || 'No instructions'}</em>
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <span>No medicines recorded.</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -1664,11 +1767,7 @@ function PatientMedicalHistoryPage({ patient, visits = [], prescriptions = [] })
             <p>Latest consultations and notes from your patient history.</p>
           </div>
         </div>
-        {historyError ? (
-          <div className="mh-error">{historyError}</div>
-        ) : loadingHistory ? (
-          <div className="mh-loading">Loading medical history...</div>
-        ) : visitRecords.length ? (
+        {visitRecords.length ? (
           <div className="mh-visit-list">
             {visitRecords.map((visit, index) => (
               <div className="mh-visit-item" key={visit.id || visit.appointmentId || index}>
@@ -1676,9 +1775,23 @@ function PatientMedicalHistoryPage({ patient, visits = [], prescriptions = [] })
                   <span>{readVisitDate(visit)}</span>
                   <strong>{readVisitDoctor(visit)}</strong>
                 </div>
-                <div className="mh-visit-details">
-                  {readVisitSpecialty(visit) ? <span className="mh-visit-specialty">{readVisitSpecialty(visit)}</span> : null}
-                  {readVisitSummary(visit) ? <p>{readVisitSummary(visit)}</p> : null}
+                <div className="mh-visit-detail-grid">
+                  <div>
+                    <span>Department</span>
+                    <strong>{readVisitDepartment(visit)}</strong>
+                  </div>
+                  <div>
+                    <span>Diagnosis</span>
+                    <strong>{readVisitDiagnosis(visit)}</strong>
+                  </div>
+                  <div>
+                    <span>Chief Complaint</span>
+                    <strong>{readVisitChiefComplaint(visit)}</strong>
+                  </div>
+                  <div>
+                    <span>Consultation Notes</span>
+                    <strong>{readVisitNotes(visit)}</strong>
+                  </div>
                 </div>
               </div>
             ))}

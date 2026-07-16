@@ -340,6 +340,28 @@
   gap: 10px;
 }
 
+.mh-condition-list {
+  display: grid;
+  gap: 14px;
+}
+
+.mh-condition-row {
+  display: grid;
+  gap: 8px;
+}
+
+.mh-condition-row > span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.mh-condition-row > strong {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
 .mh-chip {
   padding: 8px 12px;
   border-radius: 999px;
@@ -374,6 +396,37 @@
   color: #64748b;
   font-size: 12px;
   line-height: 1.4;
+}
+
+.mh-mini-item a {
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.mh-medicine-list {
+  display: grid;
+  gap: 8px;
+}
+
+.mh-medicine-list p {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.mh-medicine-list b {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.mh-medicine-list em {
+  color: #475569;
+  font-size: 12px;
+  font-style: normal;
 }
 
 .mh-panel {
@@ -454,6 +507,34 @@
   color: #475569;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.mh-visit-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mh-visit-detail-grid div {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.mh-visit-detail-grid span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mh-visit-detail-grid strong {
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .mh-empty,
@@ -655,34 +736,33 @@
 
 .pp-account-page-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
-  gap: 26px;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
   align-items: start;
 }
 
 .pp-account-card {
-  min-height: 690px;
-  padding: 20px;
-  border: 1px solid #dbe5f1;
-  border-radius: 24px;
+  padding: 14px;
+  border: 1px solid #e1e8f2;
+  border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
 }
 
 .pp-account-card-action {
   width: 100%;
-  min-height: 72px;
+  min-height: 48px;
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 0 22px;
-  margin-bottom: 16px;
+  gap: 10px;
+  padding: 0 14px;
+  margin-bottom: 10px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 12px;
   background: transparent;
-  color: #009ca1;
+  color: #082033;
   font: inherit;
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 800;
   text-align: left;
   cursor: pointer;
@@ -700,8 +780,8 @@
 }
 
 .pp-account-card-action--logout {
-  margin-top: 22px;
-  color: #c82020;
+  margin-top: 0;
+  color: #c72520;
 }
 
 .pp-account-card-action--logout:hover {
@@ -1000,6 +1080,11 @@
   .mh-grid {
     grid-template-columns: 1fr;
   }
+
+  .mh-visit-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
   .pd-prescription-card {
     text-align: left;
   }
