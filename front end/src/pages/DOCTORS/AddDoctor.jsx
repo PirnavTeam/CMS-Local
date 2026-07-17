@@ -628,49 +628,56 @@ function AddDoctor() {
     setFieldErrors((previous) => ({ ...previous, image: "" }));
   };
 
-  const parseErrorMessage = async (response) => {
-    const fallback = "Unable to add doctor right now.";
+ const parseErrorMessage = async (response) => {
+  try {
+    const data = await response.json();
 
-    try {
-      const text = await response.text();
-
-      if (!text) return fallback;
-
-      try {
-        const data = JSON.parse(text);
-        return data?.message || data?.title || text;
-      } catch {
-        return text;
-      }
-    } catch {
-      return fallback;
+    if (data.errors) {
+      return Object.values(data.errors).flat().join("\n");
     }
-  };
 
+    return (
+      data.message ||
+      data.title ||
+      "Unable to add doctor right now."
+    );
+  } catch {
+    return "Unable to add doctor right now.";
+  }
+};
   const validateForm = (values = form) => {
-    const nextErrors = {
-      branchId: validateSelected(values.branchId, "a branch"),
-      name: validateAlpha(values.name, "Doctor name"),
-      specialization: validateAlpha(values.specialization, "Specialization"),
-      areaofExpertise: validateText(values.areaofExpertise, "Area of expertise"),
-      qualification: validateRequired(values.qualification, "Qualification"),
-      experience: validateNumeric(values.experience, "Experience", {
-        integer: true,
-        max: 99,
-      }),
-      fees: validateNumeric(values.fees, "Consultation fee"),
-      email: validateGmail(values.email, 'Email', { strict: false }),
-      phone: validateMobile(values.phone, "Phone"),
-      image: validateImageFile(imageFile, "Profile image"),
-    };
-
-    Object.keys(nextErrors).forEach((key) => {
-      if (!nextErrors[key]) delete nextErrors[key];
-    });
-
-    setFieldErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+  const nextErrors = {
+    branchId: validateSelected(values.branchId, "branch"),
+    name: validateAlpha(values.name, "Doctor Name"),
+    specialization: validateText(values.specialization, "Specialization"),
+    areaofExpertise: validateText(values.areaofExpertise, "Area of Expertise"),
+    qualification: validateText(values.qualification, "Qualification"),
+    experience: validateNumeric(values.experience, "Experience", {
+      integer: true,
+      max: 99,
+    }),
+    fees: validateNumeric(values.fees, "Consultation Fee"),
+    email: validateGmail(values.email),
+    phone: validateMobile(values.phone),
   };
+
+  if (imageFile) {
+    const imageError = validateImageFile(imageFile, "Doctor Image");
+    if (imageError) {
+      nextErrors.image = imageError;
+    }
+  }
+
+  Object.keys(nextErrors).forEach((key) => {
+    if (!nextErrors[key]) {
+      delete nextErrors[key];
+    }
+  });
+
+  setFieldErrors(nextErrors);
+
+  return Object.keys(nextErrors).length === 0;
+};
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -693,8 +700,6 @@ function AddDoctor() {
     }
 
     if (!validateForm(formattedForm)) {
-      setError("Please fix the highlighted fields.");
-      toast.error("Please fix the highlighted fields.");
       return;
     }
 
@@ -727,13 +732,25 @@ function AddDoctor() {
       phoneNumber: formattedForm.phone.trim(),
       isActive: formattedForm.isActive === "true",
     };
-    const formData = new FormData();
-    if (imageFile) {
-      formData.append("Image", imageFile);
-    }
+   const formData = new FormData();
+
+formData.append("BranchId", requestPayload.branchId);
+formData.append("Name", requestPayload.name);
+formData.append("Specialization", requestPayload.specialization);
+formData.append("Experience", requestPayload.experience);
+formData.append("Qualification", requestPayload.qualification);
+formData.append("ConsultationFee", requestPayload.consultationFee);
+formData.append("AreaofExpertise", requestPayload.areaofExpertise);
+formData.append("Email", requestPayload.email);
+formData.append("PhoneNumber", requestPayload.phoneNumber);
+formData.append("IsActive", requestPayload.isActive);
+
+if (imageFile) {
+    formData.append("Image", imageFile);
+}
 
     try {
-      const response = await fetch(buildDoctorCreateUrl(requestPayload), {
+      const response = await fetch(DOCTORS_API_URL, {
         method: "POST",
         headers: getApiHeaders(),
         body: formData,
@@ -1010,10 +1027,6 @@ function AddDoctor() {
 
           {branchWarning ? (
             <p className="add-doctor-form-note">{branchWarning}</p>
-          ) : null}
-
-          {error ? (
-            <p className="add-doctor-form-error">{error}</p>
           ) : null}
 
           <div className="add-doctor-actions">

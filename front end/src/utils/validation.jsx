@@ -120,6 +120,11 @@ export const validateText = (value, label) => {
   const required = validateRequired(value, label);
   if (required) return required;
   const text = String(value).trim();
+  // Allow abbreviations and common text patterns (e.g., "NA", "n/a", "Bone Splints")
+  const hasValidChars = /^[A-Za-z0-9\s.,'/&()-]+$/.test(text);
+  if (hasValidChars && text.length >= 2) {
+    return "";
+  }
   return hasMeaningfulText(text)
     ? ""
     : `${label} must be valid text, not random characters.`;
