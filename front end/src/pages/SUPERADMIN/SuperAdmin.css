@@ -448,7 +448,13 @@
    consistent buffer between the final action and the table border. */
 .sa-table--clinics .sa-table-head,
 .sa-table--clinics .sa-table-row {
-  padding-right: 28px;
+  padding-right: 32px;
+}
+
+.sa-table--clinics .sa-table-head > :last-child,
+.sa-table--clinics .sa-table-cell--actions {
+  padding-right: 16px;
+  box-sizing: border-box;
 }
 
 .sa-table-head {

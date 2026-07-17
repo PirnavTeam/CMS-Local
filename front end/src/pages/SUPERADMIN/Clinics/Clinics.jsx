@@ -101,7 +101,9 @@ function Clinics() {
     {
       key: "actions",
       label: "Actions",
-      width: "minmax(176px, 0.9fr)",
+      // Four 32px controls plus their gaps need dedicated room so the final
+      // button never crowds the table edge.
+      width: "minmax(200px, 0.9fr)",
       cellClassName: "sa-table-cell--actions",
       render: (clinic) => {
         const isActive = String(clinic.status || "").trim().toLowerCase() === "active";
