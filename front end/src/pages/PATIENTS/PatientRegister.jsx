@@ -338,7 +338,7 @@ function PatientRegister() {
             {/* STEP 1: PERSONAL & CLINIC */}
             {currentStep === 1 && (
               <div className="step-content">
-                {/* <div className="input-group">
+                <div className="input-group">
                   <label htmlFor="reg-clinic">Select Clinic / Hospital</label>
                   <select
                     id="reg-clinic"
@@ -355,7 +355,7 @@ function PatientRegister() {
                     ))}
                   </select>
                   {errors.hospitalId && <span className="error-message">{errors.hospitalId}</span>}
-                </div> */}
+                </div>
 
                 <div className="input-group">
                   <label htmlFor="reg-first">First Name</label>
