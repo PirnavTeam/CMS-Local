@@ -69,6 +69,12 @@
   overflow: hidden;
 }
 
+.patients-table-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
 .patients-search-wrap {
   padding: 18px 20px;
   border-bottom: 1px solid #e2e8f0;
@@ -109,7 +115,8 @@
 .patients-thead,
 .patients-row {
   display: grid;
-  grid-template-columns: minmax(50px, 0.35fr) 2fr 1.5fr 0.7fr 1.2fr 1.3fr 0.9fr;
+  grid-template-columns: 70px minmax(210px, 2fr) minmax(140px, 1.5fr) 70px minmax(100px, 1.2fr) minmax(130px, 1.3fr) 100px;
+  min-width: 820px;
   align-items: center;
   padding: 16px 20px;
 }
@@ -210,16 +217,13 @@
   color: #64748b;
 }
 
+.patients-table-scroll .patients-empty {
+  min-width: 820px;
+}
+
 .patients-empty-icon {
   font-size: 48px;
   margin-bottom: 12px;
-}
-
-@media (max-width: 1200px) {
-  .patients-thead,
-  .patients-row {
-    grid-template-columns: minmax(50px, 0.3fr) 1.8fr 1.3fr 0.6fr 1fr 1.1fr 1fr;
-  }
 }
 
 @media (max-width: 768px) {
@@ -234,5 +238,34 @@
 
   .patients-title {
     font-size: 24px;
+  }
+
+  .patients-table-scroll {
+    overflow-x: hidden;
+  }
+
+  .patients-thead,
+  .patients-row {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    min-width: 0;
+    column-gap: 12px;
+    padding: 14px 20px;
+  }
+
+  /* Keep the two most useful columns aligned on phones. */
+  .patients-thead span:first-child,
+  .patients-thead span:nth-child(n + 4),
+  .patients-row > span:first-child,
+  .patients-row > span:nth-child(n + 4) {
+    display: none;
+  }
+
+  .patients-row .patients-view-btn {
+    grid-column: 1 / -1;
+    margin-top: -4px;
+  }
+
+  .patients-table-scroll .patients-empty {
+    min-width: 0;
   }
 }

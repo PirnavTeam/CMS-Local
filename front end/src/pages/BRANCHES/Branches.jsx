@@ -45,6 +45,7 @@ import {
   validateText,
 } from "../../utils/validation";
 import {
+  getCitiesForDistrict,
   getDistrictsForState,
   INDIA_COUNTRY,
   INDIAN_STATES,
@@ -60,7 +61,7 @@ const getEmptyForm = (hospitalId = getStoredHospitalId()) => ({
   city: "",
   district: "",
   state: "",
-  country: "India",
+  country: INDIA_COUNTRY,
   postalCode: "",
   addressParts: emptyAddressParts,
 });
@@ -185,6 +186,17 @@ function Branches() {
         )
       ),
     [form.addressParts?.area, areaOptions]
+  );
+
+  const districts = useMemo(
+    () => getDistrictsForState(form.state),
+    [form.state]
+  );
+
+  // City choices are constrained to the selected state and district.
+  const cities = useMemo(
+    () => getCitiesForDistrict(form.state, form.district),
+    [form.district, form.state]
   );
 
   const fetchBranches = async () => {
@@ -358,10 +370,36 @@ function Branches() {
       nextValue = onlyPincodeValue(value);
     }
 
-    setForm((previous) => ({
-      ...previous,
-      [name]: nextValue,
-    }));
+    setForm((previous) => {
+      if (name === "country") {
+        return {
+          ...previous,
+          country: nextValue,
+          state: "",
+          district: "",
+          city: "",
+        };
+      }
+
+      if (name === "state") {
+        return {
+          ...previous,
+          state: nextValue,
+          district: "",
+          city: "",
+        };
+      }
+
+      if (name === "district") {
+        return {
+          ...previous,
+          district: nextValue,
+          city: "",
+        };
+      }
+
+      return { ...previous, [name]: nextValue };
+    });
 
     setFieldErrors((previous) => ({
       ...previous,
@@ -435,6 +473,26 @@ function Branches() {
         )
       ),
     };
+
+    if (!nextErrors.postalCode && !/^\d{5,6}$/.test(form.postalCode.trim())) {
+      nextErrors.postalCode = "Postal code must be 5 or 6 digits.";
+    }
+
+    if (!nextErrors.country && form.country !== INDIA_COUNTRY) {
+      nextErrors.country = "Country must be India.";
+    }
+
+    if (!nextErrors.state && !INDIAN_STATES.includes(form.state)) {
+      nextErrors.state = "Select a valid state.";
+    }
+
+    if (!nextErrors.district && !getDistrictsForState(form.state).includes(form.district)) {
+      nextErrors.district = "Select a valid district for the selected state.";
+    }
+
+    if (!nextErrors.city && !getCitiesForDistrict(form.state, form.district).includes(form.city)) {
+      nextErrors.city = "Select a valid city for the selected district.";
+    }
 
     Object.keys(nextErrors).forEach((key) => {
       if (!nextErrors[key]) delete nextErrors[key];

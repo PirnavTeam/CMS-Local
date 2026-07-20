@@ -25,6 +25,7 @@ const htmlEscape = (value) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 const toNumber = (value) => Number(value || 0);
+const getAdminDisplayName = (value) => String(value || "").trim() || "Not Assigned";
 const formatDateTime = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value || "");
@@ -173,7 +174,12 @@ function Reports() {
       width: "minmax(52px, 0.25fr)",
       render: (_item, index) => index + 1,
     },
-    { key: "adminName", label: "Admin", width: "minmax(120px, 0.8fr)" },
+    {
+      key: "adminName",
+      label: "Admin",
+      width: "minmax(120px, 0.8fr)",
+      render: (clinic) => getAdminDisplayName(clinic.adminName),
+    },
     { key: "name", label: "Clinic", width: "minmax(130px, 0.85fr)" },
     {
       key: "revenue",
@@ -281,7 +287,7 @@ function Reports() {
   const exportRows = useMemo(
     () =>
       filteredRows.map((row) => ({
-        Admin: row.adminName || "-",
+        Admin: getAdminDisplayName(row.adminName),
         "Admin Email": row.adminEmail || "-",
         Clinic: row.name || "-",
         Revenue: formatIndianCurrency(row.revenue),

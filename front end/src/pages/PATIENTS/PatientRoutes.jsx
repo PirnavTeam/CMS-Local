@@ -3,7 +3,7 @@ import { Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom"
 import {
   Bell, Calendar, Check, CheckCircle2, ChevronDown, ChevronRight, Circle, ClipboardList,
   CreditCard, Download, Eye, EyeOff, FileText, Heart, Key, LogOut, Mail, MapPin, Pill,
-  Phone, Search, Share2, Trash2, UserRound,
+  Menu, Phone, Search, Share2, Trash2, UserRound, X,
 } from "lucide-react";
 import PatientDashboard from "./PatientDashboard";
 import { apiUrl, patientApiUrl, PATIENT_API } from "../../config/api";
@@ -210,7 +210,11 @@ const normalizeSlotOption = (slot, doctorId = "", selectedDate = "") => {
 function PatientShell({ notifications, children, patient }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const menuRef = useRef(null);
+  const searchRef = useRef(null);
   const unreadCount = (notifications || []).filter((item) => item.unread).length;
 
   useEffect(() => {
@@ -224,9 +228,34 @@ function PatientShell({ notifications, children, patient }) {
     return () => document.removeEventListener("mousedown", closeMenu);
   }, []);
 
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus();
+  }, [searchOpen]);
+
   const logout = async () => {
     setMenuOpen(false);
     await logoutPatient(navigate);
+  };
+
+  const submitSearch = (event) => {
+    event.preventDefault();
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return;
+
+    const destinations = [
+      { terms: ["dashboard", "home"], path: "/patient/dashboard" },
+      { terms: ["appointment", "booking", "visit"], path: "/patient/appointments" },
+      { terms: ["medical", "history", "record"], path: "/patient/medical-history" },
+      { terms: ["prescription", "medicine", "medication"], path: "/patient/prescriptions" },
+      { terms: ["bill", "payment", "invoice"], path: "/patient/bills" },
+      { terms: ["notification", "alert"], path: "/patient/notifications" },
+      { terms: ["profile", "account"], path: "/patient/profile" },
+    ];
+    const match = destinations.find(({ terms }) => terms.some((term) => term.includes(query) || query.includes(term)));
+    if (match) {
+      navigate(match.path);
+      setSearchOpen(false);
+    }
   };
 
   const patientTitle = formatTitleCase(
@@ -253,8 +282,15 @@ function PatientShell({ notifications, children, patient }) {
   })();
 
   return (
-    <div className="patient-portal">
-      <aside className="pp-sidebar">
+    <div className={`patient-portal ${searchOpen ? "pp-search-open" : ""}`}>
+      <button
+        type="button"
+        className={`pp-sidebar-overlay ${sidebarOpen ? "is-visible" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+        aria-label="Close navigation menu"
+        tabIndex={sidebarOpen ? 0 : -1}
+      />
+      <aside className={`pp-sidebar ${sidebarOpen ? "is-open" : ""}`}>
         <div className="pp-brand">
           <div className="pp-brand-mark">
             <Heart size={20} />
@@ -264,7 +300,7 @@ function PatientShell({ notifications, children, patient }) {
             <span>Patient Portal</span>
           </div>
         </div>
-        <nav className="pp-nav">
+        <nav className="pp-nav" onClick={() => setSidebarOpen(false)}>
           <span className="pp-nav-label">MAIN MENU</span>
           <NavLink to="/patient/dashboard" className={({ isActive }) => `pp-nav-item ${isActive ? "active" : ""}`}>
             <ClipboardList size={16} />
@@ -306,15 +342,42 @@ function PatientShell({ notifications, children, patient }) {
       </aside>
       <main className="pp-main">
         <header className="pp-topbar">
-          <div className="pp-search-box">
-            <Search size={18} className="pp-search-icon" />
+          <form className={`pp-search-box ${searchOpen ? "is-expanded" : ""}`} onSubmit={submitSearch}>
+            <button
+              type="button"
+              className="pp-search-toggle"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search patient portal"
+            >
+              <Search size={18} className="pp-search-icon" />
+            </button>
             <input
               type="search"
-              placeholder="Search dashboard, clinics, admins, reports..."
+              ref={searchRef}
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search appointments, bills, prescriptions..."
               aria-label="Search patient portal"
             />
-          </div>
+            <button
+              type="button"
+              className="pp-search-close"
+              onClick={() => setSearchOpen(false)}
+              aria-label="Close search"
+            >
+              <X size={18} />
+            </button>
+          </form>
           <div className="pp-top-actions">
+            <button
+              type="button"
+              className="pp-menu-btn"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open navigation menu"
+              aria-expanded={sidebarOpen}
+            >
+              <Menu size={21} />
+            </button>
             <NavLink to="/patient/notifications" className="pp-icon-btn">
               <Bell size={17} />
               {unreadCount ? <span className="pp-dot" /> : null}

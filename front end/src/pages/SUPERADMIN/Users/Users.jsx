@@ -42,6 +42,13 @@ const isAdminRoleUser = (user = {}) => {
   return role === "admin";
 };
 
+const FIELD_LABELS = {
+  name: "Name",
+  email: "Email",
+  mobileNumber: "Mobile number",
+  password: "Password",
+};
+
 function Users() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
@@ -169,7 +176,14 @@ function Users() {
 
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
-      setError("Please fix the highlighted fields.");
+      const invalidFields = Object.keys(nextFieldErrors).map(
+        (field) => FIELD_LABELS[field] || field
+      );
+      setError(
+        invalidFields.length === 1
+          ? `Please correct the ${invalidFields[0]} field.`
+          : `Please correct the following fields: ${invalidFields.join(", ")}.`
+      );
       return;
     }
 
@@ -301,10 +315,10 @@ function Users() {
     {
       key: "lastActive",
       label: "Last Active",
-      width: "minmax(135px, 0.8fr)",
-      cellClassName: "sa-table-cell--nowrap",
+      width: "minmax(168px, 1fr)",
+      cellClassName: "sa-table-cell--nowrap sa-table-cell--last-active",
       render: (user) => {
-        const lastActive = user.lastActive || user.lastSeen || user.lastActiveAt || user.updatedAt || user.createdAt || "-";
+        const lastActive = user.lastActive || user.lastSeen || user.lastActiveAt || user.updatedAt || user.createdAt || "Never Logged In";
         return (
           <span title={lastActive} className="sa-table-text-overflow">
             {lastActive}
@@ -315,8 +329,8 @@ function Users() {
     {
       key: "actions",
       label: "Actions",
-      width: "minmax(162px, 0.7fr)",
-      cellClassName: "sa-table-cell--nowrap",
+      width: "minmax(176px, 0.9fr)",
+      cellClassName: "sa-table-cell--actions",
       render: (user) => (
         <div className="sa-actions">
           {(() => {
@@ -386,6 +400,7 @@ function Users() {
       />
 
       <DataTable
+        className="sa-table--users"
         columns={columns}
         rows={rows}
         loading={loading}

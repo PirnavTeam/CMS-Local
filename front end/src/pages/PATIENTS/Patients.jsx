@@ -214,6 +214,8 @@ function Patients() {
           </div>
         </div>
 
+        <div className="patients-table-scroll" tabIndex="0">
+
         {/* HEADER */}
 
         <div className="patients-thead">
@@ -350,6 +352,7 @@ function Patients() {
             );
           }
         )}
+        </div>
       </div>
     </div>
   );
