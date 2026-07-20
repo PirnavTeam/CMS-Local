@@ -294,7 +294,7 @@ function PatientLogin() {
                   onClick={() => setPasswordVisible(!passwordVisible)}
                   className="password-toggle-btn"
                 >
-                  {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {passwordVisible ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
               {errors.password && <span className="error-message">{errors.password}</span>}
@@ -303,7 +303,7 @@ function PatientLogin() {
             {errors.api && <div className="api-error-banner">{errors.api}</div>}
 
             <button type="submit" className="login-btn" disabled={isLoading}>
-              {isLoading ? "Signing in…" : "Login to Portal"}
+              {isLoading ? "Signing in…" : "Login"}
             </button>
           </form>
 

@@ -188,6 +188,8 @@ function ReceptionAppointments() {
     getReceptionistProfile().hospitalId || ""
   ).trim();
   const [patients, setPatients] = useState([]);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [isPatientMenuOpen, setIsPatientMenuOpen] = useState(false);
   const [doctors, setDoctors] = useState([]);
   const [doctorLoadMessage, setDoctorLoadMessage] = useState("");
   const [appointments, setAppointments] = useState([]);
@@ -266,6 +268,34 @@ function ReceptionAppointments() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  const getPatientName = (patient = {}) =>
+    String(patient.name || patient.fullName || patient.patientName || "").trim();
+
+  const selectedPatient = useMemo(
+    () =>
+      patients.find((patient) => String(patient.id) === String(form.patientId)),
+    [patients, form.patientId]
+  );
+
+  const matchingPatients = useMemo(() => {
+    const search = patientSearch.trim().toLowerCase();
+    if (!search) return patients.slice(0, 8);
+
+    return patients
+      .filter((patient) => {
+        const name = getPatientName(patient).toLowerCase();
+        const id = String(patient.id || "").toLowerCase();
+        return name.includes(search) || id.includes(search);
+      })
+      .slice(0, 8);
+  }, [patientSearch, patients]);
+
+  useEffect(() => {
+    if (selectedPatient) {
+      setPatientSearch(getPatientName(selectedPatient));
+    }
+  }, [selectedPatient]);
 
   const parseSlots = (data) => {
     if (Array.isArray(data)) return data;
@@ -419,6 +449,22 @@ function ReceptionAppointments() {
     }
   };
 
+  const selectPatient = (patient) => {
+    setField("patientId", String(patient.id));
+    setPatientSearch(getPatientName(patient));
+    setIsPatientMenuOpen(false);
+  };
+
+  const handlePatientSearch = (value) => {
+    setPatientSearch(value);
+    setIsPatientMenuOpen(true);
+
+    const exactMatch = patients.find(
+      (patient) => getPatientName(patient).toLowerCase() === value.trim().toLowerCase()
+    );
+    setField("patientId", exactMatch ? String(exactMatch.id) : "");
+  };
+
   return (
     <section className="rc-page">
       <div className="rc-page-head">
@@ -440,13 +486,41 @@ function ReceptionAppointments() {
           <h3>Book Appointment</h3>
           <label>
             <span>Patient</span>
-            <select value={form.patientId} onChange={(e) => setField("patientId", e.target.value)}>
-              {patients.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.id})
-                </option>
-              ))}
-            </select>
+            <div className="rc-patient-autocomplete">
+              <input
+                type="text"
+                value={patientSearch}
+                onChange={(e) => handlePatientSearch(e.target.value)}
+                onFocus={() => setIsPatientMenuOpen(true)}
+                onBlur={() => setTimeout(() => setIsPatientMenuOpen(false), 150)}
+                placeholder="Type to search patient name"
+                autoComplete="off"
+                aria-label="Search patient by name"
+                aria-autocomplete="list"
+                aria-expanded={isPatientMenuOpen}
+              />
+              {isPatientMenuOpen ? (
+                <div className="rc-patient-autocomplete-menu" role="listbox">
+                  {matchingPatients.length > 0 ? (
+                    matchingPatients.map((patient) => (
+                      <button
+                        key={patient.id}
+                        type="button"
+                        role="option"
+                        aria-selected={String(patient.id) === String(form.patientId)}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => selectPatient(patient)}
+                      >
+                        <strong>{getPatientName(patient) || "Unnamed patient"}</strong>
+                        <span>Patient ID: {patient.id}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="rc-patient-autocomplete-empty">No matching patients found.</div>
+                  )}
+                </div>
+              ) : null}
+            </div>
           </label>
           <label>
             <span>Doctor</span>
