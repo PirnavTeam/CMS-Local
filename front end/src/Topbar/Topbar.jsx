@@ -117,7 +117,6 @@ const superAdminSearchItems = [
   { label: "Clinics", keywords: "clinic hospital branch", path: "/superadmin/clinics" },
   { label: "Admins", keywords: "clinic admins management", path: "/superadmin/admins" },
   { label: "Users", keywords: "users accounts active", path: "/superadmin/users" },
-  { label: "Roles & Permissions", keywords: "roles permissions access", path: "/superadmin/roles" },
   { label: "Settings", keywords: "configuration email sms payment", path: "/superadmin/settings" },
   { label: "Reports", keywords: "analysis revenue export pdf csv", path: "/superadmin/reports" },
   { label: "Audit Logs", keywords: "login audit history activity", path: "/superadmin/audit-logs" },

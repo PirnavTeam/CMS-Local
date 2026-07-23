@@ -21,6 +21,9 @@ export const clearAllSessions = () => {
     "hospitalName",
     "clinicName",
     "assignedClinic",
+    "branchId",
+    "branchName",
+    "BranchName",
     "patientToken",
     "patientRole",
     "patientEmail",
@@ -147,6 +150,12 @@ const getProfileName = (storedKey, email, claims, fallback) => {
   return fallback;
 };
 
+const getProfileBranchName = (claims) =>
+  localStorage.getItem("branchName") ||
+  localStorage.getItem("BranchName") ||
+  getClaim(claims, "BranchName", "branchName", "Branch", "branch") ||
+  "";
+
 export const getRoleProfile = (roleType = "admin") => {
   if (roleType === "doctor") {
     const claims = getSessionClaims(roleType);
@@ -157,6 +166,7 @@ export const getRoleProfile = (roleType = "admin") => {
       roleLabel: "Doctor",
       name: `Dr. ${name}`.replace(/^Dr\. Dr\./, "Dr."),
       email,
+      branchName: getProfileBranchName(claims),
       profilePath: "/doctor/profile",
       passwordPath: "/doctor/profile?tab=password",
     };
@@ -170,6 +180,7 @@ export const getRoleProfile = (roleType = "admin") => {
       roleLabel: "Receptionist",
       name: getProfileName("receptionistName", email, claims, "Receptionist"),
       email,
+      branchName: getProfileBranchName(claims),
       profilePath: "/reception/profile",
       passwordPath: "/reception/profile?tab=password",
     };
@@ -189,6 +200,7 @@ export const getRoleProfile = (roleType = "admin") => {
     roleLabel,
     name: getProfileName("adminName", email, claims, roleLabel),
     email,
+    branchName: getProfileBranchName(claims),
     profilePath: "/profile",
     passwordPath: "/profile?tab=password",
   };

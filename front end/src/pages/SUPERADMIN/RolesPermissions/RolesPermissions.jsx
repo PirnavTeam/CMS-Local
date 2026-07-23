@@ -1,218 +1,145 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import Header from "../../../components/superadmin/Header";
-import DataTable from "../../../components/superadmin/DataTable";
-import PermissionMatrix from "../../../components/superadmin/PermissionMatrix";
+import React, { useEffect, useMemo, useState } from "react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   deleteRole,
   fetchAdmins,
-  fetchRole,
   fetchRoles,
-  fetchUsers,
   saveRole,
-  updateRolePermissions,
 } from "../superAdminApi";
-import { onlyAlpha, validateAlpha } from "../../../utils/validation";
 
-const permissionOptions = ["View", "Create", "Edit", "Delete"];
-const DEFAULT_SYSTEM_ROLES = ["Admin", "Doctor", "Patient", "Receptionist"];
-const withViewPermission = (permissions = []) =>
-  Array.from(new Set(["View", ...(Array.isArray(permissions) ? permissions : [])]));
+const PERMISSIONS = ["View", "Create", "Edit", "Delete"];
+const ADMIN_ROLE_KEYS = new Set(["admin", "clinicadmin", "superadmin"]);
 
-const isDefaultRole = (role = {}) => {
-  const roleName = String(role.name || role.roleName || "").toLowerCase();
-  return DEFAULT_SYSTEM_ROLES.some(r => r.toLowerCase() === roleName);
+const normalizeKey = (value = "") =>
+  String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+const isAdminControlRole = (role = {}) => {
+  const roleKey = normalizeKey(role.roleName || role.name);
+  const moduleKey = normalizeKey(role.module || role.moduleName);
+
+  return (
+    ADMIN_ROLE_KEYS.has(roleKey) ||
+    roleKey.includes("admin") ||
+    moduleKey.includes("admin")
+  );
 };
 
-const emptyRole = {
-  name: "Admin",
+const emptyForm = {
+  id: "",
   roleName: "Admin",
-  module: "General",
+  module: "Admin Management",
+  users: "0",
   status: "Active",
   permissions: ["View"],
 };
 
-const getRoleKey = (role = {}) => role.id || role.key || role.roleName || role.name;
-
-const isAdminRole = (role = {}) =>
-  String(role.roleName || role.name || "").trim().toLowerCase() === "admin";
+const normalizePermissionList = (permissions = []) =>
+  Array.from(new Set(["View", ...permissions])).filter((permission) =>
+    PERMISSIONS.includes(permission)
+  );
 
 function RolesPermissions() {
-  const [showForm, setShowForm] = useState(false);
   const [roles, setRoles] = useState([]);
-  const [admins, setAdmins] = useState([]);
-  const [form, setForm] = useState(emptyRole);
-  const [editingRoleId, setEditingRoleId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [updatingPermission, setUpdatingPermission] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [admins, setAdmins] = useState([]);
 
-  const getAdminRowKey = (admin = {}) =>
-    String(admin.email || admin.id || admin.name || admin.raw?.email || admin.raw?.id || "")
-      .trim()
-      .toLowerCase();
+  const activeRoles = useMemo(
+    () =>
+      roles.filter(
+        (role) =>
+          isAdminControlRole(role) &&
+          String(role.status || "").toLowerCase() !== "deleted"
+      ),
+    [roles]
+  );
 
-  const mergeAdminRows = useCallback((adminRows = [], userRows = []) => {
-    const rows = new Map();
-
-    adminRows.forEach((admin) => {
-      const key = getAdminRowKey(admin);
-      if (!key) return;
-      rows.set(key, { ...admin, source: admin.source || "admins" });
-    });
-
-    userRows
-      .filter((user) => {
-        const role = String(user.role || user.type || "").trim().toLowerCase();
-        return role === "admin" || role === "clinicadmin" || role === "clinic admin";
-      })
-      .map((user) => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone || user.mobileNumber,
-        assignedClinic: user.clinic,
-        assignedClinicId: user.clinicId || user.hospitalId,
-        role: "Admin",
-        status: user.status,
-        raw: user.raw || user,
-        source: "users",
-      }))
-      .forEach((admin) => {
-        const key = getAdminRowKey(admin);
-        if (!key) return;
-        rows.set(key, { ...rows.get(key), ...admin });
-      });
-
-    return Array.from(rows.values());
-  }, []);
-
-  const loadRoles = useCallback(async () => {
+  const loadRoles = async () => {
     setLoading(true);
     setError("");
 
-    const [rolesResult, adminsResult, usersResult] = await Promise.allSettled([
-      fetchRoles(),
-      fetchAdmins(),
-      fetchUsers(),
-    ]);
-
-    if (rolesResult.status === "fulfilled") {
-      const loadedRoles = rolesResult.value;
-      setRoles(loadedRoles);
-    } else {
+    try {
+      setRoles(await fetchRoles());
+      setAdmins(await fetchAdmins().catch(() => []));
+    } catch (loadError) {
+      setError(loadError.message || "Unable to load roles and permissions.");
       setRoles([]);
-      setError(rolesResult.reason?.message || "Unable to load roles.");
+    } finally {
+      setLoading(false);
     }
-
-    const adminRows = adminsResult.status === "fulfilled" ? adminsResult.value : [];
-    const userRows = usersResult.status === "fulfilled" ? usersResult.value : [];
-    setAdmins(mergeAdminRows(adminRows, userRows));
-
-    setLoading(false);
-  }, [mergeAdminRows]);
+  };
 
   useEffect(() => {
     loadRoles();
-  }, [loadRoles]);
+  }, []);
 
-  const openCreateForm = () => {
-    setEditingRoleId("");
-    setForm(emptyRole);
-    setShowForm(true);
+  const openAdd = () => {
+    setForm(emptyForm);
     setError("");
+    setSuccess("");
+    setShowForm(true);
   };
 
-  const visibleRoles = roles.filter(isAdminRole);
-
-  const getRoleAdminNames = (role) => {
-    const roleName = String(role.roleName || role.name || "").trim().toLowerCase();
-    return admins
-      .filter((admin) => String(admin.role || "").trim().toLowerCase() === roleName)
-      .map((admin) => admin.name)
-      .filter(Boolean);
-  };
-
-  const getRoleUserCount = (role) => {
-    const adminNames = getRoleAdminNames(role);
-    if (adminNames.length > 0) return adminNames.length;
-    return role.users || 0;
-  };
-
-  const openEditForm = async (role) => {
-    setEditingRoleId(role.id);
+  const openEdit = (role) => {
     setForm({
-      ...emptyRole,
-      ...role,
-      name: role.name || role.roleName || "",
+      id: role.id || "",
       roleName: role.roleName || role.name || "",
-      module: role.module || "General",
-      permissions: withViewPermission(role.permissions),
+      module: role.module || "",
+      users: String(role.users || 0),
+      status: role.status || "Active",
+      permissions: normalizePermissionList(role.permissions || []),
     });
-    setShowForm(true);
     setError("");
-
-    try {
-      const remoteRole = await fetchRole(role.id);
-      setForm({
-        ...emptyRole,
-        ...remoteRole,
-        name: remoteRole.name || remoteRole.roleName || "",
-        roleName: remoteRole.roleName || remoteRole.name || "",
-        module: remoteRole.module || "General",
-        permissions: withViewPermission(remoteRole.permissions),
-      });
-    } catch {
-      setForm({
-        ...emptyRole,
-        ...role,
-        name: role.name || role.roleName || "",
-        roleName: role.roleName || role.name || "",
-        module: role.module || "General",
-        permissions: withViewPermission(role.permissions),
-      });
-    }
+    setSuccess("");
+    setShowForm(true);
   };
 
   const closeForm = () => {
+    if (saving) return;
     setShowForm(false);
-    setEditingRoleId("");
-    setForm(emptyRole);
+    setForm(emptyForm);
   };
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    const nextValue = ["name", "roleName", "module"].includes(name)
-      ? onlyAlpha(value)
-      : value;
-    setForm((current) => ({ ...current, [name]: nextValue }));
+  const updateForm = (field, value) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+    setError("");
+    setSuccess("");
   };
 
-  const handlePermissionChange = (permission) => {
-    if (permission === "View") return;
+  const togglePermission = (permission) => {
+    setForm((previous) => {
+      if (permission === "View") {
+        return {
+          ...previous,
+          permissions: normalizePermissionList(previous.permissions),
+        };
+      }
 
-    setForm((current) => {
-      const permissions = current.permissions.includes(permission)
-        ? current.permissions.filter((item) => item !== permission)
-        : [...current.permissions, permission];
+      const exists = previous.permissions.includes(permission);
+      const permissions = exists
+        ? previous.permissions.filter((item) => item !== permission)
+        : [...previous.permissions, permission];
 
-      return { ...current, permissions: withViewPermission(permissions) };
+      return {
+        ...previous,
+        permissions: normalizePermissionList(permissions),
+      };
     });
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const roleNameError = validateAlpha(form.roleName || form.name, "Role name");
-    if (roleNameError) {
-      setError(roleNameError);
-      return;
-    }
-
-    const moduleError = validateAlpha(form.module, "Module");
-    if (moduleError) {
-      setError(moduleError);
+    const roleName = form.roleName.trim();
+    if (!roleName) {
+      setError("Role name is required.");
       return;
     }
 
@@ -220,263 +147,232 @@ function RolesPermissions() {
     setError("");
 
     try {
-      await saveRole(
-        {
-          ...form,
-          roleName: form.roleName || form.name,
-          name: form.name || form.roleName,
-          permissions: withViewPermission(form.permissions),
-        },
-        editingRoleId || undefined
-      );
-      closeForm();
+      await saveRole({
+        ...form,
+        name: roleName,
+        roleName,
+        module: form.module.trim() || "Admin Management",
+        targetRole: "Admin",
+        appliesTo: "Admin",
+        scope: "Admin",
+        users: Number(form.users || 0) || 0,
+        permissions: normalizePermissionList(form.permissions),
+      });
+      setSuccess(form.id ? "Role updated successfully." : "Role created successfully.");
       await loadRoles();
-    } catch (requestError) {
-      setError(requestError.message || "Unable to save role.");
+      closeForm();
+    } catch (saveError) {
+      setError(saveError.message || "Unable to save role.");
     } finally {
       setSaving(false);
     }
   };
 
+  const getAssignedAdmins = (role) => {
+    const roleKey = normalizeKey(role.roleName || role.name || "Admin");
+    return admins.filter((admin) => normalizeKey(admin.role || "Admin") === roleKey);
+  };
+
+  const matrixRole = activeRoles[0] || {
+    roleName: "Admin",
+    module: "General",
+    permissions: ["View", "Create", "Edit", "Delete"],
+  };
+
   const handleDelete = async (role) => {
-    if (isDefaultRole(role)) {
-      setError(`Cannot delete system-defined role: ${role.name}`);
+    if (!role?.id) {
+      setError("This role cannot be deleted because it does not have an id.");
       return;
     }
 
-    const confirmed = window.confirm(`Delete ${role.name || "this role"}?`);
+    const confirmed = window.confirm(`Delete role ${role.roleName || role.name}?`);
     if (!confirmed) return;
 
     setError("");
+    setSuccess("");
 
     try {
       await deleteRole(role.id);
-      if (editingRoleId === role.id) closeForm();
+      setSuccess("Role deleted successfully.");
       await loadRoles();
-    } catch (requestError) {
-      setError(requestError.message || "Unable to delete role.");
+    } catch (deleteError) {
+      setError(deleteError.message || "Unable to delete role.");
     }
   };
-
-  const handleMatrixPermissionToggle = async (role, permission) => {
-    if (permission === "View") return;
-
-    const roleKey = getRoleKey(role);
-    if (!roleKey) return;
-
-    const currentPermissions = withViewPermission(role.permissions);
-    const nextPermissions = withViewPermission(
-      currentPermissions.includes(permission)
-        ? currentPermissions.filter((item) => item !== permission)
-        : [...currentPermissions, permission]
-    );
-    const updateKey = `${roleKey}:${permission}`;
-
-    setUpdatingPermission(updateKey);
-    setError("");
-    setRoles((currentRoles) =>
-      currentRoles.map((item) =>
-        getRoleKey(item) === roleKey ? { ...item, permissions: nextPermissions } : item
-      )
-    );
-    if (role.canPersistPermissions === false || !role.id) {
-      setUpdatingPermission("");
-      setError("Backend role id is unavailable, so permissions cannot sync to other systems.");
-      return;
-    }
-
-    try {
-      await updateRolePermissions(role.id, {
-        ...role,
-        permissions: nextPermissions,
-      });
-      await loadRoles();
-    } catch (requestError) {
-      setError(requestError.message || "Unable to update permissions.");
-      setRoles((currentRoles) =>
-        currentRoles.map((item) =>
-          getRoleKey(item) === roleKey ? { ...item, permissions: nextPermissions } : item
-        )
-      );
-    } finally {
-      setUpdatingPermission("");
-    }
-  };
-
-  const columns = [
-    {
-      key: "serial",
-      label: "S.No.",
-      width: "minmax(52px, 0.25fr)",
-      render: (_role, index) => index + 1,
-    },
-    { key: "name", label: "Role", width: "minmax(110px, 0.65fr)" },
-    { key: "module", label: "Module", width: "minmax(120px, 0.7fr)" },
-    {
-      key: "users",
-      label: "Assigned Users",
-      width: "minmax(145px, 0.85fr)",
-      cellClassName: "sa-table-cell--wrap",
-      render: (role) => {
-        const adminNames = getRoleAdminNames(role);
-        const userCount = getRoleUserCount(role);
-        if (adminNames.length > 0) {
-          return (
-            <div className="sa-role-admin-list">
-              <div>{`${adminNames.length} admin${adminNames.length !== 1 ? "s" : ""}`}</div>
-              <div className="sa-role-admin-names">
-                {adminNames.map((name) => (
-                  <div key={name} className="sa-role-admin-name">
-                    {name}
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        }
-        return userCount === 0 ? "0 admins" : `${userCount} admin${userCount !== 1 ? "s" : ""}`;
-      },
-    },
-    {
-      key: "permissions",
-      label: "Permissions",
-      width: "minmax(190px, 1fr)",
-      render: (role) => {
-        const perms = Array.isArray(role.permissions) && role.permissions.length > 0
-          ? role.permissions.join(", ")
-          : "View";
-        return perms;
-      },
-    },
-    {
-      key: "actions",
-      label: "Actions",
-      width: "minmax(92px, 0.45fr)",
-      render: (role) => {
-        const canUseRemoteActions = role.canPersistPermissions !== false && role.id;
-        const isSystemRole = isDefaultRole(role);
-        const canDelete = canUseRemoteActions && !isSystemRole;
-
-        return (
-          <div className="sa-actions">
-            <button
-              className="sa-icon-btn"
-              disabled={!canUseRemoteActions}
-              onClick={() => openEditForm(role)}
-              title={canUseRemoteActions ? "Edit role" : "Backend id unavailable"}
-            >
-              <Pencil size={15} />
-            </button>
-            <button
-              className="sa-icon-btn"
-              disabled={!canDelete}
-              onClick={() => handleDelete(role)}
-              title={isSystemRole ? "Cannot delete system-defined role" : canUseRemoteActions ? "Delete role" : "Backend id unavailable"}
-            >
-              <Trash2 size={15} />
-            </button>
-          </div>
-        );
-      },
-    },
-  ];
 
   return (
-    <>
-      <Header
-        title="Roles & Permissions"
-        subtitle="Create roles and assign View, Create, Edit, and Delete permissions."
-        action={
-          <button className="sa-btn sa-btn-primary" onClick={openCreateForm}>
-            <Plus size={16} />
-            Create Role
+    <div>
+      <div className="sa-page-header">
+        <div>
+          <h1>Roles & Permissions</h1>
+          <p>Create roles and assign View, Create, Edit, and Delete permissions.</p>
+        </div>
+        <div className="sa-page-actions">
+          <button className="sa-btn sa-btn-primary" type="button" onClick={openAdd}>
+            <Plus size={16} /> Create Role
           </button>
-        }
-      />
+        </div>
+      </div>
+
+      {success ? <div className="sa-state">{success}</div> : null}
+      {error ? <div className="sa-state sa-state--error">{error}</div> : null}
 
       {showForm ? (
-        <form className="sa-form-card" style={{ marginBottom: 16 }} onSubmit={handleSubmit} noValidate>
-          <h3>{editingRoleId ? "Edit Role" : "Create Role"}</h3>
-          {error ? <div className="sa-state sa-state--error">{error}</div> : null}
+        <form className="sa-form-card" onSubmit={handleSubmit} style={{ marginBottom: 24 }}>
+          <div className="sa-modal-header">
+            <div>
+              <h3>{form.id ? "Edit Role" : "Create Role"}</h3>
+            </div>
+            <button className="sa-icon-btn" type="button" onClick={closeForm} disabled={saving} aria-label="Close role form">
+              <X size={18} />
+            </button>
+          </div>
+
           <div className="sa-form-grid">
             <div className="sa-form-field">
               <label>Role Name</label>
               <input
-                name="roleName"
                 value={form.roleName}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    name: event.target.value,
-                    roleName: event.target.value,
-                  }))
-                }
-                placeholder="Admin"
-                required
-                disabled
+                onChange={(event) => updateForm("roleName", event.target.value)}
+                autoFocus
               />
             </div>
             <div className="sa-form-field">
               <label>Module</label>
               <input
-                name="module"
                 value={form.module}
-                onChange={handleChange}
-                placeholder="Enter module name"
-                required
+                onChange={(event) => updateForm("module", event.target.value)}
+                placeholder="General"
               />
             </div>
             <div className="sa-form-field">
               <label>Status</label>
-              <select name="status" value={form.status} onChange={handleChange}>
-                <option>Active</option>
-                <option>Inactive</option>
+              <select
+                value={form.status}
+                onChange={(event) => updateForm("status", event.target.value)}
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
               </select>
             </div>
-            <div className="sa-form-field sa-form-field-full">
-              <label>Permissions</label>
-              <div className="sa-page-actions">
-                {permissionOptions.map((permission) => (
+          </div>
+
+          <div style={{ marginTop: 18 }}>
+            <label className="sa-form-field" style={{ gap: 10 }}>
+              <span style={{ fontWeight: 700 }}>Permissions</span>
+              <span className="sa-actions" style={{ justifyContent: "flex-end" }}>
+                {PERMISSIONS.map((permission) => (
                   <label className="sa-checkbox" key={permission}>
                     <input
                       type="checkbox"
-                      checked={permission === "View" || form.permissions.includes(permission)}
-                      onChange={() => handlePermissionChange(permission)}
+                      checked={form.permissions.includes(permission)}
                       disabled={permission === "View"}
+                      onChange={() => togglePermission(permission)}
                     />
-                    <span>{permission}</span>
+                    {permission}
                   </label>
                 ))}
-              </div>
-            </div>
+              </span>
+            </label>
           </div>
-          <div className="sa-page-actions" style={{ marginTop: 14 }}>
-            <button type="button" className="sa-btn" onClick={closeForm}>Close</button>
-            <button className="sa-btn sa-btn-primary" disabled={saving}>
+
+          <div className="sa-page-actions" style={{ marginTop: 18 }}>
+            <button className="sa-btn" type="button" onClick={closeForm} disabled={saving}>
+              Close
+            </button>
+            <button className="sa-btn sa-btn-primary" type="submit" disabled={saving}>
+              <Check size={16} />
               {saving ? "Saving..." : "Save Role"}
             </button>
           </div>
         </form>
       ) : null}
 
-      <DataTable
-        columns={columns}
-        rows={visibleRoles}
-        loading={loading}
-        error={!showForm ? error : ""}
-        emptyMessage="No roles found."
-      />
+      <div className="sa-table">
+        <div
+          className="sa-table-head"
+          style={{ gridTemplateColumns: "70px minmax(140px,.7fr) minmax(150px,.8fr) minmax(190px,1fr) minmax(220px,1fr) 120px" }}
+        >
+          <span>S.No.</span>
+          <span>Role</span>
+          <span>Module</span>
+          <span>Assigned Users</span>
+          <span>Permissions</span>
+          <span>Actions</span>
+        </div>
 
-      <div className="sa-panel" style={{ marginTop: 16 }}>
-        <h3>Assign Permissions</h3>
-        <p>Permission matrix for the current Admin role only.</p>
-        <PermissionMatrix
-          roles={visibleRoles}
-          onToggle={handleMatrixPermissionToggle}
-          updatingKey={updatingPermission}
-        />
+        {loading ? <div className="sa-state">Loading roles...</div> : null}
+        {!loading && activeRoles.length === 0 ? (
+          <div className="sa-empty">No admin roles found.</div>
+        ) : null}
+
+        {activeRoles.map((role, index) => (
+          <div
+            className="sa-table-row"
+            key={role.key || role.id || `${role.roleName}-${index}`}
+            style={{ gridTemplateColumns: "70px minmax(140px,.7fr) minmax(150px,.8fr) minmax(190px,1fr) minmax(220px,1fr) 120px" }}
+          >
+            <span className="sa-table-cell">{index + 1}</span>
+            <span className="sa-table-cell">
+              <b>{role.roleName || role.name || "-"}</b>
+            </span>
+            <span className="sa-table-cell">
+              {role.module || "-"}
+            </span>
+            <span className="sa-table-cell">
+              <span className="sa-role-admin-list">
+                <b>{getAssignedAdmins(role).length} admins</b>
+                <span className="sa-role-admin-names">
+                  {getAssignedAdmins(role).map((admin) => (
+                    <span className="sa-role-admin-name" key={admin.id || admin.email || admin.name}>
+                      {admin.name || admin.email}
+                    </span>
+                  ))}
+                </span>
+              </span>
+            </span>
+            <span className="sa-table-cell">
+              {normalizePermissionList(role.permissions || []).join(", ")}
+            </span>
+            <span className="sa-actions">
+              <button className="sa-icon-btn" type="button" onClick={() => openEdit(role)} title="Edit role">
+                <Pencil size={15} />
+              </button>
+              <button className="sa-icon-btn sa-icon-btn--danger" type="button" onClick={() => handleDelete(role)} title="Delete role">
+                <Trash2 size={15} />
+              </button>
+            </span>
+          </div>
+        ))}
       </div>
-    </>
+
+      <div className="sa-form-card" style={{ marginTop: 24 }}>
+        <h3>Assign Permissions</h3>
+        <p className="sa-form-subtitle">Permission matrix for the current Admin role only.</p>
+        <div className="sa-permission-matrix">
+          <div className="sa-permission-head">
+            <span>Role</span>
+            {PERMISSIONS.map((permission) => (
+              <span key={permission}>{permission}</span>
+            ))}
+          </div>
+          <div className="sa-permission-row">
+            <span>{matrixRole.roleName || matrixRole.name || "Admin"}</span>
+            {PERMISSIONS.map((permission) => (
+              <label className="sa-checkbox" key={permission}>
+                <input
+                  type="checkbox"
+                  checked={normalizePermissionList(matrixRole.permissions || []).includes(permission)}
+                  disabled
+                  readOnly
+                />
+                {permission}
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -35,17 +35,13 @@ import {
   formatCompactIndianCurrency,
   formatIndianCurrency,
 } from "../utils/format";
-import {
-  canUsePermission,
-  fetchAndStoreRolePermissions,
-} from "../utils/authorization";
-import { useToast } from "../components/ToastProvider";
 import { getClinicDisplayName } from "../utils/clinicDisplay";
 
 /* ================= API ================= */
 
 const API = apiUrl("Dashboard");
 const RECEPTIONIST_API = apiUrl("Receptionist");
+const REQUEST_TIMEOUT_MS = 3500;
 
 const getAdminToken = () =>
   localStorage.getItem("adminToken") ||
@@ -63,6 +59,16 @@ const formatNumber = (value) =>
   );
 
 const formatCurrencyShort = formatCompactIndianCurrency;
+
+const fetchWithTimeout = (url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) => {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  return fetch(url, {
+    ...options,
+    signal: controller.signal,
+  }).finally(() => window.clearTimeout(timeoutId));
+};
 
 const getPaddedMax = (value) =>
   Math.max(
@@ -126,8 +132,6 @@ function Dashboard() {
     useNavigate();
   const location =
     useLocation();
-  const toast = useToast();
-
   const [dashboardData,
     setDashboardData] =
     useState(null);
@@ -135,54 +139,12 @@ function Dashboard() {
   const [loading,
     setLoading] =
     useState(true);
-  const [permissionsLoading,
-    setPermissionsLoading] =
-    useState(true);
-  const [permissionRecord,
-    setPermissionRecord] =
-    useState(null);
   const [clinicCardFlipped,
     setClinicCardFlipped] =
     useState(false);
-  const canCreateDoctor =
-    !permissionsLoading &&
-    canUsePermission(
-      permissionRecord,
-      "create"
-    );
   const openAddDoctor = () => {
-    if (!canCreateDoctor) {
-      toast.error(
-        permissionsLoading
-          ? "Loading permissions. Please try again."
-          : "Create permission is disabled by Super Admin."
-      );
-      return;
-    }
-
     navigate("/doctors/add");
   };
-
-  useEffect(() => {
-    let active = true;
-
-    const loadPermissions = async () => {
-      setPermissionsLoading(true);
-      const record =
-        await fetchAndStoreRolePermissions();
-
-      if (active) {
-        setPermissionRecord(record);
-        setPermissionsLoading(false);
-      }
-    };
-
-    loadPermissions();
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (
@@ -230,19 +192,20 @@ function Dashboard() {
       try {
         const token =
           getAdminToken();
+        const headers = {
+          "ngrok-skip-browser-warning":
+            "true",
+          ...(token
+            ? {
+              Authorization:
+                `Bearer ${token}`,
+            }
+            : {}),
+        };
 
         const response =
-          await fetch(API, {
-            headers: {
-              "ngrok-skip-browser-warning":
-                "true",
-              ...(token
-                ? {
-                  Authorization:
-                    `Bearer ${token}`,
-                }
-                : {}),
-            },
+          await fetchWithTimeout(API, {
+            headers,
           });
 
         if (!response.ok) {
@@ -254,38 +217,13 @@ function Dashboard() {
         const data =
           await response.json();
 
-        console.log(
-          "DASHBOARD:",
-          data
-        );
-
         let merged = { ...data };
-
-        try {
-          const clinicResp = await fetch(`${API}/ClincData`, {
-            headers: {
-              "ngrok-skip-browser-warning": "true",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-          });
-
-          if (clinicResp.ok) {
-            const clinicData = await clinicResp.json();
-            merged = {
-              ...merged,
-              clinic: {
-                ...(merged.clinic || {}),
-                ...clinicData,
-              },
-              clinicName: merged.clinicName || clinicData?.clinicName || merged.clinic?.clinicName,
-            };
-          }
-        } catch (e) {
-          console.log("Failed to load clinic details:", e.message || e);
-        }
+        setDashboardData(merged);
+        setLoading(false);
 
         const receptionistCount =
-          getDashboardMetricValue(
+          pickValue(
+            merged,
             [
               "totalReceptionists",
               "receptionistCount",
@@ -296,35 +234,40 @@ function Dashboard() {
             null
           );
 
-        if (
-          receptionistCount === null ||
-          receptionistCount === 0
-        ) {
-          try {
-            const receptionistResp = await fetch(RECEPTIONIST_API, {
-              headers: {
-                "ngrok-skip-browser-warning": "true",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              },
-            });
+        Promise.allSettled([
+          fetchWithTimeout(`${API}/ClincData`, { headers }, 2500),
+          receptionistCount === null || receptionistCount === 0
+            ? fetchWithTimeout(RECEPTIONIST_API, { headers }, 2500)
+            : Promise.resolve(null),
+        ]).then(async ([clinicResult, receptionistResult]) => {
+          let nextMerged = { ...data };
 
-            if (receptionistResp.ok) {
-              const receptionistData = await receptionistResp.json();
-              const receptionists =
-                Array.isArray(receptionistData)
-                  ? receptionistData
-                  : receptionistData?.data || receptionistData?.rows || [];
-              merged = {
-                ...merged,
-                receptionistCount: receptionists.length,
-              };
-            }
-          } catch (e) {
-            console.log("Failed to load receptionist count:", e.message || e);
-          }
+        if (clinicResult.status === "fulfilled" && clinicResult.value?.ok) {
+          const clinicData = await clinicResult.value.json().catch(() => ({}));
+          nextMerged = {
+            ...nextMerged,
+            clinic: {
+              ...(nextMerged.clinic || {}),
+              ...clinicData,
+            },
+            clinicName: nextMerged.clinicName || clinicData?.clinicName || nextMerged.clinic?.clinicName,
+          };
         }
 
-        setDashboardData(merged);
+        if (receptionistResult.status === "fulfilled" && receptionistResult.value?.ok) {
+          const receptionistData = await receptionistResult.value.json().catch(() => []);
+          const receptionists =
+            Array.isArray(receptionistData)
+              ? receptionistData
+              : receptionistData?.data || receptionistData?.rows || [];
+          nextMerged = {
+            ...nextMerged,
+            receptionistCount: receptionists.length,
+          };
+        }
+
+          setDashboardData(nextMerged);
+        });
 
       } catch (error) {
 
@@ -335,6 +278,10 @@ function Dashboard() {
       }
     }, []
   );
+
+  useEffect(() => {
+    fetchDashboard();
+  }, [fetchDashboard]);
   /* ================= LOADING ================= */
 
   // Helper skeleton component (lightweight) used for placeholders while loading
@@ -591,14 +538,7 @@ function Dashboard() {
           type="button"
           className="dashboard-action-button"
           onClick={openAddDoctor}
-          disabled={!canCreateDoctor}
-          title={
-            canCreateDoctor
-              ? "Add doctor"
-              : permissionsLoading
-                ? "Loading permissions"
-                : "Permission disabled by Super Admin"
-          }
+          title="Add doctor"
         >
           <UserPlus size={16} />
           Add Doctor
@@ -627,18 +567,21 @@ function Dashboard() {
               <div className="dashboard-clinic-flip-header">Clinic Info</div>
               <div className="dashboard-clinic-flip-row">
                 <span className="dashboard-clinic-flip-label">Clinic Name</span>
-                <span className="dashboard-clinic-flip-value">{clinicInfo.name || "-"}</span>
-                {loading && <Skeleton width="70%" height={20} style={{float: 'right'}} />}
+                <span className="dashboard-clinic-flip-value">
+                  {loading ? <Skeleton width="70%" height={20} /> : clinicInfo.name || "-"}
+                </span>
               </div>
               <div className="dashboard-clinic-flip-row">
                 <span className="dashboard-clinic-flip-label">Contact Number</span>
-                <span className="dashboard-clinic-flip-value">{clinicInfo.contactNumber || "-"}</span>
-                {loading && <Skeleton width="50%" height={18} style={{float: 'right'}} />}
+                <span className="dashboard-clinic-flip-value">
+                  {loading ? <Skeleton width="50%" height={18} /> : clinicInfo.contactNumber || "-"}
+                </span>
               </div>
               <div className="dashboard-clinic-flip-row">
                 <span className="dashboard-clinic-flip-label">Email</span>
-                <span className="dashboard-clinic-flip-value">{clinicInfo.email || "-"}</span>
-                {loading && <Skeleton width="60%" height={18} style={{float: 'right'}} />}
+                <span className="dashboard-clinic-flip-value">
+                  {loading ? <Skeleton width="60%" height={18} /> : clinicInfo.email || "-"}
+                </span>
               </div>
               <div className="dashboard-clinic-flip-row">
                 <span className="dashboard-clinic-flip-label">Status</span>

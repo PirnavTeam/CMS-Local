@@ -1,48 +1,48 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./layout/AppLayout";
-import DoctorApp from "./doctors/DoctorApp";
-import ReceptionistApp from "./Recepitionist/ReceptionistApp";
-import PatientRoutes from "./pages/PATIENTS/PatientRoutes";
-import UserProfilePage from "./profile/UserProfilePage";
-import SuperAdminDashboard from "./pages/SUPERADMIN/Dashboard/Dashboard";
-import SuperAdminClinics from "./pages/SUPERADMIN/Clinics/Clinics";
-import SuperAdminClinicForm from "./pages/SUPERADMIN/Clinics/ClinicForm";
-import SuperAdminAdmins from "./pages/SUPERADMIN/Admins/Admins";
-import SuperAdminUsers from "./pages/SUPERADMIN/Users/Users";
-import SuperAdminRolesPermissions from "./pages/SUPERADMIN/RolesPermissions/RolesPermissions";
-import SuperAdminSettings from "./pages/SUPERADMIN/Settings/Settings";
-import SuperAdminReports from "./pages/SUPERADMIN/Reports/Reports";
-import SuperAdminAuditLogs from "./pages/SUPERADMIN/AuditLogs/AuditLogs";
-import SuperAdminNotifications from "./pages/SUPERADMIN/Notifications/Notifications";
-
-// Pages
-import AdminLogin from "./Login/Adminlogin";
-import ForgotPassword from "./Login/Forgotpassword";
-import VerifyOTP from "./Login/Verifyopt";
-import ResetPassword from "./Login/Resertpassword";
-import Dashboard from "./Dashboard/Dashboard";
-import Branches from "./pages/BRANCHES/Branches";
-import Receptionists from "./pages/RECEPTIONISTS/Receptionists";
-import Doctors from "./pages/DOCTORS/Doctors";
-import AddDoctor from "./pages/DOCTORS/AddDoctor";
-import DoctorSchedule from "./pages/DOCTORS/DoctorSchedule";
-import Patients from "./pages/PATIENTS/Patients";
-import PatientDetails from "./pages/PATIENTS/PatientDetails";
-import PatientDashboard from "./pages/PATIENTS/PatientDashboard";
-import PatientRegister from "./pages/PATIENTS/PatientRegister";
-import PatientLogin from "./pages/PATIENTS/PatientLogin";
-// Optional
-import Appointments from "./pages/APPOINTMENTS/Appointments";
-import NewAppointment from "./pages/APPOINTMENTS/NewAppointment";
-import Doctorschedulepage from "./pages/Schedule/docschedule";
-import Reports from "./pages/REPORTS/Reports";
-import DailyReport from "./pages/REPORTS/DailyReport";
-import RevenueReport from "./pages/REPORTS/RevenueReport";
-import DoctorWiseReport from "./pages/REPORTS/DoctorWiseReport";
 import "./pages/SUPERADMIN/SuperAdmin.css";
 import { ToastProvider } from "./components/ToastProvider";
+
+// Pages
+const DoctorApp = lazy(() => import("./doctors/DoctorApp"));
+const ReceptionistApp = lazy(() => import("./Recepitionist/ReceptionistApp"));
+const PatientRoutes = lazy(() => import("./pages/PATIENTS/PatientRoutes"));
+const UserProfilePage = lazy(() => import("./profile/UserProfilePage"));
+const SuperAdminDashboard = lazy(() => import("./pages/SUPERADMIN/Dashboard/Dashboard"));
+const SuperAdminClinics = lazy(() => import("./pages/SUPERADMIN/Clinics/Clinics"));
+const SuperAdminClinicForm = lazy(() => import("./pages/SUPERADMIN/Clinics/ClinicForm"));
+const SuperAdminAdmins = lazy(() => import("./pages/SUPERADMIN/Admins/Admins"));
+const SuperAdminUsers = lazy(() => import("./pages/SUPERADMIN/Users/Users"));
+const SuperAdminSettings = lazy(() => import("./pages/SUPERADMIN/Settings/Settings"));
+const SuperAdminReports = lazy(() => import("./pages/SUPERADMIN/Reports/Reports"));
+const SuperAdminAuditLogs = lazy(() => import("./pages/SUPERADMIN/AuditLogs/AuditLogs"));
+const SuperAdminNotifications = lazy(() => import("./pages/SUPERADMIN/Notifications/Notifications"));
+const SuperAdminRolesPermissions = lazy(() => import("./pages/SUPERADMIN/RolesPermissions/RolesPermissions"));
+const AdminLogin = lazy(() => import("./Login/Adminlogin"));
+const ForgotPassword = lazy(() => import("./Login/Forgotpassword"));
+const VerifyOTP = lazy(() => import("./Login/Verifyopt"));
+const ResetPassword = lazy(() => import("./Login/Resertpassword"));
+const Dashboard = lazy(() => import("./Dashboard/Dashboard"));
+const Branches = lazy(() => import("./pages/BRANCHES/Branches"));
+const Receptionists = lazy(() => import("./pages/RECEPTIONISTS/Receptionists"));
+const Doctors = lazy(() => import("./pages/DOCTORS/Doctors"));
+const AddDoctor = lazy(() => import("./pages/DOCTORS/AddDoctor"));
+const DoctorSchedule = lazy(() => import("./pages/DOCTORS/DoctorSchedule"));
+const Patients = lazy(() => import("./pages/PATIENTS/Patients"));
+const PatientDetails = lazy(() => import("./pages/PATIENTS/PatientDetails"));
+const PatientDashboard = lazy(() => import("./pages/PATIENTS/PatientDashboard"));
+const PatientRegister = lazy(() => import("./pages/PATIENTS/PatientRegister"));
+const PatientLogin = lazy(() => import("./pages/PATIENTS/PatientLogin"));
+// Optional
+const Appointments = lazy(() => import("./pages/APPOINTMENTS/Appointments"));
+const NewAppointment = lazy(() => import("./pages/APPOINTMENTS/NewAppointment"));
+const Doctorschedulepage = lazy(() => import("./pages/Schedule/docschedule"));
+const Reports = lazy(() => import("./pages/REPORTS/Reports"));
+const DailyReport = lazy(() => import("./pages/REPORTS/DailyReport"));
+const RevenueReport = lazy(() => import("./pages/REPORTS/RevenueReport"));
+const DoctorWiseReport = lazy(() => import("./pages/REPORTS/DoctorWiseReport"));
 // ensure app styles include patient styles
 
 const normalizeRole = (role = "") =>
@@ -58,7 +58,8 @@ function App() {
   return (
     <ToastProvider>
       <BrowserRouter>
-        <Routes>
+        <Suspense fallback={<div className="app-route-loading">Loading...</div>}>
+          <Routes>
 
         {/* DEFAULT */}
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -112,8 +113,9 @@ function App() {
           <Route path="superadmin/clinics/edit/:id" element={<SuperAdminRoute><SuperAdminClinicForm mode="edit" /></SuperAdminRoute>} />
           <Route path="superadmin/admins" element={<SuperAdminRoute><SuperAdminAdmins /></SuperAdminRoute>} />
           <Route path="superadmin/users" element={<SuperAdminRoute><SuperAdminUsers /></SuperAdminRoute>} />
-          <Route path="superadmin/roles" element={<SuperAdminRoute><SuperAdminRolesPermissions /></SuperAdminRoute>} />
           <Route path="superadmin/settings" element={<SuperAdminRoute><SuperAdminSettings /></SuperAdminRoute>} />
+          <Route path="superadmin/roles" element={<SuperAdminRoute><SuperAdminRolesPermissions /></SuperAdminRoute>} />
+          <Route path="superadmin/roles-permissions" element={<Navigate to="/superadmin/roles" replace />} />
           <Route path="superadmin/reports" element={<SuperAdminRoute><SuperAdminReports /></SuperAdminRoute>} />
           <Route path="superadmin/audit-logs" element={<SuperAdminRoute><SuperAdminAuditLogs /></SuperAdminRoute>} />
           <Route path="superadmin/notifications" element={<SuperAdminRoute><SuperAdminNotifications /></SuperAdminRoute>} />
@@ -128,7 +130,8 @@ function App() {
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/login" replace />} />
 
-        </Routes>
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </ToastProvider>
   );

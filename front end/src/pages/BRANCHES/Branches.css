@@ -1,6 +1,6 @@
 .branches-page {
   min-height: 100%;
-  padding: 24px;
+  padding: 18px;
   background: #f8fafc;
   color: #0f172a;
   box-sizing: border-box;
@@ -11,12 +11,12 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .branches-header h2 {
   margin: 0;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: 0;
@@ -73,7 +73,7 @@
 }
 
 .branches-clinic-band {
-  min-height: 44px;
+  min-height: 40px;
   border: 1px solid #dbe3ed;
   border-radius: 8px;
   background: #ffffff;
@@ -81,7 +81,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   box-sizing: border-box;
   color: #0f766e;
 }
@@ -101,11 +101,11 @@
 }
 
 .branches-toolbar {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .branches-search {
-  height: 48px;
+  height: 44px;
   border: 1px solid #d7e0ea;
   border-radius: 10px;
   background: #ffffff;
@@ -185,7 +185,8 @@
   background: #ffffff;
   border: 1px solid #dbe3ed;
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
@@ -193,19 +194,21 @@
 .branches-row {
   display: grid;
   grid-template-columns:
-    minmax(58px, 0.35fr)
-    minmax(180px, 1.1fr)
-    minmax(180px, 1.1fr)
-    minmax(240px, 1.55fr)
-    minmax(108px, 0.62fr)
-    minmax(88px, 0.5fr);
-  column-gap: 12px;
+    58px
+    minmax(170px, 0.95fr)
+    minmax(190px, 1fr)
+    minmax(230px, 1.25fr)
+    110px
+    124px;
+  column-gap: 8px;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .branches-thead {
-  min-height: 48px;
-  padding: 0 18px;
+  min-height: 44px;
+  padding: 0 14px;
   border-bottom: 1px solid #e2e8f0;
   color: #475569;
   font-size: 12px;
@@ -213,9 +216,35 @@
   background: #f8fafc;
 }
 
+.branches-thead span {
+  min-width: 0;
+}
+
+.branches-thead span:nth-child(5),
+.branches-row > .branches-cell:nth-child(5) {
+  justify-self: center;
+}
+
+.branches-thead span:nth-child(6),
+.branches-actions {
+  justify-self: center;
+}
+
+.branches-actions-heading,
+.branches-actions {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: inherit;
+}
+
+.branches-actions {
+  background: #ffffff;
+}
+
 .branches-row {
-  min-height: 78px;
-  padding: 12px 18px;
+  min-height: 72px;
+  padding: 10px 14px;
   border-bottom: 1px solid #eef2f7;
 }
 
@@ -231,9 +260,9 @@
 }
 
 .branches-avatar {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   border-radius: 10px;
   background: #e0f2fe;
   color: #0369a1;
@@ -269,9 +298,13 @@
   overflow-wrap: anywhere;
 }
 
+.branches-cell span {
+  word-break: break-word;
+}
+
 .branches-status {
-  min-width: 82px;
-  height: 28px;
+  min-width: 72px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -287,26 +320,39 @@
 }
 
 .branches-status-inactive {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: #ffe4e6;
+  color: #be123c;
 }
 
 .branches-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 9px;
+  justify-content: center;
+  gap: 6px;
+  min-width: 112px;
 }
 
 .branches-action-button {
-  width: 34px;
-  height: 34px;
+  width: 31px;
+  height: 31px;
   border: 1px solid #dbe3ed;
   background: #ffffff;
   color: #0f172a;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.branches-action-danger {
+  color: #dc2626;
+}
+
+.branches-action-edit {
+  color: #0f172a;
+}
+
+.branches-action-toggle {
+  color: #0f766e;
 }
 
 .branches-empty {
@@ -496,13 +542,9 @@
 }
 
 @media (max-width: 1100px) {
-  .branches-table {
-    overflow-x: auto;
-  }
-
   .branches-thead,
   .branches-row {
-    min-width: 960px;
+    min-width: 900px;
   }
 }
 

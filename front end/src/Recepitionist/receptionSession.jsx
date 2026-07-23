@@ -55,6 +55,15 @@ export const getReceptionistProfile = () => {
       "clinic_id"
     ) ||
     "";
+  const branchName =
+    localStorage.getItem("branchName") ||
+    localStorage.getItem("BranchName") ||
+    getClaim(claims, "BranchName", "branchName", "Branch", "branch") ||
+    "";
+  const branchId =
+    localStorage.getItem("branchId") ||
+    getClaim(claims, "BranchId", "branchId", "BranchID", "branchID") ||
+    "";
 
   return {
     token,
@@ -63,6 +72,8 @@ export const getReceptionistProfile = () => {
     role: localStorage.getItem("receptionistRole") || "Receptionist",
     hospitalId: String(hospitalId),
     hospitalName,
+    branchName,
+    branchId: String(branchId),
   };
 };
 

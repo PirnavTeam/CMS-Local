@@ -38,7 +38,6 @@ export const SUPER_ADMIN_API = {
 
 const LOCAL_NOTIFICATIONS_KEY = "superadmin_notifications";
 const LOCAL_AUDIT_LOGS_KEY = "superadmin_audit_logs";
-const LOCAL_ROLE_OVERRIDES_KEY = "superadmin_role_overrides";
 const readLocalList = (key) => {
   try {
     const value = JSON.parse(localStorage.getItem(key) || "[]");
@@ -56,77 +55,6 @@ const prependLocalItem = (key, item) => {
   const nextItems = [item, ...readLocalList(key)].slice(0, 100);
   writeLocalList(key, nextItems);
   return item;
-};
-
-const readLocalRoleOverrides = () => {
-  try {
-    const value = JSON.parse(localStorage.getItem(LOCAL_ROLE_OVERRIDES_KEY) || "{}");
-    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
-  } catch {
-    return {};
-  }
-};
-
-const writeLocalRoleOverrides = (overrides) => {
-  localStorage.setItem(LOCAL_ROLE_OVERRIDES_KEY, JSON.stringify(overrides));
-};
-
-const getRoleStorageKeys = (role = {}) =>
-  Array.from(
-    new Set(
-      ["id", "roleId", "_id", "roleName", "name", "key"]
-        .map((field) => String(role?.[field] || "").trim())
-        .filter(Boolean)
-    )
-  );
-
-const applyRoleOverrides = (role = {}) => {
-  const overrides = readLocalRoleOverrides();
-  const override = getRoleStorageKeys(role)
-    .map((key) => overrides[key])
-    .find(Boolean);
-
-  return override ? { ...role, ...override } : role;
-};
-
-const saveRoleOverride = (role = {}, override = {}) => {
-  const keys = getRoleStorageKeys(role);
-  if (!keys.length) return;
-
-  const overrides = readLocalRoleOverrides();
-  const roleName = String(pick(role, ["roleName", "name"], "")).trim();
-  const nextOverride = {
-    ...(roleName ? { roleName, name: roleName } : {}),
-    ...override,
-  };
-  const nextOverrides = { ...overrides };
-
-  keys.forEach((key) => {
-    nextOverrides[key] = {
-      ...nextOverrides[key],
-      ...nextOverride,
-    };
-  });
-
-  writeLocalRoleOverrides(nextOverrides);
-};
-
-const deleteRoleOverride = (role = {}) => {
-  const keys = getRoleStorageKeys(role);
-  if (!keys.length) return;
-
-  const overrides = readLocalRoleOverrides();
-  let changed = false;
-
-  keys.forEach((key) => {
-    if (key in overrides) {
-      delete overrides[key];
-      changed = true;
-    }
-  });
-
-  if (!changed) return;
-  writeLocalRoleOverrides(overrides);
 };
 
 const asArray = (value) => {
@@ -1589,35 +1517,6 @@ export const normalizeRole = (role = {}, index = 0) => {
   };
 };
 
-const buildRolePayload = (role = {}) => {
-  const permissions = Array.isArray(role.permissions) ? role.permissions : [];
-  const canView = permissions.includes("View") || pick(role, ["canView", "CanView"], false) === true;
-  const canCreate = permissions.includes("Create") || pick(role, ["canCreate", "CanCreate"], false) === true;
-  const canEdit = permissions.includes("Edit") || pick(role, ["canEdit", "CanEdit"], false) === true;
-  const canDelete = permissions.includes("Delete") || pick(role, ["canDelete", "CanDelete"], false) === true;
-  const roleName = String(pick(role, ["roleName", "name"], "")).trim();
-  const module = String(pick(role, ["module"], "")).trim();
-
-  return {
-    roleName: roleName || "Role",
-    name: roleName || "Role",
-    module: module || "General",
-    moduleName: module || "General",
-    status: String(pick(role, ["status"], "Active") || "Active"),
-    permissions,
-    permissionNames: permissions,
-    claims: permissions,
-    canView,
-    canCreate,
-    canEdit,
-    canDelete,
-    CanView: canView,
-    CanCreate: canCreate,
-    CanEdit: canEdit,
-    CanDelete: canDelete,
-  };
-};
-
 const isDeletedRecord = (record = {}) => {
   const deletedValue = pick(
     record,
@@ -2634,64 +2533,62 @@ export const fetchLoginHistory = async () => {
   );
 };
 
-export const fetchRoles = async () => {
-  try {
-    return asArray(await superAdminRequest(SUPER_ADMIN_API.roles))
-      .map(normalizeRole);
-  } catch (error) {
-    const fallbackRoles = asArray(
-      await superAdminRequest(SUPER_ADMIN_API.roleNames)
-    )
-      .map(normalizeRole);
-
-    return fallbackRoles;
-  }
-};
-
 export const fetchRoleNames = async () =>
   asArray(await superAdminRequest(SUPER_ADMIN_API.roleNames)).map((role, index) =>
     typeof role === "string" ? role : normalizeRole(role, index).name
   );
 
+export const fetchRoles = async () =>
+  asArray(await superAdminRequest(SUPER_ADMIN_API.roles)).map(normalizeRole);
+
 export const fetchRole = async (id) =>
   normalizeRole(await superAdminRequest(`${SUPER_ADMIN_API.roles}/${id}`));
 
-export const saveRole = async (role, id) => {
-  const result = await superAdminRequest(id ? `${SUPER_ADMIN_API.roles}/${id}` : SUPER_ADMIN_API.roles, {
-    method: id ? "PUT" : "POST",
-    body: buildRolePayload(role),
-  });
-  localStorage.removeItem("superadmin_role_overrides");
-  recordSuperAdminActivity(
-    id ? "Updated role" : "Created role",
-    "Roles & Permissions",
-    pick(role, ["roleName", "name"], id || "Role record")
-  );
-  return result;
+const buildRolePayload = (role = {}) => {
+  const permissions = Array.isArray(role.permissions)
+    ? role.permissions
+    : [];
+
+  const hasPermission = (permission) =>
+    permissions.some(
+      (item) =>
+        String(item || "").trim().toLowerCase() ===
+        String(permission || "").trim().toLowerCase()
+    );
+
+  return {
+    name: String(role.name || role.roleName || "").trim(),
+    roleName: String(role.roleName || role.name || "").trim(),
+    module: String(role.module || "").trim(),
+    targetRole: String(role.targetRole || role.appliesTo || role.scope || "Admin").trim(),
+    appliesTo: String(role.appliesTo || role.targetRole || role.scope || "Admin").trim(),
+    scope: String(role.scope || role.targetRole || role.appliesTo || "Admin").trim(),
+    status: String(role.status || "Active").trim(),
+    users: Number(role.users || 0) || 0,
+    permissions,
+    canView: hasPermission("View"),
+    canCreate: hasPermission("Create"),
+    canEdit: hasPermission("Edit"),
+    canDelete: hasPermission("Delete"),
+  };
 };
 
-export const deleteRole = async (id) => {
-  const result = await superAdminRequest(`${SUPER_ADMIN_API.roles}/${id}`, { method: "DELETE" });
-  recordSuperAdminActivity("Deleted role", "Roles & Permissions", `Role ID ${id}`);
-  return result;
-};
-
-export const updateRolePermissions = async (id, role) => {
+export const saveRole = async (role = {}) => {
   const payload = buildRolePayload(role);
-  const result = await superAdminRequestFirst(
-    [
-      `${SUPER_ADMIN_API.roles}/${id}`,
-      `${SUPER_ADMIN_API.roles}/${id}/permissions`,
-    ],
+  const id = role.id || role.roleId || "";
+  const result = await superAdminRequest(
+    id ? `${SUPER_ADMIN_API.roles}/${id}` : SUPER_ADMIN_API.roles,
     {
-      method: "PUT",
+      method: id ? "PUT" : "POST",
       body: payload,
     }
   );
-  localStorage.removeItem("superadmin_role_overrides");
-  recordSuperAdminActivity("Updated role permissions", "Roles & Permissions", pick(role, ["roleName", "name"], `Role ID ${id}`));
-  return result;
+
+  return normalizeRole(result || { ...payload, id });
 };
+
+export const deleteRole = async (id) =>
+  superAdminRequest(`${SUPER_ADMIN_API.roles}/${id}`, { method: "DELETE" });
 
 export const fetchUsers = async () => {
   const [usersResult, loginResult] = await Promise.allSettled([

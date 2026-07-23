@@ -6,6 +6,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import "./DoctorSidebar.css";
+import { getRoleProfile } from "../profile/sessionProfile";
 import { getClinicDisplayName } from "../utils/clinicDisplay";
 
 /* ── Navigation items ── */
@@ -26,9 +27,10 @@ const getInitials = (name) =>
     .toUpperCase() || "D";
 
 function DoctorSidebar() {
-  const doctorName = localStorage.getItem("doctorName") || "Doctor";
-  const hospitalName = getClinicDisplayName({}, "Clinic Name");
-  const displayName = `Dr. ${doctorName}`.replace(/^Dr\.\s*Dr\./i, "Dr.");
+  const profile = getRoleProfile("doctor");
+  const hospitalName = getClinicDisplayName(profile, "Clinic Name");
+  const branchName = String(profile.branchName || "").trim();
+  const displayName = profile.name || "Dr. Doctor";
 
   return (
     <aside className="dr-sidebar">
@@ -43,6 +45,7 @@ function DoctorSidebar() {
         <div>
           <p className="dr-brand-sub">Clinic Name</p>
           <p className="dr-brand-name">{hospitalName}</p>
+          {branchName ? <p className="dr-brand-branch">{branchName}</p> : null}
         </div>
       </div>
 

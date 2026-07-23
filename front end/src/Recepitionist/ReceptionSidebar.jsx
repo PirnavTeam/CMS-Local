@@ -34,6 +34,7 @@ function ReceptionSidebar({ onClose = () => {} }) {
   const profile = getReceptionistProfile();
   const profileName = profile.name || "Receptionist";
   const hospitalName = getClinicDisplayName(profile, "Clinic Name");
+  const branchName = String(profile.branchName || "").trim();
 
   return (
     <aside className="rc-sidebar">
@@ -44,6 +45,7 @@ function ReceptionSidebar({ onClose = () => {} }) {
         <div>
           <span>Clinic Name</span>
           <strong>{hospitalName}</strong>
+          {branchName ? <em className="rc-brand-branch">{branchName}</em> : null}
         </div>
         <button className="rc-sidebar-close" onClick={onClose} type="button" aria-label="Close sidebar">
           <X size={18} />

@@ -542,7 +542,6 @@ import "./docschedule.css";
 
 import {
   Trash2,
-  Plus,
   Save,
   Pencil,
 } from "lucide-react";
@@ -553,6 +552,15 @@ import { useToast } from "../../components/ToastProvider";
 
 const API =
   apiUrl("ScheduleSettings");
+
+const getTodayInputValue = () => {
+  const today = new Date();
+  today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+  return today.toISOString().slice(0, 10);
+};
+
+const isPastInputDate = (value) =>
+  Boolean(value) && value < getTodayInputValue();
 
 /* ================= COMPONENT ================= */
 
@@ -738,6 +746,18 @@ function Doctorschedulepage() {
       !newHoliday.name ||
       !newHoliday.date
     ) {
+      toast.error(
+        "Enter holiday date and name."
+      );
+      return;
+    }
+
+    if (
+      isPastInputDate(newHoliday.date)
+    ) {
+      toast.error(
+        "Holiday date cannot be a past date."
+      );
       return;
     }
 
@@ -772,10 +792,16 @@ function Doctorschedulepage() {
       });
 
       fetchHolidays();
+      toast.success(
+        "Holiday added successfully."
+      );
 
     } catch (error) {
 
       console.log(error);
+      toast.error(
+        "Unable to add holiday."
+      );
 
     }
   };
@@ -799,6 +825,25 @@ function Doctorschedulepage() {
 
   const updateHoliday =
     async () => {
+      if (
+        !newHoliday.name ||
+        !newHoliday.date
+      ) {
+        toast.error(
+          "Enter holiday date and name."
+        );
+        return;
+      }
+
+      if (
+        isPastInputDate(newHoliday.date)
+      ) {
+        toast.error(
+          "Holiday date cannot be a past date."
+        );
+        return;
+      }
+
       try {
 
         await fetch(
@@ -832,10 +877,16 @@ function Doctorschedulepage() {
         });
 
         fetchHolidays();
+        toast.success(
+          "Holiday updated successfully."
+        );
 
       } catch (error) {
 
         console.log(error);
+        toast.error(
+          "Unable to update holiday."
+        );
 
       }
     };
@@ -1115,6 +1166,7 @@ function Doctorschedulepage() {
 
             <input
               type="date"
+              min={getTodayInputValue()}
               value={
                 newHoliday.date
               }
@@ -1144,18 +1196,15 @@ function Doctorschedulepage() {
             />
 
             <button
+              type="button"
+              className="holiday-ok-button"
               onClick={
                 editingId
                   ? updateHoliday
                   : addHoliday
               }
             >
-
-              {editingId ? (
-                <Pencil size={18} />
-              ) : (
-                <Plus size={18} />
-              )}
+              OK
 
             </button>
 

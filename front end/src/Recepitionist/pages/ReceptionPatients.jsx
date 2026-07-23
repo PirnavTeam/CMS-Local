@@ -41,10 +41,6 @@ import {
   validateSelected,
 } from "../../utils/validation";
 import { formatTitleCase } from "../../utils/format";
-import {
-  canUseStaffRolePermission,
-  getStaffPermissionDisabledTitle,
-} from "../../utils/staffRolePermissions";
 
 const emptyForm = {
   name: "",
@@ -287,20 +283,7 @@ function ReceptionPatients() {
   const visibleAreaOptions = Array.from(
     new Set([form.addressParts?.area, ...areaOptions].filter(Boolean))
   );
-  const canCreatePatient = canUseStaffRolePermission("Receptionist", "Create");
-  const canEditPatient = canUseStaffRolePermission("Receptionist", "Edit");
-  const canDeletePatient = canUseStaffRolePermission("Receptionist", "Delete");
-  const createDisabledTitle = getStaffPermissionDisabledTitle("Receptionist", "Create");
-  const editDisabledTitle = getStaffPermissionDisabledTitle("Receptionist", "Edit");
-  const deleteDisabledTitle = getStaffPermissionDisabledTitle("Receptionist", "Delete");
-
   const openAdd = () => {
-    if (!canCreatePatient) {
-      const text = "Create permission is disabled by Admin.";
-      setMessage(text);
-      toast.error(text);
-      return;
-    }
     setForm(emptyForm);
     setFieldErrors({});
     setModal("add");
@@ -308,12 +291,6 @@ function ReceptionPatients() {
   };
 
   const openEdit = (patient) => {
-    if (!canEditPatient) {
-      const text = "Edit permission is disabled by Admin.";
-      setMessage(text);
-      toast.error(text);
-      return;
-    }
     const addressParts = getPatientAddressParts(patient);
     const dateOfBirth = getPatientDateOfBirth(patient);
     setForm({
@@ -541,18 +518,6 @@ function ReceptionPatients() {
 
   const savePatient = async (event) => {
     event.preventDefault();
-    if (modal === "edit" && !canEditPatient) {
-      const text = "Edit permission is disabled by Admin.";
-      setMessage(text);
-      toast.error(text);
-      return;
-    }
-    if (modal !== "edit" && !canCreatePatient) {
-      const text = "Create permission is disabled by Admin.";
-      setMessage(text);
-      toast.error(text);
-      return;
-    }
 
     if (!validateForm()) {
       const text = "Please fix the highlighted fields.";
@@ -613,13 +578,6 @@ function ReceptionPatients() {
   };
 
   const deletePatient = async (patient) => {
-    if (!canDeletePatient) {
-      const text = "Delete permission is disabled by Admin.";
-      setMessage(text);
-      toast.error(text);
-      return;
-    }
-
     const patientId = Number(patient?.id);
     if (!Number.isInteger(patientId) || patientId <= 0) {
       const text = "Patient id is missing.";
@@ -656,8 +614,7 @@ function ReceptionPatients() {
           <button
             className="rc-btn"
             onClick={openAdd}
-            disabled={!canCreatePatient}
-            title={canCreatePatient ? "Add patient" : createDisabledTitle}
+            title="Add patient"
           >
             <Plus size={16} /> Add Patient
           </button>
@@ -715,8 +672,7 @@ function ReceptionPatients() {
                 <button
                   aria-label="Edit patient"
                   onClick={() => openEdit(patient)}
-                  disabled={!canEditPatient}
-                  title={canEditPatient ? "Edit patient" : editDisabledTitle}
+                  title="Edit patient"
                 >
                   <Pencil size={15} />
                 </button>
@@ -730,8 +686,7 @@ function ReceptionPatients() {
                 <button
                   className="danger"
                   onClick={() => deletePatient(patient)}
-                  disabled={!canDeletePatient}
-                  title={canDeletePatient ? "Delete patient" : deleteDisabledTitle}
+                  title="Delete patient"
                 >
                   <Trash2 size={15} /> Delete
                 </button>
