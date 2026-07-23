@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import ReceptionSidebar from "./ReceptionSidebar";
 import ReceptionTopbar from "./ReceptionTopbar";
-import { loadStaffRolePermissions } from "../utils/staffRolePermissions";
 import { isReceptionistSession } from "./receptionSession";
 import "./Receptionist.css";
 
@@ -19,10 +18,6 @@ const TITLES = {
 function ReceptionistLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-
-  useEffect(() => {
-    loadStaffRolePermissions().catch(() => {});
-  }, []);
 
   if (!isReceptionistSession()) {
     return <Navigate to="/login" replace />;

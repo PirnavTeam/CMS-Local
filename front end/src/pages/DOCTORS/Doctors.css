@@ -814,6 +814,26 @@
   cursor: pointer;
 }
 
+.doctor-edit-image-remove-btn {
+  position: absolute;
+  left: 4px;
+  bottom: 8px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.doctor-edit-image-remove-btn:hover {
+  background: #b91c1c;
+}
+
 .doctor-edit-image-input {
   display: none;
 }

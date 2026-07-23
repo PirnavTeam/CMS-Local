@@ -9,6 +9,7 @@ import {
   Search,
   ToggleLeft,
   ToggleRight,
+  Trash2,
   X,
 } from "lucide-react";
 import "./Branches.css";
@@ -139,6 +140,7 @@ function Branches() {
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingBranchId, setDeletingBranchId] = useState(null);
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -541,6 +543,43 @@ function Branches() {
     }
   };
 
+  const handleDeleteBranch = async (branch) => {
+    const branchId = getBranchId(branch);
+    if (!branchId || saving || deletingBranchId || updatingStatusId) return;
+
+    const shouldDelete = window.confirm(
+      `Delete branch ${getBranchName(branch) || ""}?`
+    );
+    if (!shouldDelete) return;
+
+    setDeletingBranchId(branchId);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(`${BRANCH_API_URL}/${branchId}`, {
+        method: "DELETE",
+        headers: getApiHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(await parseErrorMessage(response, "Unable to delete branch."));
+      }
+
+      setBranches((previous) =>
+        previous.filter((item) => String(getBranchId(item)) !== String(branchId))
+      );
+      const message = "Branch deleted successfully";
+      setSuccess(message);
+      toast.success(message);
+    } catch (deleteError) {
+      const message = deleteError.message || "Unable to delete branch.";
+      showError(message);
+    } finally {
+      setDeletingBranchId(null);
+    }
+  };
+
   return (
     <div className="branches-page">
       <div className="branches-header">
@@ -605,7 +644,7 @@ function Branches() {
           <span>Contact</span>
           <span>Location</span>
           <span>Status</span>
-          <span>Actions</span>
+          <span className="branches-actions-heading">Actions</span>
         </div>
 
         {!loading && filteredBranches.length === 0 ? (
@@ -616,6 +655,7 @@ function Branches() {
           const branchId = getBranchId(branch);
           const isActive = getBranchIsActive(branch);
           const isUpdating = String(updatingStatusId) === String(branchId);
+          const isDeleting = String(deletingBranchId) === String(branchId);
 
           return (
             <div className="branches-row" key={branchId || `${getBranchName(branch)}-${index}`}>
@@ -646,21 +686,33 @@ function Branches() {
               <div className="branches-actions">
                 <button
                   type="button"
-                  className="branches-action-button"
+                  className="branches-action-button branches-action-edit"
                   onClick={() => openEditModal(branch)}
-                  disabled={saving || isUpdating}
+                  disabled={saving || isUpdating || isDeleting}
                   title="Edit branch"
+                  aria-label={`Edit ${getBranchName(branch) || "branch"}`}
                 >
                   <Pencil size={14} />
                 </button>
                 <button
                   type="button"
-                  className="branches-action-button"
+                  className="branches-action-button branches-action-toggle"
                   onClick={() => toggleBranchStatus(branch)}
-                  disabled={saving || isUpdating}
+                  disabled={saving || isUpdating || isDeleting}
                   title={isActive ? "Disable branch" : "Activate branch"}
+                  aria-label={`${isActive ? "Disable" : "Activate"} ${getBranchName(branch) || "branch"}`}
                 >
                   {isActive ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                </button>
+                <button
+                  type="button"
+                  className="branches-action-button branches-action-danger"
+                  onClick={() => handleDeleteBranch(branch)}
+                  disabled={saving || isUpdating || isDeleting}
+                  title="Delete branch"
+                  aria-label={`Delete ${getBranchName(branch) || "branch"}`}
+                >
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>

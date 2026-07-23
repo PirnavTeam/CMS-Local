@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Camera,
   CheckCircle,
   Pencil,
   Plus,
@@ -12,22 +13,20 @@ import {
   X,
 } from "lucide-react";
 import "./Receptionists.css";
+import AuthImage, { resolveApiImageUrl } from "../../utils/AuthImage";
 import { apiUrl } from "../../config/api";
 import { useToast } from "../../components/ToastProvider";
 import {
   buildBranchOptions,
   fetchBranchesForHospital,
 } from "../../utils/branchApi";
-import {
-  canUsePermission,
-  fetchAndStoreRolePermissions,
-} from "../../utils/authorization";
 import { formatTitleCase } from "../../utils/format";
 import {
   onlyAlpha,
   onlyIndianMobileValue,
   validateAlpha,
   validateGmail,
+  validateImageFile,
   validateMobile,
 } from "../../utils/validation";
 import {
@@ -35,9 +34,20 @@ import {
   getStoredClinicName,
 } from "../../utils/clinicDisplay";
 const RECEPTIONIST_API = apiUrl("Receptionist");
+const REQUEST_TIMEOUT_MS = 3500;
 
 const getAuthToken = () =>
   localStorage.getItem("adminToken") || localStorage.getItem("token");
+
+const fetchWithTimeout = (url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) => {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  return fetch(url, {
+    ...options,
+    signal: controller.signal,
+  }).finally(() => window.clearTimeout(timeoutId));
+};
 
 const decodeJwtPayload = (token) => {
   try {
@@ -66,6 +76,24 @@ const getEmptyForm = () => ({
   phone: "",
   branchId: "",
 });
+
+const getReceptionistImageUrl = (receptionist = {}) => {
+  const candidates = [
+    receptionist.imageUrl,
+    receptionist.image,
+    receptionist.Image,
+    receptionist.profileImage,
+    receptionist.profileImageUrl,
+    receptionist.imagePath,
+  ];
+
+  for (const candidate of candidates) {
+    const value = String(candidate ?? "").trim();
+    if (value && value.toLowerCase() !== "string") return value;
+  }
+
+  return "";
+};
 
 const parseReceptionistsResponse = (data) => {
   if (Array.isArray(data)) return data;
@@ -137,6 +165,7 @@ const parseErrorMessage = async (response, fallback) => {
 
 function Receptionists() {
   const toast = useToast();
+  const imageInputRef = useRef(null);
   const [receptionists, setReceptionists] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -148,12 +177,19 @@ function Receptionists() {
   const [editingReceptionist, setEditingReceptionist] = useState(null);
   const [form, setForm] = useState(getEmptyForm());
   const [fieldErrors, setFieldErrors] = useState({});
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [removeImage, setRemoveImage] = useState(false);
   const [branchOptions, setBranchOptions] = useState([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
-  const [permissionsLoading, setPermissionsLoading] = useState(true);
-  const [permissionRecord, setPermissionRecord] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 8;
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   // Keep the page-level success banner in sync with the transient toast.
   // Without this, a status-change confirmation remains until another action
@@ -168,12 +204,6 @@ function Receptionists() {
   const hospitalId = getHospitalId();
   const clinicDisplayName =
     getStoredClinicName() || getClinicDisplayName({ hospitalId }, "Clinic");
-  const canCreateReceptionist = !permissionsLoading && canUsePermission(permissionRecord, "create");
-  const canEditReceptionist = !permissionsLoading && canUsePermission(permissionRecord, "edit");
-  const canDeleteReceptionist = !permissionsLoading && canUsePermission(permissionRecord, "delete");
-  const permissionDisabledTitle = permissionsLoading
-    ? "Loading permissions"
-    : "Permission disabled by Super Admin";
   const branchNameById = useMemo(
     () =>
       branchOptions.reduce((lookup, branch) => {
@@ -194,23 +224,12 @@ function Receptionists() {
     );
   }, [branchNameById, receptionists, searchText]);
 
-  const pageCount = Math.max(1, Math.ceil(filteredReceptionists.length / pageSize));
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchText, filteredReceptionists.length]);
-
-  const visibleReceptionists = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredReceptionists.slice(start, start + pageSize);
-  }, [filteredReceptionists, currentPage]);
-
   const fetchReceptionists = async () => {
     setLoading(true);
     setError("");
 
     try {
-      const response = await fetch(RECEPTIONIST_API, {
+      const response = await fetchWithTimeout(RECEPTIONIST_API, {
         headers: {
           "ngrok-skip-browser-warning": "true",
         },
@@ -272,28 +291,15 @@ function Receptionists() {
     };
   }, [hospitalId]);
 
-  useEffect(() => {
-    let active = true;
-
-    const loadPermissions = async () => {
-      setPermissionsLoading(true);
-      const record = await fetchAndStoreRolePermissions();
-      if (active) {
-        setPermissionRecord(record);
-        setPermissionsLoading(false);
-      }
-    };
-
-    loadPermissions();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
   const openAddModal = () => {
+    if (imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
     setEditingReceptionist(null);
     setForm(getEmptyForm());
+    setImageFile(null);
+    setImagePreview("");
+    setRemoveImage(false);
     setFieldErrors({});
     setError("");
     setSuccess("");
@@ -301,6 +307,9 @@ function Receptionists() {
   };
 
   const openEditModal = (receptionist) => {
+    if (imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
     setEditingReceptionist(receptionist);
     setForm({
       name: receptionist.name || "",
@@ -308,6 +317,9 @@ function Receptionists() {
       phone: receptionist.phone || "",
       branchId: getReceptionistBranchId(receptionist) || "",
     });
+    setImageFile(null);
+    setImagePreview(resolveApiImageUrl(getReceptionistImageUrl(receptionist)));
+    setRemoveImage(false);
     setFieldErrors({});
     setError("");
     setSuccess("");
@@ -320,7 +332,45 @@ function Receptionists() {
     setModalOpen(false);
     setEditingReceptionist(null);
     setForm(getEmptyForm());
+    setImageFile(null);
+    setImagePreview("");
+    setRemoveImage(false);
     setFieldErrors({});
+  };
+
+  const handleImageChange = (event) => {
+    const nextFile = event.target.files?.[0];
+    if (!nextFile) return;
+
+    const imageError = validateImageFile(nextFile, "Profile image");
+    if (imageError) {
+      setFieldErrors((previous) => ({ ...previous, image: imageError }));
+      toast.error(imageError);
+      return;
+    }
+
+    if (imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setImageFile(nextFile);
+    setImagePreview(URL.createObjectURL(nextFile));
+    setRemoveImage(false);
+    setFieldErrors((previous) => ({ ...previous, image: "", form: "" }));
+  };
+
+  const handleRemoveImage = () => {
+    if (imagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setImageFile(null);
+    setImagePreview("");
+    setRemoveImage(true);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
+    setFieldErrors((previous) => ({ ...previous, image: "", form: "" }));
   };
 
   const updateField = (name, value) => {
@@ -361,6 +411,10 @@ function Receptionists() {
       nextErrors.form = "Clinic not found. Please login again.";
     }
 
+    if (imageFile) {
+      nextErrors.image = validateImageFile(imageFile, "Profile image");
+    }
+
     Object.keys(nextErrors).forEach((key) => {
       if (!nextErrors[key]) delete nextErrors[key];
     });
@@ -383,7 +437,7 @@ function Receptionists() {
     setSuccess("");
 
     const payload = {
-      name: form.name.trim(),
+      name: formatTitleCase(form.name).trim(),
       email: form.email.trim(),
       phone: form.phone.trim(),
       hospitalId: Number(hospitalId),
@@ -392,14 +446,24 @@ function Receptionists() {
 
     try {
       const isEditing = Boolean(editingReceptionist?.id);
-      if (isEditing && !canEditReceptionist) {
-        throw new Error("Edit permission is disabled by Super Admin.");
-      }
-      if (!isEditing && !canCreateReceptionist) {
-        throw new Error("Create permission is disabled by Super Admin.");
-      }
 
       const token = getAuthToken();
+      const body = new FormData();
+      body.append("Name", payload.name);
+      body.append("Email", payload.email);
+      body.append("Phone", payload.phone);
+      body.append("PhoneNumber", payload.phone);
+      body.append("HospitalId", String(payload.hospitalId));
+      body.append("BranchId", String(payload.branchId));
+      if (imageFile) {
+        body.append("Image", imageFile);
+      }
+      if (removeImage) {
+        body.append("RemoveImage", "true");
+        body.append("RemoveProfileImage", "true");
+        body.append("ImageUrl", "");
+      }
+
       const response = await fetch(
         isEditing
           ? `${RECEPTIONIST_API}/${editingReceptionist.id}`
@@ -407,11 +471,10 @@ function Receptionists() {
         {
           method: isEditing ? "PUT" : "POST",
           headers: {
-            "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "true",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify(payload),
+          body,
         }
       );
 
@@ -447,10 +510,6 @@ function Receptionists() {
 
   const toggleReceptionistStatus = async (receptionist) => {
     if (!receptionist?.id || deletingId) return;
-    if (!canEditReceptionist) {
-      toast.error("Edit permission is disabled by Super Admin.");
-      return;
-    }
 
     const nextStatus = receptionist.isActive ? "Inactive" : "Active";
     setDeletingId(receptionist.id);
@@ -506,10 +565,6 @@ function Receptionists() {
 
   const handleDelete = async (receptionist) => {
     if (!receptionist?.id || deletingId) return;
-    if (!canDeleteReceptionist) {
-      toast.error("Delete permission is disabled by Super Admin.");
-      return;
-    }
 
     const shouldDelete = window.confirm(
       `Delete receptionist ${receptionist.name || ""}?`
@@ -576,8 +631,7 @@ function Receptionists() {
             type="button"
             className="receptionists-primary-button"
             onClick={openAddModal}
-            disabled={!canCreateReceptionist}
-            title={canCreateReceptionist ? "Add receptionist" : permissionDisabledTitle}
+            title="Add receptionist"
           >
             <Plus size={16} />
             Add Receptionist
@@ -615,6 +669,7 @@ function Receptionists() {
         <div className="receptionists-thead">
           <span>S.No.</span>
           <span>Name</span>
+          <span>Branch</span>
           <span>Email</span>
           <span>Phone</span>
           <span>Status</span>
@@ -626,7 +681,7 @@ function Receptionists() {
           <div className="receptionists-empty">No receptionists found.</div>
         ) : null}
 
-        {visibleReceptionists.map((receptionist, index) => {
+        {filteredReceptionists.map((receptionist, index) => {
           const initials =
             (receptionist.name || "R")
               .split(" ")
@@ -636,6 +691,7 @@ function Receptionists() {
               .slice(0, 2)
               .toUpperCase() || "R";
           const isDeleting = deletingId === receptionist.id;
+          const isActive = receptionist.isActive !== false;
           const receptionistClinicName = getClinicDisplayName(
             { ...receptionist, hospitalId: receptionist.hospitalId || hospitalId },
             clinicDisplayName
@@ -643,26 +699,40 @@ function Receptionists() {
 
           return (
             <div className="receptionists-row" key={receptionist.id}>
-              <span>{(currentPage - 1) * pageSize + index + 1}</span>
+              <span>{index + 1}</span>
               <div className="receptionists-name-cell">
-                <div className="receptionists-avatar">{initials}</div>
+                <div className="receptionists-avatar">
+                  <AuthImage
+                    src={getReceptionistImageUrl(receptionist)}
+                    alt={receptionist.name || "Receptionist"}
+                    fallback={<span>{initials}</span>}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      display: "flex",
+                    }}
+                  />
+                </div>
                 <div>
                   <b>{receptionist.name || "-"}</b>
                   <span>{receptionistClinicName}</span>
                 </div>
               </div>
 
+              <span className="receptionists-cell">{getReceptionistBranchName(receptionist, branchNameById) || "-"}</span>
               <span className="receptionists-cell receptionists-email">{receptionist.email || "-"}</span>
               <span className="receptionists-cell">{receptionist.phone || "-"}</span>
 
-              <span className="receptionists-cell">
+              <span className="receptionists-cell receptionists-status-cell">
                 <span
-                  className={`receptionists-status ${receptionist.isActive
+                  className={`receptionists-status ${isActive
                       ? "receptionists-status-active"
                       : "receptionists-status-inactive"
                     }`}
                 >
-                  {receptionist.isActive ? "Active" : "Inactive"}
+                  {isActive ? "Active" : "Inactive"}
                 </span>
               </span>
 
@@ -675,8 +745,8 @@ function Receptionists() {
                   type="button"
                   className="receptionists-action-button"
                   onClick={() => openEditModal(receptionist)}
-                  disabled={!canEditReceptionist || isDeleting}
-                  title={canEditReceptionist ? "Edit receptionist" : permissionDisabledTitle}
+                  disabled={isDeleting}
+                  title="Edit receptionist"
                 >
                   <Pencil size={14} />
                 </button>
@@ -685,18 +755,18 @@ function Receptionists() {
                   type="button"
                   className="receptionists-action-button"
                   onClick={() => toggleReceptionistStatus(receptionist)}
-                  disabled={!canEditReceptionist || isDeleting}
-                  title={canEditReceptionist ? (receptionist.isActive ? "Deactivate receptionist" : "Activate receptionist") : permissionDisabledTitle}
+                  disabled={isDeleting}
+                  title={isActive ? "Deactivate receptionist" : "Activate receptionist"}
                 >
-                  {receptionist.isActive ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                  {isActive ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                 </button>
 
                 <button
                   type="button"
                   className="receptionists-action-button receptionists-action-danger"
                   onClick={() => handleDelete(receptionist)}
-                  disabled={!canDeleteReceptionist || isDeleting}
-                  title={canDeleteReceptionist ? "Delete receptionist" : permissionDisabledTitle}
+                  disabled={isDeleting}
+                  title="Delete receptionist"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -705,26 +775,6 @@ function Receptionists() {
           );
         })}
       </div>
-
-      {filteredReceptionists.length ? (
-        <div className="rc-pagination">
-          <button type="button" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
-            First
-          </button>
-          <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1}>
-            Prev
-          </button>
-          <span>
-            Page {currentPage} of {pageCount}
-          </span>
-          <button type="button" onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))} disabled={currentPage === pageCount}>
-            Next
-          </button>
-          <button type="button" onClick={() => setCurrentPage(pageCount)} disabled={currentPage === pageCount}>
-            Last
-          </button>
-        </div>
-      ) : null}
 
       {modalOpen ? (
         <div className="receptionists-modal-overlay" onClick={closeModal}>
@@ -757,6 +807,60 @@ function Receptionists() {
             </div>
 
             <form className="receptionists-form" onSubmit={handleSubmit} noValidate>
+              <div className="receptionists-image-upload">
+                <div className="receptionists-image-circle">
+                  {imagePreview ? (
+                    <AuthImage
+                      src={imagePreview}
+                      alt="Receptionist profile preview"
+                      fallback={<span>{(form.name || "R").slice(0, 1).toUpperCase()}</span>}
+                      className="receptionists-image-preview"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        display: "flex",
+                      }}
+                    />
+                  ) : (
+                    <span>{(form.name || "R").slice(0, 1).toUpperCase()}</span>
+                  )}
+                  <button
+                    type="button"
+                    className="receptionists-image-button"
+                    onClick={() => imageInputRef.current?.click()}
+                    title="Upload profile picture"
+                    aria-label="Upload profile picture"
+                    disabled={saving}
+                  >
+                    <Camera size={17} />
+                  </button>
+                  {imagePreview ? (
+                    <button
+                      type="button"
+                      className="receptionists-image-remove"
+                      onClick={handleRemoveImage}
+                      title="Remove profile picture"
+                      aria-label="Remove profile picture"
+                      disabled={saving}
+                    >
+                      <X size={15} />
+                    </button>
+                  ) : null}
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    className="receptionists-image-input"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                </div>
+                {fieldErrors.image ? (
+                  <span className="receptionists-field-error">{fieldErrors.image}</span>
+                ) : null}
+              </div>
+
               <div className="receptionists-field">
                 <label htmlFor="receptionist-name">Name</label>
                 <input
@@ -856,12 +960,7 @@ function Receptionists() {
                 <button
                   type="submit"
                   className="receptionists-save-button"
-                  disabled={
-                    saving ||
-                    (editingReceptionist
-                      ? !canEditReceptionist
-                      : !canCreateReceptionist)
-                  }
+                  disabled={saving}
                 >
                   <CheckCircle size={16} />
                   {saving

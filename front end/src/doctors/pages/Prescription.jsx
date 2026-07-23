@@ -16,10 +16,6 @@ import { getClinicDisplayName } from "../../utils/clinicDisplay";
 import { useToast } from "../../components/ToastProvider";
 import { validateDate, validateRequired } from "../../utils/validation";
 import { formatDateMMDDYYYY } from "../../utils/dateFormat";
-import {
-  canUseStaffRolePermission,
-  getStaffPermissionDisabledTitle,
-} from "../../utils/staffRolePermissions";
 
 const STEPS = [
   "Waiting",
@@ -250,8 +246,6 @@ function Prescription() {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
-  const canCreatePrescription = canUseStaffRolePermission("Doctor", "Create");
-  const createDisabledTitle = getStaffPermissionDisabledTitle("Doctor", "Create");
   const routeState = React.useMemo(() => location.state || {}, [location.state]);
 
   const [appointment, setAppointment] = useState(null);
@@ -536,22 +530,12 @@ function Prescription() {
     );
 
   const removeMedicine = (id) => {
-    if (!canCreatePrescription) {
-      toast.error("Create permission is disabled by Admin.");
-      return;
-    }
-
     setMedicines((prev) =>
       prev.length === 1 ? [createMedicine()] : prev.filter((medicine) => medicine.id !== id)
     );
   };
 
   const addMedicine = () => {
-    if (!canCreatePrescription) {
-      toast.error("Create permission is disabled by Admin.");
-      return;
-    }
-
     setMedicines((prev) => [...prev, createMedicine()]);
   };
 
@@ -786,13 +770,6 @@ function Prescription() {
   };
 
   const submitPrescription = async () => {
-    if (!canCreatePrescription) {
-      const text = "Create permission is disabled by Admin.";
-      setError(text);
-      toast.error(text);
-      return;
-    }
-
     setFieldErrors({});
     const appointmentId = toPositiveId(appointment?.appointmentId);
     const patientId = toPositiveId(appointment?.patientId);
@@ -966,7 +943,6 @@ function Prescription() {
             <select
               className="rx-input"
               value={diagnosis}
-              disabled={!canCreatePrescription}
               onChange={(event) => {
                 setDiagnosis(event.target.value);
                 setFieldErrors((prev) => ({ ...prev, diagnosis: "" }));
@@ -998,9 +974,8 @@ function Prescription() {
                 onBlur={() => setTimeout(() => setIsMedicineSearchFocused(false), 200)}
                 placeholder="Search medicine or brand..."
                 autoComplete="off"
-                disabled={!canCreatePrescription}
               />
-              {canCreatePrescription && showMedicineResults ? (
+              {showMedicineResults ? (
                 <div className="rx-medicine-results">
                   {filteredMedicineOptions.map((medicine) => (
                     <button
@@ -1051,7 +1026,6 @@ function Prescription() {
                   }}
                   onBlur={(event) => registerTypedMedicine(event.target.value)}
                   placeholder="Select or type medicine"
-                  disabled={!canCreatePrescription}
                 />
                 <input
                   className="rx-cell-input"
@@ -1061,7 +1035,6 @@ function Prescription() {
                     updateMedicine(medicine.id, "dosage", event.target.value)
                   }
                   placeholder="Select or type dosage"
-                  disabled={!canCreatePrescription}
                 />
                 <input
                   className="rx-cell-input"
@@ -1073,12 +1046,10 @@ function Prescription() {
                     updateMedicine(medicine.id, "quantity", event.target.value)
                   }
                   placeholder="Qty"
-                  disabled={!canCreatePrescription}
                 />
                 <select
                   className="rx-cell-input rx-freq"
                   value={medicine.frequency}
-                  disabled={!canCreatePrescription}
                   onChange={(event) =>
                     updateMedicine(medicine.id, "frequency", event.target.value)
                   }
@@ -1097,12 +1068,10 @@ function Prescription() {
                     updateMedicine(medicine.id, "duration", event.target.value)
                   }
                   placeholder="5 Days"
-                  disabled={!canCreatePrescription}
                 />
                 <select
                   className="rx-cell-input"
                   value={medicine.notes}
-                  disabled={!canCreatePrescription}
                   onChange={(event) =>
                     updateMedicine(medicine.id, "notes", event.target.value)
                   }
@@ -1119,8 +1088,7 @@ function Prescription() {
                     className="rx-del-btn"
                     type="button"
                     onClick={() => removeMedicine(medicine.id)}
-                    disabled={!canCreatePrescription}
-                    title={canCreatePrescription ? "Remove medicine" : createDisabledTitle}
+                    title="Remove medicine"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -1145,8 +1113,7 @@ function Prescription() {
             className="rx-add-med-btn"
             type="button"
             onClick={addMedicine}
-            disabled={!canCreatePrescription}
-            title={canCreatePrescription ? "Add medicine" : createDisabledTitle}
+            title="Add medicine"
           >
             + Add Medicine
           </button>
@@ -1156,7 +1123,6 @@ function Prescription() {
             <select
               className="rx-input"
               value={instructions}
-              disabled={!canCreatePrescription}
               onChange={(event) => setInstructions(event.target.value)}
             >
               {INSTRUCTION_OPTIONS.map((option) => (
@@ -1176,7 +1142,6 @@ function Prescription() {
               className="rx-input"
               type="date"
               value={followUp}
-              disabled={!canCreatePrescription}
               onChange={(event) => {
                 setFollowUp(event.target.value);
                 setFieldErrors((prev) => ({ ...prev, followUp: "" }));
@@ -1201,8 +1166,8 @@ function Prescription() {
               className="rx-btn-submit"
               type="button"
               onClick={submitPrescription}
-                disabled={submitting || !canCreatePrescription}
-                title={canCreatePrescription ? "Submit prescription" : createDisabledTitle}
+                disabled={submitting}
+                title="Submit prescription"
               >
                 {submitting ? "Submitting..." : "Submit Prescription"}
               </button>

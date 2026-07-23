@@ -16,11 +16,9 @@ import AuthImage, {
 } from "../../utils/AuthImage";
 import { apiUrl } from "../../config/api";
 import {
-  canUsePermission,
-  fetchAndStoreRolePermissions,
-} from "../../utils/authorization";
-import {
   getApiHeaders,
+  fetchBranchesForHospital,
+  buildBranchOptions,
 } from "../../utils/branchApi";
 import { useToast } from "../../components/ToastProvider";
 import {
@@ -153,7 +151,11 @@ const getDoctorWorkingHours = (doctor = {}) =>
   doctor.workingHours ?? doctor.availableTime ?? doctor.available_time ?? "";
 
 const getDoctorFee = (doctor = {}) =>
-  doctor.consultationFee ?? doctor.fees ?? doctor.Fees ?? "";
+  doctor.consultationFee ??
+  doctor.ConsultationFee ??
+  doctor.fees ??
+  doctor.Fees ??
+  "";
 
 const formatFeeValue = (value) => {
   const text = String(value ?? "").trim();
@@ -172,7 +174,7 @@ const formatPhoneValue = (value) => {
 };
 
 const getDoctorPhone = (doctor = {}) =>
-  doctor.phoneNumber ?? doctor.phone ?? doctor.Phone ?? "";
+  doctor.phoneNumber ?? doctor.PhoneNumber ?? doctor.phone ?? doctor.Phone ?? "";
 
 const getDoctorAreaOfExpertise = (doctor = {}) =>
   doctor.areaofExpertise ??
@@ -180,6 +182,17 @@ const getDoctorAreaOfExpertise = (doctor = {}) =>
   doctor.AreaofExpertise ??
   doctor.AreaOfExpertise ??
   doctor.area_of_expertise ??
+  "";
+
+const getDoctorBranchId = (doctor = {}) =>
+  doctor.branchId ?? doctor.BranchId ?? doctor.branchID ?? doctor.BranchID ?? "";
+
+const getDoctorBranchName = (doctor = {}, branchNameById = {}) =>
+  doctor.branchName ??
+  doctor.BranchName ??
+  doctor.branch?.name ??
+  doctor.branch?.branchName ??
+  branchNameById[String(getDoctorBranchId(doctor) || "")] ??
   "";
 
 const getInitialEditForm = (doctor = {}) => ({
@@ -291,6 +304,7 @@ const buildDoctorUpdateBody = ({
     consultationFee: Number(form.fees ?? getDoctorFee(doctor) ?? 0) || 0,
     email: cleanFormValue(form.email ?? doctor.email),
     phoneNumber: cleanFormValue(form.phone ?? getDoctorPhone(doctor)),
+    branchId: form.branchId ?? getDoctorBranchId(doctor),
     isActive: nextIsActive,
   };
 
@@ -324,13 +338,12 @@ function Doctors() {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [permissionsLoading, setPermissionsLoading] = useState(true);
-  const [permissionRecord, setPermissionRecord] = useState(null);
 
   const [editingDoctor, setEditingDoctor] = useState(null);
   const [editForm, setEditForm] = useState(getInitialEditForm());
   const [editImageFile, setEditImageFile] = useState(null);
   const [editImagePreview, setEditImagePreview] = useState("");
+  const [removeEditImage, setRemoveEditImage] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editError, setEditError] = useState("");
   const [editFieldErrors, setEditFieldErrors] =
@@ -338,19 +351,19 @@ function Doctors() {
 
   const [toggleLoadingId, setToggleLoadingId] = useState(null);
   const [deleteLoadingId, setDeleteLoadingId] = useState(null);
-  const canCreateDoctor = !permissionsLoading && canUsePermission(permissionRecord, "create");
-  const canEditDoctor = !permissionsLoading && canUsePermission(permissionRecord, "edit");
-  const canDeleteDoctor = !permissionsLoading && canUsePermission(permissionRecord, "delete");
-  const permissionDisabledTitle = permissionsLoading
-    ? "Loading permissions"
-    : "Permission disabled by Super Admin";
+  const [branchOptions, setBranchOptions] = useState([]);
+  const [, setLoadingBranches] = useState(true);
+
+  const branchNameById = useMemo(
+    () =>
+      branchOptions.reduce((lookup, branch) => {
+        lookup[String(branch.id)] = branch.name;
+        return lookup;
+      }, {}),
+    [branchOptions]
+  );
 
   const openAddDoctor = () => {
-    if (!canCreateDoctor) {
-      toast.error("Create permission is disabled by Super Admin.");
-      return;
-    }
-
     navigate("/doctors/add");
   };
 
@@ -453,6 +466,94 @@ function Doctors() {
     }
   };
 
+  const buildDoctorUpdateFormData = (requestBody, { removeImage = false } = {}) => {
+    const formData = new FormData();
+    const fieldMap = {
+      BranchId: requestBody.branchId,
+      Name: requestBody.name,
+      Specialization: requestBody.specialization,
+      Experience: requestBody.experience,
+      Qualification: requestBody.qualification,
+      ConsultationFee: requestBody.consultationFee,
+      Fees: requestBody.consultationFee,
+      AreaofExpertise: requestBody.areaofExpertise,
+      AreaOfExpertise: requestBody.areaofExpertise,
+      Email: requestBody.email,
+      PhoneNumber: requestBody.phoneNumber,
+      Phone: requestBody.phoneNumber,
+      IsActive: requestBody.isActive,
+    };
+
+    Object.entries(fieldMap).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        formData.append(key, String(value));
+      }
+    });
+
+    if (removeImage) {
+      formData.append("RemoveImage", "true");
+      formData.append("RemoveProfileImage", "true");
+      formData.append("ImageUrl", "");
+    }
+
+    return formData;
+  };
+
+  const updateDoctorStatus = async (doctor, nextIsActive) => {
+    const requestBody = buildDoctorUpdateBody({
+      doctor,
+      isActive: nextIsActive,
+    });
+
+    const response = await fetch(`${DOCTORS_API_URL}/${doctor.id}`, {
+      method: "PUT",
+      headers: getApiHeaders(),
+      body: buildDoctorUpdateFormData(requestBody),
+    });
+
+    if (response.ok) return;
+
+    const firstError = await parseErrorMessage(
+      response,
+      "Unable to toggle doctor status right now."
+    );
+
+    const params = new URLSearchParams();
+    const paramMap = {
+      BranchId: requestBody.branchId,
+      Name: requestBody.name,
+      Specialization: requestBody.specialization,
+      Experience: requestBody.experience,
+      Qualification: requestBody.qualification,
+      ConsultationFee: requestBody.consultationFee,
+      Fees: requestBody.consultationFee,
+      AreaofExpertise: requestBody.areaofExpertise,
+      AreaOfExpertise: requestBody.areaofExpertise,
+      IsActive: String(requestBody.isActive),
+      PhoneNumber: requestBody.phoneNumber,
+      Phone: requestBody.phoneNumber,
+      Email: requestBody.email,
+    };
+
+    Object.entries(paramMap).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        params.set(key, String(value));
+      }
+    });
+
+    const fallbackResponse = await fetch(`${DOCTORS_API_URL}/${doctor.id}?${params.toString()}`, {
+      method: "PUT",
+      headers: getApiHeaders(),
+      body: buildDoctorUpdateFormData(requestBody),
+    });
+
+    if (!fallbackResponse.ok) {
+      throw new Error(
+        await parseErrorMessage(fallbackResponse, firstError)
+      );
+    }
+  };
+
   useEffect(() => {
     fetchDoctors();
   }, []);
@@ -460,16 +561,26 @@ function Doctors() {
   useEffect(() => {
     let active = true;
 
-    const loadPermissions = async () => {
-      setPermissionsLoading(true);
-      const record = await fetchAndStoreRolePermissions();
-      if (active) {
-        setPermissionRecord(record);
-        setPermissionsLoading(false);
+    const loadBranches = async () => {
+      setLoadingBranches(true);
+
+      try {
+        const hospitalId = localStorage.getItem("hospitalId") || "";
+        const branches = await fetchBranchesForHospital(hospitalId);
+        if (!active) return;
+
+        const options = buildBranchOptions(branches);
+        setBranchOptions(options);
+      } catch {
+        if (active) {
+          setBranchOptions([]);
+        }
+      } finally {
+        if (active) setLoadingBranches(false);
       }
     };
 
-    loadPermissions();
+    loadBranches();
 
     return () => {
       active = false;
@@ -588,11 +699,6 @@ function Doctors() {
 
   const openEditDoctor = (doctor) => {
     if (!doctor?.id) return;
-    if (!canEditDoctor) {
-      toast.error("Edit permission is disabled by Super Admin.");
-      return;
-    }
-
     if (editImagePreview.startsWith("blob:")) {
       URL.revokeObjectURL(editImagePreview);
     }
@@ -600,6 +706,7 @@ function Doctors() {
     setEditingDoctor(doctor);
     setEditForm(getInitialEditForm(doctor));
     setEditImageFile(null);
+    setRemoveEditImage(false);
     setEditImagePreview(
       resolveApiImageUrl(
         getImageUrl(doctor)
@@ -617,6 +724,7 @@ function Doctors() {
     setEditingDoctor(null);
     setEditForm(getInitialEditForm());
     setEditImageFile(null);
+    setRemoveEditImage(false);
     setEditImagePreview("");
     setEditError("");
     setEditFieldErrors(getEmptyEditErrors());
@@ -683,7 +791,26 @@ function Doctors() {
     }
 
     setEditImageFile(nextFile);
+    setRemoveEditImage(false);
     setEditImagePreview(URL.createObjectURL(nextFile));
+    setEditFieldErrors((previous) => ({
+      ...previous,
+      image: "",
+      form: "",
+    }));
+  };
+
+  const handleRemoveEditImage = () => {
+    if (editImagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(editImagePreview);
+    }
+
+    setEditImageFile(null);
+    setEditImagePreview("");
+    setRemoveEditImage(true);
+    if (editImageInputRef.current) {
+      editImageInputRef.current.value = "";
+    }
     setEditFieldErrors((previous) => ({
       ...previous,
       image: "",
@@ -695,12 +822,6 @@ function Doctors() {
     event.preventDefault();
 
     if (!editingDoctor?.id) return;
-    if (!canEditDoctor) {
-      setEditError("Edit permission is disabled by Super Admin.");
-      toast.error("Edit permission is disabled by Super Admin.");
-      return;
-    }
-
     const validationErrors = {
       ...validateEditForm(editForm),
       image: validateImageFile(editImageFile),
@@ -732,9 +853,12 @@ function Doctors() {
       Experience: requestBody.experience,
       Qualification: requestBody.qualification,
       ConsultationFee: requestBody.consultationFee,
+      Fees: requestBody.consultationFee,
       AreaofExpertise: requestBody.areaofExpertise,
+      AreaOfExpertise: requestBody.areaofExpertise,
       IsActive: String(requestBody.isActive),
       PhoneNumber: requestBody.phoneNumber,
+      Phone: requestBody.phoneNumber,
       Email: requestBody.email,
     };
     Object.entries(paramMap).forEach(([key, value]) => {
@@ -742,9 +866,15 @@ function Doctors() {
         params.set(key, String(value));
       }
     });
-    const formData = new FormData();
+    const formData = buildDoctorUpdateFormData(requestBody, {
+      removeImage: removeEditImage,
+    });
     if (editImageFile) {
       formData.append("Image", editImageFile);
+    }
+    if (removeEditImage) {
+      params.set("RemoveImage", "true");
+      params.set("RemoveProfileImage", "true");
     }
 
     try {
@@ -775,29 +905,13 @@ function Doctors() {
 
   const handleToggleDoctorStatus = async (doctor) => {
     if (!doctor?.id) return;
-    if (!canEditDoctor) {
-      toast.error("Edit permission is disabled by Super Admin.");
-      return;
-    }
-
     const nextIsActive = !getDoctorIsActive(doctor);
 
     setToggleLoadingId(doctor.id);
     setError("");
 
     try {
-      const response = await fetch(`${DOCTORS_API_URL}/${doctor.id}/toggle-status`, {
-        method: "PATCH",
-        headers: getApiHeaders(),
-      });
-
-      if (!response.ok) {
-        const message = await parseErrorMessage(
-          response,
-          "Unable to toggle doctor status right now."
-        );
-        throw new Error(message);
-      }
+      await updateDoctorStatus(doctor, nextIsActive);
 
       setDoctors((previousDoctors) =>
         previousDoctors.map((item) =>
@@ -811,6 +925,7 @@ function Doctors() {
             : item
         )
       );
+      fetchDoctors();
       toast.success(nextIsActive ? "Doctor activated successfully" : "Doctor disabled successfully");
     } catch (toggleError) {
       const message =
@@ -824,11 +939,6 @@ function Doctors() {
 
   const handleDeleteDoctor = async (doctorId) => {
     if (!doctorId) return;
-    if (!canDeleteDoctor) {
-      toast.error("Delete permission is disabled by Super Admin.");
-      return;
-    }
-
     const shouldDelete = window.confirm("Are you sure you want to delete this doctor?");
     if (!shouldDelete) return;
 
@@ -888,8 +998,7 @@ function Doctors() {
           <button
             className="doctors-btn doctors-btn-primary"
             onClick={openAddDoctor}
-            disabled={!canCreateDoctor}
-            title={canCreateDoctor ? "Add doctor" : permissionDisabledTitle}
+            title="Add doctor"
           >
             <Plus size={16} /> Add Doctor
           </button>
@@ -1036,6 +1145,10 @@ function Doctors() {
                       <b>{doc.name || "-"}</b>
                     </div>
                     <div>
+                      <span>Branch</span>
+                      <b>{getDoctorBranchName(doc, branchNameById) || "-"}</b>
+                    </div>
+                    <div>
                       <span>Specialization</span>
                       <b>{doc.specialization || "-"}</b>
                     </div>
@@ -1065,8 +1178,8 @@ function Doctors() {
                         type="button"
                         className="doctors-status-button"
                         onClick={() => handleToggleDoctorStatus(doc)}
-                        disabled={!doc.id || !canEditDoctor || isStatusUpdating || isDeleting}
-                        title={canEditDoctor ? "Toggle status" : permissionDisabledTitle}
+                        disabled={!doc.id || isStatusUpdating || isDeleting}
+                        title="Toggle status"
                       >
                         <span
                           className={`doctors-status ${isActive ? "doctors-status-active" : "doctors-status-inactive"
@@ -1122,8 +1235,8 @@ function Doctors() {
                       type="button"
                       className="doctors-action-icon"
                       onClick={() => openEditDoctor(doc)}
-                      disabled={!doc.id || !canEditDoctor || isDeleting}
-                      title={canEditDoctor ? "Edit doctor" : permissionDisabledTitle}
+                      disabled={!doc.id || isDeleting}
+                      title="Edit doctor"
                     >
                       <Pencil size={14} />
                     </button>
@@ -1132,8 +1245,8 @@ function Doctors() {
                       type="button"
                       className="doctors-action-icon doctors-action-icon-delete"
                       onClick={() => handleDeleteDoctor(doc.id)}
-                      disabled={!doc.id || !canDeleteDoctor || isDeleting || isStatusUpdating}
-                      title={canDeleteDoctor ? "Delete doctor" : permissionDisabledTitle}
+                      disabled={!doc.id || isDeleting || isStatusUpdating}
+                      title="Delete doctor"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -1188,6 +1301,17 @@ function Doctors() {
                   >
                     <Camera size={17} />
                   </button>
+                  {editImagePreview ? (
+                    <button
+                      type="button"
+                      className="doctor-edit-image-remove-btn"
+                      onClick={handleRemoveEditImage}
+                      title="Remove profile image"
+                      aria-label="Remove profile image"
+                    >
+                      <X size={15} />
+                    </button>
+                  ) : null}
                   <input
                     ref={editImageInputRef}
                     type="file"

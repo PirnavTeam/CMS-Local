@@ -240,10 +240,6 @@ import {
   validateText,
 } from "../../utils/validation";
 import {
-  canUsePermission,
-  fetchAndStoreRolePermissions,
-} from "../../utils/authorization";
-import {
   validateUniqueMobileNumber,
 } from "../../utils/mobileUniqueness";
 const DOCTORS_API_URL =
@@ -366,6 +362,38 @@ const formatFeeValue = (value) => {
   return Number.isNaN(numberValue) ? text : numberValue.toFixed(2);
 };
 
+const formatValidationMessage = (message) =>
+  String(message || "")
+    .replace(/^The\s+/i, "")
+    .replace(/\s+field\s+is\s+required\.?$/i, " is required.")
+    .trim();
+
+const getApiErrorKey = (key) => {
+  const normalized = String(key || "")
+    .split(".")
+    .pop()
+    .replace(/[^a-z0-9]/gi, "")
+    .toLowerCase();
+
+  const map = {
+    branchid: "branchId",
+    name: "name",
+    specialization: "specialization",
+    experience: "experience",
+    qualification: "qualification",
+    consultationfee: "fees",
+    fee: "fees",
+    fees: "fees",
+    areaofexpertise: "areaofExpertise",
+    email: "email",
+    phonenumber: "phone",
+    phone: "phone",
+    image: "image",
+  };
+
+  return map[normalized] || "form";
+};
+
 function AddDoctor() {
   const navigate = useNavigate();
   const toast = useToast();
@@ -399,9 +427,17 @@ function AddDoctor() {
   const [branchOptions, setBranchOptions] = useState([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
   const [branchWarning, setBranchWarning] = useState("");
-  const [permissionsLoading, setPermissionsLoading] = useState(true);
-  const [permissionRecord, setPermissionRecord] = useState(null);
-  const canCreateDoctor = !permissionsLoading && canUsePermission(permissionRecord, "create");
+  useEffect(() => {
+    const firstErrorKey = Object.keys(fieldErrors).find((key) => fieldErrors[key]);
+    if (!firstErrorKey) return;
+
+    const selector =
+      firstErrorKey === "image"
+        ? ".doctor-image-circle"
+        : `[name="${firstErrorKey === "fees" ? "fees" : firstErrorKey}"]`;
+    const field = document.querySelector(selector);
+    field?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [fieldErrors]);
 
   const doctorInitials = useMemo(
     () =>
@@ -529,31 +565,24 @@ function AddDoctor() {
     };
   }, [imagePreview]);
 
-  useEffect(() => {
-    let active = true;
-
-    const loadPermissions = async () => {
-      setPermissionsLoading(true);
-      const record = await fetchAndStoreRolePermissions();
-      if (active) {
-        setPermissionRecord(record);
-        setPermissionsLoading(false);
-      }
-    };
-
-    loadPermissions();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
   const handleChange = (event) => {
     const { name } = event.target;
     let { value } = event.target;
 
-    if (["name", "specialization"].includes(name)) {
+    if (["name", "specialization", "areaofExpertise"].includes(name)) {
       value = formatTitleCase(onlyAlpha(value));
+    }
+
+    if (name === "qualification") {
+      value = value
+        .split(" ")
+        .map((part) =>
+          part.length <= 5 && part === part.toUpperCase()
+            ? part
+            : formatTitleCase(onlyAlpha(part))
+        )
+        .join(" ")
+        .trimStart();
     }
 
     if (name === "phone") {
@@ -606,7 +635,20 @@ function AddDoctor() {
     const data = await response.json();
 
     if (data.errors) {
-      return Object.values(data.errors).flat().join("\n");
+      const apiFieldErrors = {};
+
+      Object.entries(data.errors).forEach(([key, messages]) => {
+        const errorKey = getApiErrorKey(key);
+        const message = Array.isArray(messages) ? messages[0] : messages;
+        apiFieldErrors[errorKey] = formatValidationMessage(message);
+      });
+
+      setFieldErrors((previous) => ({
+        ...previous,
+        ...apiFieldErrors,
+      }));
+
+      return Object.values(apiFieldErrors).filter(Boolean).join("\n");
     }
 
     return (
@@ -663,14 +705,6 @@ function AddDoctor() {
       setForm(formattedForm);
     }
 
-    if (!canCreateDoctor) {
-      const message = permissionsLoading
-        ? "Loading permissions. Please try again."
-        : "Create permission is disabled by Super Admin.";
-      toast.error(message);
-      return;
-    }
-
     if (!validateForm(formattedForm)) {
       return;
     }
@@ -692,12 +726,12 @@ function AddDoctor() {
 
     const requestPayload = {
       branchId: Number(formattedForm.branchId) || 0,
-      name: formattedForm.name.trim(),
-      specialization: formattedForm.specialization.trim(),
+      name: formatTitleCase(formattedForm.name).trim(),
+      specialization: formatTitleCase(formattedForm.specialization).trim(),
       experience: String(Number(formattedForm.experience) || 0),
       qualification: formattedForm.qualification.trim(),
       consultationFee: Number(formattedForm.fees) || 0,
-      areaofExpertise: formattedForm.areaofExpertise.trim(),
+      areaofExpertise: formatTitleCase(formattedForm.areaofExpertise).trim(),
       email: formattedForm.email.trim(),
       phoneNumber: formattedForm.phone.trim(),
       isActive: formattedForm.isActive === "true",
@@ -710,9 +744,12 @@ formData.append("Specialization", requestPayload.specialization);
 formData.append("Experience", requestPayload.experience);
 formData.append("Qualification", requestPayload.qualification);
 formData.append("ConsultationFee", requestPayload.consultationFee);
+formData.append("Fees", requestPayload.consultationFee);
 formData.append("AreaofExpertise", requestPayload.areaofExpertise);
+formData.append("AreaOfExpertise", requestPayload.areaofExpertise);
 formData.append("Email", requestPayload.email);
 formData.append("PhoneNumber", requestPayload.phoneNumber);
+formData.append("Phone", requestPayload.phoneNumber);
 formData.append("IsActive", requestPayload.isActive);
 
 if (imageFile) {
@@ -1002,14 +1039,8 @@ if (imageFile) {
             <button
               className="add-doctor-primary"
               type="submit"
-              disabled={saving || loadingBranches || !canCreateDoctor}
-              title={
-                canCreateDoctor
-                  ? "Add doctor"
-                  : permissionsLoading
-                    ? "Loading permissions"
-                    : "Permission disabled by Super Admin"
-              }
+              disabled={saving || loadingBranches}
+              title="Add doctor"
             >
               {saving ? "Adding..." : "Add Doctor"}
             </button>

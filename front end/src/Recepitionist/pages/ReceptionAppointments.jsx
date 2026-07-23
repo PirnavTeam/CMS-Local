@@ -120,9 +120,11 @@ const getDoctorId = (doctor = {}) =>
 const getDoctorBranchId = (doctor = {}) =>
   doctor.branchId ??
   doctor.BranchId ??
+  doctor.branchID ??
+  doctor.BranchID ??
   doctor.branch?.id ??
+  doctor.branch?.branchId ??
   doctor.Branch?.Id ??
-  getRecordHospitalId(doctor) ??
   "";
 
 const getDoctorFee = (doctor = {}) =>
@@ -260,6 +262,9 @@ function ReceptionAppointments() {
   const receptionistHospitalId = String(
     getReceptionistProfile().hospitalId || ""
   ).trim();
+  const receptionistBranchId = String(
+    getReceptionistProfile().branchId || ""
+  ).trim();
   const [patients, setPatients] = useState([]);
   const [patientSearch, setPatientSearch] = useState("");
   const [isPatientMenuOpen, setIsPatientMenuOpen] = useState(false);
@@ -290,32 +295,65 @@ function ReceptionAppointments() {
   const refresh = useCallback(() => {
     setDoctorLoadMessage("");
 
+    const doctorRequest = receptionistBranchId
+      ? requestJson(`Doctor/branch/${encodeURIComponent(receptionistBranchId)}`)
+          .then((data) => ({ data, error: "", source: "branch" }))
+          .catch((error) =>
+            requestJson("Doctor")
+              .then((data) => ({
+                data,
+                error:
+                  error.message ||
+                  "Unable to load branch doctors. Showing matching local records.",
+                source: "fallback",
+              }))
+              .catch((fallbackError) => ({
+                data: [],
+                error:
+                  fallbackError.message ||
+                  error.message ||
+                  "Unable to load doctors.",
+                source: "fallback",
+              }))
+          )
+      : requestJson("Doctor")
+          .then((data) => ({ data, error: "", source: "all" }))
+          .catch((error) => ({
+            data: [],
+            error: error.message || "Unable to load doctors.",
+            source: "all",
+          }));
+
     Promise.all([
       requestJson("Patient").catch(() => []),
-      requestJson("Doctor")
-        .then((data) => ({ data, error: "" }))
-        .catch((error) => ({
-          data: [],
-          error: error.message || "Unable to load doctors.",
-        })),
+      doctorRequest,
       requestJson("Appointment").catch(() => []),
     ]).then(([patientData, doctorResult, appointmentData]) => {
       const nextPatients = parseList(patientData);
       const activeDoctors = parseList(doctorResult.data).filter(isActiveDoctor);
+      const branchDoctors =
+        receptionistBranchId && doctorResult.source !== "branch"
+          ? activeDoctors.filter(
+              (doctor) =>
+                String(getDoctorBranchId(doctor)).trim() ===
+                receptionistBranchId
+            )
+          : activeDoctors;
       const nextDoctors = receptionistHospitalId
-        ? activeDoctors.filter(
+        ? branchDoctors.filter(
             (doctor) =>
               String(getRecordHospitalId(doctor)).trim() ===
-              receptionistHospitalId
+                receptionistHospitalId ||
+              !String(getRecordHospitalId(doctor)).trim()
           )
-        : activeDoctors;
+        : branchDoctors;
 
       if (doctorResult.error) {
         setDoctorLoadMessage(doctorResult.error);
       } else if (nextDoctors.length === 0) {
         setDoctorLoadMessage(
           receptionistHospitalId
-            ? `No active doctors are assigned to hospital ${receptionistHospitalId}.`
+            ? `No active doctors are assigned to this branch.`
             : "No active doctors are available for this receptionist."
         );
       } else {
@@ -339,7 +377,7 @@ function ReceptionAppointments() {
           : String(getDoctorId(nextDoctors[0]) || ""),
       }));
     });
-  }, [receptionistHospitalId, requestedPatientId]);
+  }, [receptionistBranchId, receptionistHospitalId, requestedPatientId]);
 
   useEffect(() => {
     refresh();

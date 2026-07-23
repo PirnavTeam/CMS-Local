@@ -6,8 +6,6 @@ import { apiUrl } from '../config/api';
 import { recordAuditLog } from '../pages/SUPERADMIN/superAdminApi';
 import { useToast } from '../components/ToastProvider';
 import { validateGmail } from '../utils/validation';
-import { fetchAndStoreRolePermissions } from '../utils/authorization';
-import { loadStaffRolePermissions } from '../utils/staffRolePermissions';
 const EyeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
@@ -249,6 +247,9 @@ const clearStoredSession = () => {
     'doctorName',
     'hospitalId',
     'hospitalName',
+    'branchId',
+    'branchName',
+    'BranchName',
     'superadmin_role_overrides',
   ].forEach((key) => localStorage.removeItem(key));
 };
@@ -404,12 +405,33 @@ const AdminLogin = () => {
         authData.clinicId ||
         getClaim(claims, 'HospitalId', 'hospitalId') ||
         '';
+      const branchId =
+        authData.branchId ||
+        authData.BranchId ||
+        authData.branchID ||
+        authData.BranchID ||
+        authData.branch?.id ||
+        authData.branch?.branchId ||
+        authData.branch?.BranchId ||
+        getClaim(claims, 'BranchId', 'branchId', 'BranchID', 'branchID') ||
+        '';
       const clinicName =
         authData.hospitalName ||
         authData.clinicName ||
         authData.assignedClinic ||
         authData.clinic ||
         getClaim(claims, 'HospitalName', 'hospitalName', 'ClinicName', 'clinicName', 'AssignedClinic', 'assignedClinic') ||
+        '';
+      const branchName =
+        authData.branchName ||
+        authData.BranchName ||
+        authData.branch ||
+        authData.Branch ||
+        authData.branch?.name ||
+        authData.branch?.branchName ||
+        authData.branch?.BranchName ||
+        authData.assignedBranch ||
+        getClaim(claims, 'BranchName', 'branchName', 'Branch', 'branch', 'AssignedBranch', 'assignedBranch') ||
         '';
       let loginIp = await getLoginIp(authData, claims);
       if (!loginIp) {
@@ -427,6 +449,16 @@ const AdminLogin = () => {
       localStorage.setItem('hospitalId', String(hospitalId));
       localStorage.setItem('hospitalName', clinicName);
       localStorage.setItem('clinicName', clinicName);
+      if (branchId) {
+        localStorage.setItem('branchId', String(branchId));
+      } else {
+        localStorage.removeItem('branchId');
+      }
+      if (branchName) {
+        localStorage.setItem('branchName', branchName);
+      } else {
+        localStorage.removeItem('branchName');
+      }
       localStorage.setItem('loginIpAddress', loginIp || '');
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', loginEmail);
@@ -453,9 +485,6 @@ const AdminLogin = () => {
         localStorage.setItem('adminRole', 'superadmin');
         localStorage.setItem('adminEmail', loginEmail);
         localStorage.setItem('adminName', displayName);
-        try {
-          await fetchAndStoreRolePermissions('superadmin');
-        } catch {}
         toast.success('Login successful');
         navigate('/superadmin/dashboard', { replace: true });
         return;
@@ -467,9 +496,6 @@ const AdminLogin = () => {
         localStorage.setItem('doctorEmail', loginEmail);
         localStorage.setItem('doctorName', displayName);
         localStorage.setItem('doctorId', String(authData.doctorId || getClaim(claims, 'DoctorId') || ''));
-        try {
-          await loadStaffRolePermissions();
-        } catch {}
         toast.success('Login successful');
         navigate('/doctor/dashboard', { replace: true });
         return;
@@ -480,9 +506,6 @@ const AdminLogin = () => {
         localStorage.setItem('receptionistRole', role);
         localStorage.setItem('receptionistEmail', loginEmail);
         localStorage.setItem('receptionistName', displayName);
-        try {
-          await loadStaffRolePermissions();
-        } catch {}
         toast.success('Login successful');
         navigate('/reception/dashboard', { replace: true });
         return;
@@ -504,9 +527,6 @@ const AdminLogin = () => {
       localStorage.setItem('adminEmail', loginEmail);
       localStorage.setItem('adminName', displayName);
       toast.success('Login successful');
-      try {
-        await fetchAndStoreRolePermissions(role);
-      } catch {}
       navigate('/dashboard', { replace: true });
     } catch {
       setErrors({
