@@ -8,6 +8,7 @@ import {
   getLoggedInDoctor,
 } from "../utils/doctorSession";
 import {
+  DEFAULT_DIAGNOSIS_OPTIONS,
   fetchDiagnosisOptions,
   mergeDiagnosisOption,
 } from "../utils/diagnosisOptions";
@@ -29,18 +30,6 @@ const CLINICAL_NOTE_SECTIONS = [
   { key: "noteSubjective", label: "Subjective" },
   { key: "noteAssessment", label: "Assessment" },
   { key: "notePlan", label: "Plan" },
-];
-
-const DEFAULT_DIAGNOSIS_OPTIONS = [
-  "Fever",
-  "Upper respiratory infection",
-  "Gastritis",
-  "Hypertension",
-  "Diabetes follow-up",
-  "Migraine",
-  "Allergic rhinitis",
-  "Back pain",
-  "Community Acquired Pneumonia",
 ];
 
 const getInitials = (name) =>

@@ -9,7 +9,7 @@ import {
   getLoggedInDoctor,
 } from "../utils/doctorSession";
 import {
-  fetchDiagnosisOptions,
+  DIAGNOSIS_TEST_OPTIONS,
   mergeDiagnosisOption,
 } from "../utils/diagnosisOptions";
 import { getClinicDisplayName } from "../../utils/clinicDisplay";
@@ -38,16 +38,6 @@ const DEFAULT_MEDICINE_OPTIONS = [
   "Pantoprazole",
   "Metformin",
   "Amlodipine",
-];
-const DEFAULT_DIAGNOSIS_OPTIONS = [
-  "Fever",
-  "Upper respiratory infection",
-  "Gastritis",
-  "Hypertension",
-  "Diabetes follow-up",
-  "Migraine",
-  "Allergic rhinitis",
-  "Back pain",
 ];
 const DOSAGE_OPTIONS = ["1 Tablet", "1/2 Tablet", "2 Tablets", "5 ml", "10 ml", "1 Capsule", "1 Sachet"];
 const FREQUENCY_OPTIONS = [
@@ -250,7 +240,7 @@ function Prescription() {
 
   const [appointment, setAppointment] = useState(null);
   const [consultation, setConsultation] = useState(routeState.consultation || null);
-  const [diagnosis, setDiagnosis] = useState(routeState.consultation?.diagnosis || "");
+  const [diagnosis, setDiagnosis] = useState("");
   const [instructions, setInstructions] = useState(
     "Take medicines after food and complete the full course."
   );
@@ -266,22 +256,6 @@ function Prescription() {
   const [medicineOptions, setMedicineOptions] = useState([]);
   const [typedMedicineNames, setTypedMedicineNames] = useState([]);
   const [isMedicineSearchFocused, setIsMedicineSearchFocused] = useState(false);
-
-  useEffect(() => {
-    let isActive = true;
-
-    fetchDiagnosisOptions()
-      .then((options) => {
-        if (isActive) setDiagnosisOptions(options);
-      })
-      .catch((err) => {
-        console.warn("Unable to load diagnosis suggestions.", err);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("prescriptionTypedMedicineNames");
@@ -415,8 +389,6 @@ function Prescription() {
         setConsultation(savedConsultation);
         const resolvedDiagnosis =
           savedPrescription?.diagnosis ||
-          savedConsultation?.diagnosis ||
-          routeState.consultation?.diagnosis ||
           "";
 
         setDiagnosis(resolvedDiagnosis);
@@ -456,7 +428,7 @@ function Prescription() {
     consultation?.chiefComplaints ||
     emptyValue;
   const clinicalNote = consultation?.clinicalNotes || emptyValue;
-  const previewDiagnosis = diagnosis || consultation?.diagnosis || emptyValue;
+  const previewDiagnosis = diagnosis || emptyValue;
   const followUpLabel = followUp ? formatDateMMDDYYYY(followUp, emptyValue) : "Select date";
   const vitals = [
     ["BP", appointment?.bloodPressure],
@@ -514,7 +486,7 @@ function Prescription() {
   }, [combinedMedicineOptions, medicines]);
 
   const diagnosisSelectOptions = useMemo(() => {
-    const options = new Set(DEFAULT_DIAGNOSIS_OPTIONS);
+    const options = new Set(DIAGNOSIS_TEST_OPTIONS);
     diagnosisOptions.forEach((option) => {
       if (option) options.add(option);
     });
@@ -712,7 +684,7 @@ function Prescription() {
                 </section>
                 <div class="block"><b>Chief Complaint</b><p>${chiefComplaint}</p></div>
                 <div class="block"><b>Clinical Note</b><p>${clinicalNote}</p></div>
-                <div class="block"><b>Diagnosis</b><p>${previewDiagnosis}</p></div>
+                <div class="block"><b>Diagnosis Tests</b><p>${previewDiagnosis}</p></div>
               </div>
               <aside class="vitals">
                 <b>Vitals</b>
@@ -782,7 +754,7 @@ function Prescription() {
     }
 
     const nextErrors = {
-      diagnosis: validateRequired(diagnosis, "Diagnosis"),
+      diagnosis: validateRequired(diagnosis, "Diagnosis tests"),
       followUp: validateDate(followUp, "Follow up date", { allowPast: false }),
     };
 
@@ -939,7 +911,7 @@ function Prescription() {
       <div className="rx-body">
         <div className="rx-form-panel">
           <div className="rx-field">
-            <label className="rx-label">Diagnosis *</label>
+            <label className="rx-label">Diagnosis Tests *</label>
             <select
               className="rx-input"
               value={diagnosis}
@@ -949,7 +921,7 @@ function Prescription() {
                 setError("");
               }}
             >
-              <option value="">Select diagnosis</option>
+              <option value="">Select diagnosis test</option>
               {diagnosisSelectOptions.map((item) => (
                 <option value={item} key={item}>
                   {item}
@@ -1218,7 +1190,7 @@ function Prescription() {
                     <span>{clinicalNote}</span>
                   </p>
                   <p>
-                    <b>Diagnosis</b>
+                    <b>Diagnosis Tests</b>
                     <span>{previewDiagnosis}</span>
                   </p>
                 </div>

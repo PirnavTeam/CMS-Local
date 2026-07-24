@@ -12,6 +12,11 @@ import {
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { parseList, requestJson } from "../receptionApi";
+import {
+  getReceptionistScope,
+  scopeReceptionistRecords,
+  withReceptionistScopePayload,
+} from "../receptionScope";
 
 const emptyForm = {
   id: "",
@@ -48,6 +53,7 @@ function ReceptionMedicalHistory() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedPatientId = String(searchParams.get("patientId") || "").trim();
+  const receptionistScope = useMemo(() => getReceptionistScope(), []);
   const handledPatientHistoryLink = useRef("");
   const [histories, setHistories] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -74,9 +80,25 @@ function ReceptionMedicalHistory() {
   }, [appointments, form.patientId]);
 
   const loadPatients = useCallback(async () => {
-    const data = await requestJson("Patient");
-    return parseList(data);
-  }, []);
+    const [patientData, appointmentData] = await Promise.all([
+      requestJson("Patient"),
+      requestJson("Appointment").catch(() => []),
+    ]);
+    const branchPatientIds = new Set(
+      scopeReceptionistRecords(parseList(appointmentData), receptionistScope)
+        .map(getAppointmentPatientId)
+        .map((id) => String(id || "").trim())
+        .filter(Boolean)
+    );
+
+    return parseList(patientData).filter((patient) => {
+      const patientId = String(patient.id || patient.patientId || patient.PatientId || "").trim();
+      return (
+        branchPatientIds.has(patientId) ||
+        scopeReceptionistRecords([patient], receptionistScope).length > 0
+      );
+    });
+  }, [receptionistScope]);
 
   const fetchHistories = useCallback(async (patientList) => {
     try {
@@ -124,11 +146,13 @@ function ReceptionMedicalHistory() {
 
   const fetchAppointments = useCallback(async () => {
     try {
-      setAppointments(parseList(await requestJson("Appointment")));
+      setAppointments(
+        scopeReceptionistRecords(parseList(await requestJson("Appointment")), receptionistScope)
+      );
     } catch {
       setAppointments([]);
     }
-  }, []);
+  }, [receptionistScope]);
 
   useEffect(() => {
     fetchAppointments();
@@ -218,13 +242,13 @@ function ReceptionMedicalHistory() {
       return;
     }
 
-    const body = {
+    const body = withReceptionistScopePayload({
       patientId,
       allergies: form.allergies.trim(),
       chronicDiseases: form.chronicDiseases.trim(),
       currentMedications: form.currentMedications.trim(),
       surgeries: form.surgeries.trim(),
-    };
+    }, receptionistScope);
 
     try {
       await requestJson("MedicalHistory", {

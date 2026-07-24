@@ -163,6 +163,98 @@ const parseErrorMessage = async (response, fallback) => {
   }
 };
 
+const buildReceptionistFormData = (payload, { imageFile, removeImage }) => {
+  const body = new FormData();
+  body.append("Name", payload.name);
+  body.append("Email", payload.email);
+  body.append("Phone", payload.phone);
+  body.append("PhoneNumber", payload.phone);
+  body.append("HospitalId", String(payload.hospitalId));
+  body.append("BranchId", String(payload.branchId));
+
+  if (imageFile) {
+    body.append("Image", imageFile);
+  }
+
+  if (removeImage) {
+    body.append("RemoveImage", "true");
+    body.append("RemoveProfileImage", "true");
+    body.append("ImageUrl", "");
+  }
+
+  return body;
+};
+
+const buildReceptionistJson = (payload, { removeImage } = {}) => ({
+  name: payload.name,
+  Name: payload.name,
+  email: payload.email,
+  Email: payload.email,
+  phone: payload.phone,
+  Phone: payload.phone,
+  phoneNumber: payload.phone,
+  PhoneNumber: payload.phone,
+  hospitalId: payload.hospitalId,
+  HospitalId: payload.hospitalId,
+  branchId: payload.branchId,
+  BranchId: payload.branchId,
+  ...(removeImage
+    ? {
+        imageUrl: "",
+        ImageUrl: "",
+        removeImage: true,
+        RemoveImage: true,
+        removeProfileImage: true,
+        RemoveProfileImage: true,
+      }
+    : {}),
+});
+
+const submitReceptionistRequest = async ({
+  url,
+  method,
+  payload,
+  token,
+  imageFile,
+  removeImage,
+  fallbackMessage,
+}) => {
+  const hasImageChange = Boolean(imageFile || removeImage);
+  const commonHeaders = {
+    "ngrok-skip-browser-warning": "true",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const jsonRequest = () =>
+    fetch(url, {
+      method,
+      headers: {
+        ...commonHeaders,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(buildReceptionistJson(payload, { removeImage })),
+    });
+
+  const formRequest = () =>
+    fetch(url, {
+      method,
+      headers: commonHeaders,
+      body: buildReceptionistFormData(payload, { imageFile, removeImage }),
+    });
+
+  let response = hasImageChange ? await formRequest() : await jsonRequest();
+
+  if (response.status === 415) {
+    response = hasImageChange ? await jsonRequest() : await formRequest();
+  }
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, fallbackMessage));
+  }
+
+  return response.json().catch(() => ({}));
+};
+
 function Receptionists() {
   const toast = useToast();
   const imageInputRef = useRef(null);
@@ -446,50 +538,20 @@ function Receptionists() {
 
     try {
       const isEditing = Boolean(editingReceptionist?.id);
-
       const token = getAuthToken();
-      const body = new FormData();
-      body.append("Name", payload.name);
-      body.append("Email", payload.email);
-      body.append("Phone", payload.phone);
-      body.append("PhoneNumber", payload.phone);
-      body.append("HospitalId", String(payload.hospitalId));
-      body.append("BranchId", String(payload.branchId));
-      if (imageFile) {
-        body.append("Image", imageFile);
-      }
-      if (removeImage) {
-        body.append("RemoveImage", "true");
-        body.append("RemoveProfileImage", "true");
-        body.append("ImageUrl", "");
-      }
-
-      const response = await fetch(
-        isEditing
+      const data = await submitReceptionistRequest({
+        url: isEditing
           ? `${RECEPTIONIST_API}/${editingReceptionist.id}`
           : RECEPTIONIST_API,
-        {
-          method: isEditing ? "PUT" : "POST",
-          headers: {
-            "ngrok-skip-browser-warning": "true",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          await parseErrorMessage(
-            response,
-            isEditing
-              ? "Unable to update receptionist."
-              : "Unable to create receptionist."
-          )
-        );
-      }
-
-      const data = await response.json().catch(() => ({}));
+        method: isEditing ? "PUT" : "POST",
+        payload,
+        token,
+        imageFile,
+        removeImage,
+        fallbackMessage: isEditing
+          ? "Unable to update receptionist."
+          : "Unable to create receptionist.",
+      });
       const message =
         data?.message ||
         (isEditing

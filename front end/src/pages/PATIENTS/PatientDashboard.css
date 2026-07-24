@@ -538,24 +538,27 @@
 }
 
 .pd-profile-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
 }
 
 .pd-profile-avatar {
-  width: 84px;
-  height: 84px;
-  flex: 0 0 84px;
+  width: 144px;
+  height: 144px;
+  flex: 0 0 144px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #ccfbf1, #f0fdfa);
-  color: #0f766e;
-  font-size: 28px;
+  border: 1px solid #c7f3f4;
+  border-radius: 50%;
+  background: #eefafa;
+  color: #07989d;
+  font-size: 42px;
   font-weight: 800;
-  box-shadow: inset 0 0 0 1px #99f6e4;
+  line-height: 1;
+  box-shadow: inset 0 0 0 12px #e8f5f6;
 }
 
 .pd-profile-copy {
@@ -674,7 +677,7 @@
 
   .pd-profile-card,
   .pd-doctor-info {
-    align-items: flex-start;
+    align-items: center;
   }
 
   .pd-empty-state {
@@ -700,10 +703,10 @@
   }
 
   .pd-profile-avatar {
-    width: 72px;
-    height: 72px;
-    flex-basis: 72px;
-    font-size: 24px;
+    width: 132px;
+    height: 132px;
+    flex-basis: 132px;
+    font-size: 38px;
   }
 }
 

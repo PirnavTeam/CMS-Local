@@ -11,6 +11,11 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { parseList, requestJson } from "../receptionApi";
+import {
+  getReceptionistScope,
+  scopeReceptionistRecords,
+  withReceptionistScopePayload,
+} from "../receptionScope";
 import { useToast } from "../../components/ToastProvider";
 import {
   buildAddress,
@@ -63,6 +68,14 @@ const firstText = (...values) =>
 
 const getPatientId = (patient = {}) =>
   firstText(patient.id, patient.patientId, patient.PatientId, patient.PID);
+
+const getAppointmentPatientId = (appointment = {}) =>
+  firstText(
+    appointment.patientId,
+    appointment.PatientId,
+    appointment.patient?.id,
+    appointment.Patient?.Id
+  );
 
 const normalizePhone = (value) => String(value ?? "").replace(/\D/g, "");
 
@@ -239,6 +252,7 @@ const toPatientPayload = (patient = {}, overrides = {}) => {
 function ReceptionPatients() {
   const navigate = useNavigate();
   const toast = useToast();
+  const receptionistScope = useMemo(() => getReceptionistScope(), []);
   const [patients, setPatients] = useState([]);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -247,16 +261,31 @@ function ReceptionPatients() {
   const [areaOptions, setAreaOptions] = useState([]);
 
   const fetchPatients = useCallback(() =>
-    requestJson("Patient")
-      .then((data) => {
-        setPatients(parseList(data).filter((patient) => !isDeletedPatient(patient)));
+    Promise.all([
+      requestJson("Patient"),
+      requestJson("Appointment").catch(() => []),
+    ])
+      .then(([data, appointmentData]) => {
+        const branchPatientIds = new Set(
+          scopeReceptionistRecords(parseList(appointmentData), receptionistScope)
+            .map(getAppointmentPatientId)
+            .filter(Boolean)
+        );
+        setPatients(
+          parseList(data)
+            .filter((patient) => !isDeletedPatient(patient))
+            .filter((patient) =>
+              branchPatientIds.has(getPatientId(patient)) ||
+              scopeReceptionistRecords([patient], receptionistScope).length > 0
+            )
+        );
         setMessage("");
       })
       .catch((error) => {
         setMessage(error.message);
         toast.error(error.message || "Unable to load patients.");
       }),
-  [toast]);
+  [receptionistScope, toast]);
 
   useEffect(() => {
     fetchPatients();
@@ -555,9 +584,12 @@ function ReceptionPatients() {
       return;
     }
 
-    const body = toPatientPayload(form, {
-      address: buildAddress(form.addressParts),
-    });
+    const body = withReceptionistScopePayload(
+      toPatientPayload(form, {
+        address: buildAddress(form.addressParts),
+      }),
+      receptionistScope
+    );
 
     try {
       if (modal === "edit" && form.id) {

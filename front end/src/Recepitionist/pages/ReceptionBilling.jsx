@@ -3,6 +3,7 @@ import { ArrowLeft, Banknote, CreditCard, Download, FileText, ReceiptText } from
 import { useNavigate } from "react-router-dom";
 import { parseList, requestJson } from "../receptionApi";
 import { getReceptionistProfile } from "../receptionSession";
+import { getReceptionistScope, scopeReceptionistRecords } from "../receptionScope";
 import { useToast } from "../../components/ToastProvider";
 import {
   onlyNumberValue,
@@ -32,6 +33,199 @@ const formatAmountInput = (value, { emptyValue = "0.00" } = {}) => {
 
 const formatCurrency = (value) => formatIndianCurrency(value);
 
+const AMOUNT_KEYS = {
+  consultation: [
+    "consultationCharge",
+    "ConsultationCharge",
+    "consultationCharges",
+    "ConsultationCharges",
+    "consultationFee",
+    "ConsultationFee",
+    "doctorFee",
+    "DoctorFee",
+  ],
+  medicine: [
+    "medicineCharge",
+    "MedicineCharge",
+    "medicineCharges",
+    "MedicineCharges",
+    "medicineAmount",
+    "MedicineAmount",
+    "medicineFee",
+    "MedicineFee",
+    "medicationCharge",
+    "MedicationCharge",
+    "medicationCharges",
+    "MedicationCharges",
+    "medicationAmount",
+    "MedicationAmount",
+    "pharmacyCharge",
+    "PharmacyCharge",
+    "pharmacyCharges",
+    "PharmacyCharges",
+    "pharmacyAmount",
+    "PharmacyAmount",
+  ],
+  lab: [
+    "labCharge",
+    "LabCharge",
+    "labCharges",
+    "LabCharges",
+    "labAmount",
+    "LabAmount",
+    "laboratoryCharge",
+    "LaboratoryCharge",
+    "laboratoryCharges",
+    "LaboratoryCharges",
+    "laboratoryAmount",
+    "LaboratoryAmount",
+    "labFee",
+    "LabFee",
+    "testCharge",
+    "TestCharge",
+    "testCharges",
+    "TestCharges",
+    "labTestCharge",
+    "LabTestCharge",
+    "labTestCharges",
+    "LabTestCharges",
+    "diagnosticCharge",
+    "DiagnosticCharge",
+    "diagnosticCharges",
+    "DiagnosticCharges",
+  ],
+  total: [
+    "totalAmount",
+    "TotalAmount",
+    "total",
+    "Total",
+    "grandTotal",
+    "GrandTotal",
+    "netAmount",
+    "NetAmount",
+    "paidAmount",
+    "PaidAmount",
+    "amount",
+    "Amount",
+  ],
+};
+
+const readAmount = (source, keys, fallback = 0) => {
+  if (!source || typeof source !== "object") return Number(fallback || 0);
+
+  for (const key of keys) {
+    const value = source[key];
+    if (value !== undefined && value !== null && value !== "") {
+      const amount = Number(value);
+      if (Number.isFinite(amount)) return amount;
+    }
+  }
+
+  for (const nestedKey of ["billing", "bill", "invoice", "payment", "charges", "amounts", "totals"]) {
+    const nestedValue = source[nestedKey] || source[nestedKey.charAt(0).toUpperCase() + nestedKey.slice(1)];
+    if (nestedValue && typeof nestedValue === "object" && !Array.isArray(nestedValue)) {
+      const amount = readAmount(nestedValue, keys, NaN);
+      if (Number.isFinite(amount)) return amount;
+    }
+  }
+
+  return Number(fallback || 0);
+};
+
+const getItemLabel = (item = {}) =>
+  String(
+    firstValue(
+      item.label,
+      item.Label,
+      item.name,
+      item.Name,
+      item.title,
+      item.Title,
+      item.description,
+      item.Description,
+      item.serviceName,
+      item.ServiceName,
+      item.chargeType,
+      item.ChargeType,
+      item.type,
+      item.Type,
+      item.category,
+      item.Category
+    ) || ""
+  ).toLowerCase();
+
+const getItemAmount = (item = {}) =>
+  readAmount(
+    item,
+    [
+      "amount",
+      "Amount",
+      "charge",
+      "Charge",
+      "charges",
+      "Charges",
+      "price",
+      "Price",
+      "fee",
+      "Fee",
+      "total",
+      "Total",
+      "totalAmount",
+      "TotalAmount",
+      "lineTotal",
+      "LineTotal",
+    ],
+    0
+  );
+
+const readItemizedAmount = (source, keywords = []) => {
+  if (!source || typeof source !== "object") return 0;
+
+  const arrayKeys = [
+    "items",
+    "Items",
+    "lineItems",
+    "LineItems",
+    "billItems",
+    "BillItems",
+    "billingItems",
+    "BillingItems",
+    "billingDetails",
+    "BillingDetails",
+    "chargeDetails",
+    "ChargeDetails",
+    "charges",
+    "Charges",
+    "services",
+    "Services",
+    "particulars",
+    "Particulars",
+  ];
+
+  for (const key of arrayKeys) {
+    const value = source[key];
+    if (!Array.isArray(value)) continue;
+
+    const sum = value.reduce((amount, item) => {
+      const label = getItemLabel(item);
+      const matches = keywords.some((keyword) => label.includes(keyword));
+      return matches ? amount + getItemAmount(item) : amount;
+    }, 0);
+
+    if (sum > 0) return sum;
+  }
+
+  for (const nestedKey of ["billing", "bill", "invoice", "payment", "details", "data", "result"]) {
+    const nestedValue = source[nestedKey] || source[nestedKey.charAt(0).toUpperCase() + nestedKey.slice(1)];
+    if (nestedValue && typeof nestedValue === "object" && !Array.isArray(nestedValue)) {
+      const amount = readItemizedAmount(nestedValue, keywords);
+      if (amount > 0) return amount;
+    }
+  }
+
+  return 0;
+};
+
 const formatInvoiceDate = (value = new Date()) => {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) return new Date().toLocaleDateString("en-IN");
@@ -56,6 +250,18 @@ const getInvoiceNumber = (invoice) =>
     invoice?.id,
     invoice?.appointmentId ? `APT-${invoice.appointmentId}` : ""
   ) || "-";
+
+const getInvoiceId = (invoice) =>
+  firstValue(
+    invoice?.id,
+    invoice?.Id,
+    invoice?.billingId,
+    invoice?.BillingId,
+    invoice?.billId,
+    invoice?.BillId,
+    invoice?.invoiceId,
+    invoice?.InvoiceId
+  ) || "";
 
 const getInvoiceStatus = (invoice) =>
   firstValue(invoice?.paymentStatus, invoice?.invoiceStatus, invoice?.billingStatus, invoice?.status) ||
@@ -94,7 +300,7 @@ const getAppointmentStatus = (appointment = {}) =>
 
 const isBillableAppointment = (appointment = {}) => {
   const status = getAppointmentStatus(appointment);
-  return !["cancelled", "canceled", "billed"].includes(status);
+  return ["completed", "consulted", "complete"].includes(status);
 };
 
 const getAppointmentPatientName = (appointment = {}) =>
@@ -124,34 +330,6 @@ const getAppointmentDoctorName = (appointment = {}) =>
     appointment.doctor?.fullName,
     appointment.Doctor?.FullName
   ) || "-";
-
-const getAppointmentClinicId = (appointment = {}) =>
-  firstValue(
-    appointment.clinicId,
-    appointment.ClinicId,
-    appointment.hospitalId,
-    appointment.HospitalId,
-    appointment.assignedClinicId,
-    appointment.AssignedClinicId,
-    appointment.hospital?.id,
-    appointment.clinic?.id,
-    appointment.assignedClinic?.id
-  ) || "";
-
-const getAppointmentClinicName = (appointment = {}) =>
-  firstValue(
-    appointment.clinicName,
-    appointment.ClinicName,
-    appointment.hospitalName,
-    appointment.HospitalName,
-    appointment.clinic,
-    appointment.Clinic,
-    appointment.assignedClinic,
-    appointment.AssignedClinic,
-    appointment.hospital?.name,
-    appointment.clinic?.name,
-    appointment.assignedClinic?.name
-  ) || "";
 
 const getAppointmentTime = (appointment = {}) =>
   firstValue(
@@ -186,16 +364,35 @@ const fetchBillingAppointments = async () => {
   return { appointments: appointmentList, source: "appointment" };
 };
 
-const getInvoiceAmounts = ({ invoice, form, selectedAppointment, total }) => ({
-  consultation:
-    invoice?.consultationCharge ??
-    invoice?.consultationCharges ??
-    selectedAppointment?.consultationCharge ??
-    0,
-  medicine: invoice?.medicineCharge ?? invoice?.medicineCharges ?? form.medicineCharges ?? 0,
-  lab: invoice?.labCharge ?? invoice?.labCharges ?? form.labCharges ?? 0,
-  total: invoice?.totalAmount ?? invoice?.total ?? total,
-});
+const getInvoiceAmounts = ({ invoice, form, selectedAppointment, total }) => {
+  const consultation = readAmount(
+    invoice,
+    AMOUNT_KEYS.consultation,
+    readAmount(selectedAppointment, AMOUNT_KEYS.consultation, 0)
+  );
+  let medicine =
+    readAmount(invoice, AMOUNT_KEYS.medicine, 0) ||
+    readItemizedAmount(invoice, ["medicine", "medication", "pharmacy", "drug"]) ||
+    Number(form.medicineCharges || 0);
+  const lab =
+    readAmount(invoice, AMOUNT_KEYS.lab, 0) ||
+    readItemizedAmount(invoice, ["lab", "laboratory", "test", "diagnostic"]) ||
+    Number(form.labCharges || 0);
+  const lineTotal = consultation + medicine + lab;
+  const invoiceTotal = readAmount(invoice, AMOUNT_KEYS.total, total);
+  const unitemizedBalance = invoiceTotal - lineTotal;
+
+  if (invoice && invoiceTotal > 0 && unitemizedBalance > 0 && medicine === 0 && lab === 0) {
+    medicine = unitemizedBalance;
+  }
+
+  return {
+    consultation,
+    medicine,
+    lab,
+    total: invoiceTotal || consultation + medicine + lab,
+  };
+};
 
 const getLatestInvoice = (data) => {
   const invoices = parseList(data);
@@ -207,10 +404,38 @@ const getLatestInvoice = (data) => {
   })[0] || null;
 };
 
+const fetchInvoiceDetails = async (invoice) => {
+  const invoiceId = getInvoiceId(invoice);
+  if (!invoiceId) return invoice;
+
+  const detailPaths = [
+    `Billing/${invoiceId}`,
+    `Billing/details/${invoiceId}`,
+    `Billing/invoice/${invoiceId}`,
+  ];
+
+  for (const path of detailPaths) {
+    try {
+      const details = await requestJson(path);
+      if (details && typeof details === "object") {
+        return {
+          ...invoice,
+          ...(Array.isArray(details) ? details[0] : details),
+        };
+      }
+    } catch {
+      // Try the next supported detail shape.
+    }
+  }
+
+  return invoice;
+};
+
 function ReceptionBilling() {
   const navigate = useNavigate();
   const toast = useToast();
   const receptionistProfile = getReceptionistProfile();
+  const receptionistScope = useMemo(() => getReceptionistScope(), []);
   const clinicName = getClinicDisplayName(receptionistProfile, "CMS Clinic");
   const clinicId = receptionistProfile.hospitalId || localStorage.getItem("hospitalId") || "";
   const clinicEmail =
@@ -226,7 +451,6 @@ function ReceptionBilling() {
   const amountFormatTimers = useRef({});
   const messageTimer = useRef(null);
   const [appointments, setAppointments] = useState([]);
-  const [billingSource, setBillingSource] = useState("billing");
   const [appointmentDetails, setAppointmentDetails] = useState(null);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
@@ -253,31 +477,27 @@ function ReceptionBilling() {
         const invoicesData =
           invoicesResult.status === "fulfilled" ? invoicesResult.value : [];
 
-        const all = parseList(appointmentsResultData.appointments).filter(isBillableAppointment);
-        const list = all.filter((appt) => {
-          if (appointmentsResultData.source === "billing") return true;
-
-          const allowedClinicId = String(clinicId || "").trim();
-          const allowedClinicName = String(clinicName || "").trim().toLowerCase();
-          const apptClinicId = String(getAppointmentClinicId(appt)).trim();
-          const apptClinicName = String(getAppointmentClinicName(appt)).trim().toLowerCase();
-          if (allowedClinicId && apptClinicId === allowedClinicId) return true;
-          if (allowedClinicName && apptClinicName === allowedClinicName) return true;
-          if (!allowedClinicId && !allowedClinicName) return true;
-          return false;
-        });
+        const list = scopeReceptionistRecords(
+          parseList(appointmentsResultData.appointments).filter(isBillableAppointment),
+          receptionistScope
+        );
+        const scopedInvoices = scopeReceptionistRecords(parseList(invoicesData), receptionistScope);
 
         if (invoicesResult.status !== "fulfilled") {
           console.warn("Unable to load invoices:", invoicesResult.reason);
         }
 
-        setBillingSource(appointmentsResultData.source);
+        const latestInvoice = getLatestInvoice(scopedInvoices);
+        const latestInvoiceDetails = latestInvoice
+          ? await fetchInvoiceDetails(latestInvoice)
+          : null;
+
         setAppointments(list);
         setForm((prev) => ({
           ...prev,
           appointmentId: String(getAppointmentId(list[0]) || ""),
         }));
-        setInvoice(getLatestInvoice(invoicesData));
+        setInvoice(latestInvoiceDetails);
       } catch (error) {
         setMessage(error.message);
         setMessageType("error");
@@ -286,7 +506,7 @@ function ReceptionBilling() {
     };
 
     loadBillingData();
-  }, [toast, clinicId, clinicName]);
+  }, [toast, receptionistScope]);
 
   const fetchAppointmentDetails = useCallback(
     async (appointmentId) => {
@@ -436,9 +656,12 @@ function ReceptionBilling() {
 
       const invoiceData = Array.isArray(data) ? data[0] : data;
       const nextInvoice = {
-        ...body,
         ...(invoiceData || {}),
+        ...body,
         consultationCharge,
+        medicineCharge: Number(form.medicineCharges || 0),
+        labCharge: Number(form.labCharges || 0),
+        totalAmount: total,
         patientName:
           invoiceData?.patientName ||
           getAppointmentPatientName(selectedAppointment),
