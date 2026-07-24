@@ -253,15 +253,34 @@ const DOCTOR_QUALIFICATIONS_API_URL =
 
 const SPECIALIZATION_OPTIONS = [
   "Cardiology",
+  "Cardiothoracic and Cardiovascular Surgery",
   "Dermatology",
+  "Dental and Maxillofacial Surgery",
   "ENT",
+  "Endocrinology",
   "General Medicine",
+  "General Surgery",
   "Gynecology",
+  "Internal Medicine",
+  "Medical Gastroenterology",
+  "Nephrology",
   "Neurology",
+  "Neurosurgery",
+  "Obstetrics and Gynaecology",
+  "Ophthalmology",
   "Orthopedics",
+  "Paediatric Cardiology",
   "Pediatrics",
+  "Plastic and Cosmetic Surgery",
+  "Pulmonology",
   "Psychiatry",
+  "Psychiatric Counselling",
   "Radiology",
+  "Rheumatology",
+  "Surgical Gastroenterology - Laparoscopic and MIS",
+  "Urology",
+  "Vascular and Endovascular Surgery",
+  "Other",
 ];
 
 const QUALIFICATION_OPTIONS = [
@@ -483,7 +502,7 @@ function AddDoctor() {
 
           if (options.length) {
             setSpecializationOptions(
-              uniqueByValue(options)
+              uniqueByValue([...SPECIALIZATION_OPTIONS, ...options])
             );
           }
         } else {

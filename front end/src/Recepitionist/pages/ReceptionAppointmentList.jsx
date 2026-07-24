@@ -4,12 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "../../components/ToastProvider";
 import { formatDateMMDDYYYY } from "../../utils/dateFormat";
 import { filterAppointments, getAppointmentValue, getBookingType } from "./appointmentListUtils";
+import { getReceptionistScope, scopeReceptionistRecords } from "../receptionScope";
 
 const pageSize = 8;
 
 function ReceptionAppointmentList({ title, subtitle, fetchAppointments, bookingType, emptyState }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const receptionistScope = useMemo(() => getReceptionistScope(), []);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -24,7 +26,7 @@ function ReceptionAppointmentList({ title, subtitle, fetchAppointments, bookingT
     setError("");
 
     try {
-      const data = await fetchAppointments();
+      const data = scopeReceptionistRecords(await fetchAppointments(), receptionistScope);
       const nextAppointments = data.filter((item) => {
         const currentBookingType = getBookingType(item);
         return currentBookingType === bookingType;
@@ -37,7 +39,7 @@ function ReceptionAppointmentList({ title, subtitle, fetchAppointments, bookingT
     } finally {
       setLoading(false);
     }
-  }, [bookingType, fetchAppointments, toast]);
+  }, [bookingType, fetchAppointments, receptionistScope, toast]);
 
   useEffect(() => {
     loadAppointments();

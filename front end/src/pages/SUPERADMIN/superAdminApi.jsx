@@ -2381,7 +2381,11 @@ const buildAuditLookups = ({ users = [], admins = [], doctors = [], receptionist
   return { roleLookup, emailLookup };
 };
 
-const withAuditFallback = (log, roleLookup, emailLookup, currentIpAddress = "") => {
+const withAuditFallback = (log, roleLookup, emailLookup, options = {}) => {
+  const { currentIpAddress = "", fillMissingIpAddress = false } =
+    typeof options === "string"
+      ? { currentIpAddress: options, fillMissingIpAddress: false }
+      : options;
   const session = getCurrentSessionIdentity(currentIpAddress);
   const role =
     log.role ||
@@ -2389,7 +2393,7 @@ const withAuditFallback = (log, roleLookup, emailLookup, currentIpAddress = "") 
     roleLookup.get(normalizeString(log.user)) ||
     roleLookup.get(normalizeString(log.userName)) ||
     (isUserLoginMatch(session, log) ? session.role : "");
-  const ipAddress = log.ipAddress || session.ipAddress || currentIpAddress || "";
+  const ipAddress = log.ipAddress || (fillMissingIpAddress ? session.ipAddress || currentIpAddress : "") || "";
   const email =
     log.email ||
     log.userEmail ||
@@ -2490,13 +2494,18 @@ export const fetchAuditLogs = async () => {
     receptionists: receptionistsResult.status === "fulfilled" ? asArray(receptionistsResult.value) : [],
     loginLogs,
   });
-  const currentIpAddress = await fetchCurrentIpAddress();
   const remoteLogs = uniqueAuditLogs([...loginLogs, ...auditLogs]).map((log) =>
-    withAuditFallback(log, roleLookup, emailLookup, currentIpAddress)
+    withAuditFallback(log, roleLookup, emailLookup)
   );
+  const currentIpAddress = remoteLogs.length ? "" : await fetchCurrentIpAddress();
   const logs = remoteLogs.length
     ? remoteLogs
-    : localLogs.map((log) => withAuditFallback(log, roleLookup, emailLookup, currentIpAddress));
+    : localLogs.map((log) =>
+        withAuditFallback(log, roleLookup, emailLookup, {
+          currentIpAddress,
+          fillMissingIpAddress: true,
+        })
+      );
 
   if (!logs.length && auditResult.status === "rejected" && loginResult.status === "rejected") {
     throw auditResult.reason;
@@ -2526,10 +2535,8 @@ export const fetchLoginHistory = async () => {
     receptionists: receptionistsResult.status === "fulfilled" ? asArray(receptionistsResult.value) : [],
     loginLogs,
   });
-  const currentIpAddress = await fetchCurrentIpAddress();
-
   return sortAuditLogs(
-    loginLogs.map((log) => withAuditFallback(log, roleLookup, emailLookup, currentIpAddress))
+    loginLogs.map((log) => withAuditFallback(log, roleLookup, emailLookup))
   );
 };
 

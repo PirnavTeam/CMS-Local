@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "../../components/ToastProvider";
 import { formatToday, parseList, requestJson } from "../receptionApi";
 import { getReceptionistProfile } from "../receptionSession";
+import { scopeReceptionistRecords } from "../receptionScope";
 import { validateText } from "../../utils/validation";
 import { formatIndianCurrency } from "../../utils/format";
 
@@ -116,6 +117,9 @@ const getRecordHospitalId = (record = {}) =>
 
 const getDoctorId = (doctor = {}) =>
   doctor.doctorId ?? doctor.DoctorId ?? doctor.id ?? doctor.Id ?? "";
+
+const getAppointmentPatientId = (appointment = {}) =>
+  appointment.patientId ?? appointment.PatientId ?? appointment.patient?.id ?? appointment.Patient?.Id ?? "";
 
 const getDoctorBranchId = (doctor = {}) =>
   doctor.branchId ??
@@ -329,7 +333,21 @@ function ReceptionAppointments() {
       doctorRequest,
       requestJson("Appointment").catch(() => []),
     ]).then(([patientData, doctorResult, appointmentData]) => {
-      const nextPatients = parseList(patientData);
+      const scope = {
+        clinicId: receptionistHospitalId,
+        branchId: receptionistBranchId,
+      };
+      const scopedAppointments = scopeReceptionistRecords(parseList(appointmentData), scope);
+      const branchPatientIds = new Set(
+        scopedAppointments
+          .map(getAppointmentPatientId)
+          .map((id) => String(id || "").trim())
+          .filter(Boolean)
+      );
+      const nextPatients = parseList(patientData).filter((patient) => {
+        const patientId = String(patient.id ?? patient.patientId ?? patient.PatientId ?? "").trim();
+        return branchPatientIds.has(patientId) || scopeReceptionistRecords([patient], scope).length > 0;
+      });
       const activeDoctors = parseList(doctorResult.data).filter(isActiveDoctor);
       const branchDoctors =
         receptionistBranchId && doctorResult.source !== "branch"
@@ -362,7 +380,7 @@ function ReceptionAppointments() {
 
       setPatients(nextPatients);
       setDoctors(nextDoctors);
-      setAppointments(parseList(appointmentData));
+      setAppointments(scopedAppointments);
       setForm((prev) => ({
         ...prev,
         patientId: nextPatients.some(
@@ -540,7 +558,7 @@ function ReceptionAppointments() {
 
     const selectedSlotStart = getSlotStart(selectedSlot);
     const branchIdForAppointment =
-      Number(getDoctorBranchId(selectedDoctor)) || Number(receptionistHospitalId) || 0;
+      Number(getDoctorBranchId(selectedDoctor)) || Number(receptionistBranchId) || 0;
     const transactionId = `CONS-${Date.now()}`;
     const vitals = {
       bloodPressure: appendUnit(form.bloodPressure, vitalFieldByName.bloodPressure.unit),
@@ -551,6 +569,8 @@ function ReceptionAppointments() {
       respiratoryRate: appendUnit(form.respiratoryRate, vitalFieldByName.respiratoryRate.unit),
     };
     const body = {
+      hospitalId: Number(receptionistHospitalId) || 0,
+      clinicId: Number(receptionistHospitalId) || 0,
       branchId: branchIdForAppointment,
       doctorId: Number(form.doctorId),
       patientId: Number(form.patientId),

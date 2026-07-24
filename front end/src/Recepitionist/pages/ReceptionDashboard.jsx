@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarCheck,
@@ -9,30 +9,43 @@ import {
   UserPlus,
 } from "lucide-react";
 import { formatToday, parseList, requestJson } from "../receptionApi";
+import { getReceptionistScope, scopeReceptionistRecords } from "../receptionScope";
 
 function ReceptionDashboard() {
   const navigate = useNavigate();
+  const receptionistScope = useMemo(() => getReceptionistScope(), []);
   const [appointments, setAppointments] = useState([]);
   const [stats, setStats] = useState({ today: 0, waiting: 0, completed: 0 });
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [dashboardData, appointmentData] = await Promise.all([
+        const [, appointmentData] = await Promise.all([
           requestJson("ReceptionistDashboard"),
           requestJson("Appointment"),
         ]);
 
+        const appointmentList = scopeReceptionistRecords(parseList(appointmentData), receptionistScope);
+        const todayDate = formatToday();
+        const todays = appointmentList.filter((item) =>
+          String(item.date || item.appointmentDate || "").startsWith(todayDate)
+        );
         setStats({
-          today: Number(dashboardData?.totalTodayAppointments) || 0,
-          waiting: Number(dashboardData?.waitingAppointments) || 0,
-          completed: Number(dashboardData?.completedAppointments) || 0,
+          today: todays.length,
+          waiting: appointmentList.filter((item) =>
+            ["waiting", "scheduled", "booked"].includes(
+              String(item.status || "").toLowerCase()
+            )
+          ).length,
+          completed: appointmentList.filter((item) =>
+            ["completed", "consulted"].includes(String(item.status || "").toLowerCase())
+          ).length,
         });
-        setAppointments(parseList(appointmentData));
+        setAppointments(appointmentList);
       } catch (dashboardError) {
         requestJson("Appointment")
           .then((data) => {
-            const appointmentList = parseList(data);
+            const appointmentList = scopeReceptionistRecords(parseList(data), receptionistScope);
             const todayDate = formatToday();
             const todays = appointmentList.filter((item) =>
               String(item.date || item.appointmentDate || "").startsWith(todayDate)
@@ -58,7 +71,7 @@ function ReceptionDashboard() {
     };
 
     loadDashboard();
-  }, []);
+  }, [receptionistScope]);
 
   const todayDate = formatToday();
   const latest = appointments.filter((item) =>
