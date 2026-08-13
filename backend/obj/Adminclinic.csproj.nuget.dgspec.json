@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\ADMIN\\Downloads\\16\\Adminclinic_CMS_same_login_final_fixed\\Adminclinic\\Adminclinic.csproj": {}
+    "C:\\Users\\ADMIN\\Desktop\\CMS_project\\CMS-Local\\backend\\Adminclinic.csproj": {}
   },
   "projects": {
-    "C:\\Users\\ADMIN\\Downloads\\16\\Adminclinic_CMS_same_login_final_fixed\\Adminclinic\\Adminclinic.csproj": {
+    "C:\\Users\\ADMIN\\Desktop\\CMS_project\\CMS-Local\\backend\\Adminclinic.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\ADMIN\\Downloads\\16\\Adminclinic_CMS_same_login_final_fixed\\Adminclinic\\Adminclinic.csproj",
+        "projectUniqueName": "C:\\Users\\ADMIN\\Desktop\\CMS_project\\CMS-Local\\backend\\Adminclinic.csproj",
         "projectName": "Adminclinic",
-        "projectPath": "C:\\Users\\ADMIN\\Downloads\\16\\Adminclinic_CMS_same_login_final_fixed\\Adminclinic\\Adminclinic.csproj",
+        "projectPath": "C:\\Users\\ADMIN\\Desktop\\CMS_project\\CMS-Local\\backend\\Adminclinic.csproj",
         "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\ADMIN\\Downloads\\16\\Adminclinic_CMS_same_login_final_fixed\\Adminclinic\\obj\\",
+        "outputPath": "C:\\Users\\ADMIN\\Desktop\\CMS_project\\CMS-Local\\backend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -26,6 +26,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -45,7 +46,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.200"
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -100,7 +101,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.202/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300-preview.0.26177.108/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

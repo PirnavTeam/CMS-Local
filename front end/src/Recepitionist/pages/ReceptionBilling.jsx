@@ -1970,6 +1970,7 @@ function ReceptionBilling() {
     const totalAmount = Number(details.totals.total || 0);
     const labCharge = isPharmacy ? 0 : subtotal;
     const medicineCharge = isPharmacy ? subtotal : 0;
+    const visitDate = getAppointmentDate(selectedAppointment);
 
     return {
       appointmentId,
@@ -1980,6 +1981,22 @@ function ReceptionBilling() {
       BranchId: branchId,
       billingType: isPharmacy ? "Pharmacy" : "Lab",
       BillingType: isPharmacy ? "Pharmacy" : "Lab",
+      createdAt: details.createdAt,
+      CreatedAt: details.createdAt,
+      billDate: details.createdAt,
+      BillDate: details.createdAt,
+      invoiceDate: details.createdAt,
+      InvoiceDate: details.createdAt,
+      patientName: details.patientName,
+      PatientName: details.patientName,
+      patientPhone: details.patientPhone,
+      PatientPhone: details.patientPhone,
+      phone: details.patientPhone,
+      Phone: details.patientPhone,
+      visitDate,
+      VisitDate: visitDate,
+      appointmentDate: visitDate,
+      AppointmentDate: visitDate,
       consultationCharge: 0,
       ConsultationCharge: 0,
       labCharge,
@@ -2075,6 +2092,14 @@ function ReceptionBilling() {
         totals: details.totals,
         patientName: details.patientName,
         patientId: details.patientId,
+        patientPhone: details.patientPhone,
+        PatientPhone: details.patientPhone,
+        phone: details.patientPhone,
+        Phone: details.patientPhone,
+        visitDate: payload.visitDate,
+        VisitDate: payload.VisitDate,
+        appointmentDate: payload.appointmentDate,
+        AppointmentDate: payload.AppointmentDate,
         doctorName: details.doctorName,
         paymentMode: details.paymentMode,
         invoiceType: details.type === "pharmacy" ? "pharmacy" : "diagnostic",

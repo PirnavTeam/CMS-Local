@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "+kW0eAqgpCM=",
+  "dgSpecHash": "TI+/UJcBEEo=",
   "success": true,
-  "projectFilePath": "C:\\Users\\ADMIN\\Downloads\\16\\Adminclinic_CMS_same_login_final_fixed\\Adminclinic\\Adminclinic.csproj",
+  "projectFilePath": "C:\\Users\\ADMIN\\Desktop\\CMS_project\\CMS-Local\\backend\\Adminclinic.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ADMIN\\.nuget\\packages\\azure.core\\1.25.0\\azure.core.1.25.0.nupkg.sha512",
     "C:\\Users\\ADMIN\\.nuget\\packages\\azure.identity\\1.7.0\\azure.identity.1.7.0.nupkg.sha512",

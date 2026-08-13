@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle, Download, FileText, Play, RefreshCw, Search, TestTube2 } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { downloadBlob, firstSuccessfulList, parseList, requestJson } from "./labApi";
 import { getLabProfile } from "./labSession";
 import { getClinicDisplayName } from "../utils/clinicDisplay";
@@ -15,10 +15,28 @@ import {
 const readFirst = (record = {}, keys = [], fallback = "-") => {
   for (const key of keys) {
     const value = String(key).split(".").reduce((current, part) => (current && typeof current === "object" ? current[part] : undefined), record);
-    if (value !== undefined && value !== null && String(value).trim() !== "") return value;
+    if (value !== undefined && value !== null && String(value).trim() !== "" && String(value).trim() !== "-") return value;
   }
   return fallback;
 };
+
+const PATIENT_PHONE_KEYS = [
+  "phone", "Phone", "mobile", "Mobile", "phoneNumber", "PhoneNumber", "mobileNumber", "MobileNumber",
+  "patientPhone", "PatientPhone", "contactNumber", "ContactNumber",
+  "patient.phone", "patient.Phone", "patient.mobile", "patient.Mobile", "patient.phoneNumber", "patient.PhoneNumber", "patient.mobileNumber", "patient.MobileNumber",
+  "Patient.phone", "Patient.Phone", "Patient.mobile", "Patient.Mobile", "Patient.phoneNumber", "Patient.PhoneNumber", "Patient.mobileNumber", "Patient.MobileNumber",
+  "appointment.phone", "appointment.Phone", "appointment.patientPhone", "appointment.PatientPhone",
+  "Appointment.phone", "Appointment.Phone", "Appointment.patientPhone", "Appointment.PatientPhone",
+];
+
+const VISIT_DATE_KEYS = [
+  "visitDate", "VisitDate", "appointmentDate", "AppointmentDate", "appointmentDateTime", "AppointmentDateTime",
+  "scheduledDate", "ScheduledDate", "slotDate", "SlotDate", "bookingDate", "BookingDate",
+  "invoiceDate", "InvoiceDate", "billDate", "BillDate", "createdAt", "CreatedAt", "createdOn", "CreatedOn", "date", "Date",
+  "appointment.visitDate", "appointment.VisitDate", "appointment.appointmentDate", "appointment.AppointmentDate", "appointment.date", "appointment.Date",
+  "Appointment.visitDate", "Appointment.VisitDate", "Appointment.appointmentDate", "Appointment.AppointmentDate", "Appointment.date", "Appointment.Date",
+  "bill.invoiceDate", "bill.billDate", "Bill.InvoiceDate", "Bill.BillDate",
+];
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -34,8 +52,8 @@ const pageConfig = {
     paths: ["Lab/orders", "Billing/lab"],
     columns: [
       ["Patient", ["patientName", "PatientName", "name", "Name", "fullName"]],
-      ["Visit Date", ["visitDate", "VisitDate", "appointmentDate", "AppointmentDate", "invoiceDate", "InvoiceDate", "billDate", "BillDate", "createdAt", "CreatedAt", "date", "Date"]],
-      ["Phone", ["phone", "Phone", "mobile", "Mobile", "phoneNumber", "patient.phone", "Patient.Phone"]],
+      ["Visit Date", VISIT_DATE_KEYS],
+      ["Phone", PATIENT_PHONE_KEYS],
       ["Tests", ["__labTestNames", "testName", "TestName", "labTestName", "items", "serviceItems", "billItems"]],
     ],
   },
@@ -56,8 +74,8 @@ const pageConfig = {
     paths: ["Lab/orders", "Billing/lab"],
     columns: [
       ["Patient", ["patientName", "PatientName", "patient.name"]],
-      ["Visit Date", ["visitDate", "VisitDate", "appointmentDate", "AppointmentDate", "invoiceDate", "InvoiceDate", "billDate", "BillDate", "createdAt", "CreatedAt", "date", "Date"]],
-      ["Phone", ["phone", "Phone", "mobile", "Mobile", "phoneNumber", "patient.phone", "Patient.Phone"]],
+      ["Visit Date", VISIT_DATE_KEYS],
+      ["Phone", PATIENT_PHONE_KEYS],
       ["Tests", ["__labTestNames", "testName", "TestName", "labTestName", "items", "serviceItems", "billItems"]],
       ["Status", ["status", "Status", "sampleStatus"]],
     ],
@@ -120,7 +138,7 @@ const getServiceBillType = (record = {}) =>
 
 const isDiagnosticRecord = (record = {}) => {
   const source = normalizeText(record.__sourcePath);
-  if (source.includes("lab/orders") || source.includes("diagnostic") || source.includes("labgeneratedreports")) return true;
+  if (source.includes("lab/orders") || source.includes("lab/doctor/reports") || source.includes("lab/patient/reports") || source.includes("diagnostic") || source.includes("labgeneratedreports")) return true;
   const typeText = getServiceBillType(record);
   const labAmount = Number(readFirst(record, ["labCharges", "labCharge", "diagnosticRevenue"], 0)) || 0;
   const reportName = readFirst(record, ["reportName", "ReportName", "reportTitle", "testName", "TestName"], "");
@@ -180,6 +198,33 @@ const getPatientGroupKey = (record = {}) => {
 const mergeTextValues = (...values) =>
   values.map((value) => String(value ?? "").trim()).find((value) => value && value !== "-") || "-";
 
+const getRecordAppointmentId = (record = {}) =>
+  normalizeId(readFirst(record, [
+    "appointmentId", "AppointmentId", "appointment.id", "appointment.appointmentId", "Appointment.Id", "Appointment.AppointmentId",
+  ], ""));
+
+const mergeAppointmentFallback = (row = {}, appointment = null) => {
+  if (!appointment) return row;
+
+  const phone = mergeTextValues(getRecordPhoneValue(row), getRecordPhoneValue(appointment));
+  const visitDate = mergeTextValues(getRecordDateValue(row), getRecordDateValue(appointment));
+
+  return {
+    ...appointment,
+    ...row,
+    patient: row.patient || appointment.patient || appointment.Patient,
+    appointment: row.appointment || appointment,
+    phone,
+    Phone: phone,
+    patientPhone: phone,
+    PatientPhone: phone,
+    visitDate,
+    VisitDate: visitDate,
+    appointmentDate: visitDate,
+    AppointmentDate: visitDate,
+  };
+};
+
 const mergeLabPatientRows = (rows = []) => {
   const grouped = new Map();
 
@@ -216,14 +261,34 @@ const mergeLabPatientRows = (rows = []) => {
   return Array.from(grouped.values());
 };
 
-const enrichLabPatientRow = (record = {}) => ({
-  ...record,
-  __labTestNames: getPatientTestNames(record),
-  __labAmount: getPatientLabAmount(record),
-});
-
 const getRecordDateValue = (record = {}) =>
-  readFirst(record, ["visitDate", "VisitDate", "appointmentDate", "AppointmentDate", "invoiceDate", "InvoiceDate", "billDate", "BillDate", "createdAt", "CreatedAt", "date", "Date"], "");
+  readFirst(record, VISIT_DATE_KEYS, "");
+
+const getRecordPhoneValue = (record = {}) =>
+  readFirst(record, PATIENT_PHONE_KEYS, "");
+
+const getRecordPatientId = (record = {}) =>
+  normalizeId(readFirst(record, [
+    "patientId", "PatientId", "patient.id", "patient.patientId", "Patient.Id", "Patient.PatientId",
+  ], ""));
+
+const getRecordPatientName = (record = {}) =>
+  normalizeText(readFirst(record, ["patientName", "PatientName", "patient.name", "Patient.Name", "name", "Name", "fullName"], ""));
+
+const enrichLabPatientRow = (record = {}) => {
+  const phone = getRecordPhoneValue(record);
+  const visitDate = getRecordDateValue(record);
+
+  return {
+    ...record,
+    phone,
+    Phone: phone,
+    visitDate,
+    VisitDate: visitDate,
+    __labTestNames: getPatientTestNames(record),
+    __labAmount: getPatientLabAmount(record),
+  };
+};
 
 const isToday = (value) => {
   const date = new Date(value || "");
@@ -240,6 +305,8 @@ const isDoneRecord = (record = {}) => {
   return /complete|completed|done|reported|delivered|cancel|cancelled|canceled/.test(status);
 };
 
+const isPendingRecord = (record = {}) => /\bpending\b|waiting|awaiting/.test(getNormalizedStatus(record));
+
 const isCurrentLabWork = (record = {}) => {
   const dateValue = getRecordDateValue(record);
   return isToday(dateValue) || (!dateValue && !isDoneRecord(record));
@@ -255,33 +322,52 @@ const recordIdentifier = (row = {}) =>
 
 const filterRowsByView = (rows = [], view = "") => {
   if (view === "today") return rows.filter(isCurrentLabWork);
-  if (view === "pending") return rows.filter((row) => !isDoneRecord(row));
-  if (view === "samples") return rows.filter((row) => !/complete|completed|reported|delivered|cancel|cancelled|canceled/.test(getNormalizedStatus(row)));
+  if (view === "pending") return rows.filter(isPendingRecord);
+  if (view === "samples") return rows.filter((row) => isPendingRecord(row) || !getNormalizedStatus(row));
   if (view === "in-progress") return rows.filter((row) => /progress|processing|started/.test(getNormalizedStatus(row)));
   if (view === "completed") return rows.filter((row) => isToday(getRecordDateValue(row)) && /complete|completed|done|reported|delivered/.test(getNormalizedStatus(row)));
   if (view === "cancelled") return rows.filter((row) => /cancel|cancelled|canceled/.test(getNormalizedStatus(row)));
-  if (view === "pending-reports") return rows.filter((row) => !/reported|delivered/.test(getNormalizedStatus(row)) && !/cancel|cancelled|canceled/.test(getNormalizedStatus(row)));
+  if (view === "pending-reports") return rows.filter(isPendingRecord);
   return rows;
 };
 
 const isGeneratedReport = (row = {}) =>
+  isPendingRecord(row) ||
+  /complete|completed|done/.test(getNormalizedStatus(row)) ||
   /reported|delivered/.test(getNormalizedStatus(row)) ||
   Boolean(readFirst(row, ["reportName", "ReportName", "reportTitle", "findings", "Findings", "reportFindings", "ReportFindings"], ""));
 
 function LabDataPage({ type }) {
   const config = pageConfig[type];
   const location = useLocation();
-  const view = new URLSearchParams(location.search).get("view") || "";
+  const navigate = useNavigate();
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const view = searchParams.get("view") || "";
+  const urlSearch = searchParams.get("q") || "";
   const labProfile = useMemo(() => getLabProfile(), []);
   const clinicName = getClinicDisplayName(labProfile, "Clinic");
   const clinicBranding = getClinicInvoiceBranding({ clinicId: labProfile.hospitalId, clinicName });
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [processingAction, setProcessingAction] = useState("");
   const [search, setSearch] = useState("");
 
-  const loadRows = useCallback(async () => {
-    setLoading(true);
+  const updateSearch = (value) => {
+    setSearch(value);
+    const nextParams = new URLSearchParams(location.search);
+    if (value.trim()) {
+      nextParams.set("q", value);
+    } else {
+      nextParams.delete("q");
+    }
+    const query = nextParams.toString();
+    navigate(`${location.pathname}${query ? `?${query}` : ""}`, { replace: true });
+  };
+
+  const loadRows = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setError("");
     try {
       const backendData = type === "tests"
@@ -294,6 +380,40 @@ function LabDataPage({ type }) {
                 : []
             )
         : await firstSuccessfulList(config.paths);
+      const appointmentRows = type === "patients" || type === "samples" || type === "reports"
+        ? (await Promise.allSettled(["Appointment", "Billing/appointments"].map((path) => requestJson(path))))
+            .flatMap((result) => result.status === "fulfilled" ? parseList(result.value) : [])
+        : [];
+      const sortedAppointmentRows = [...appointmentRows].sort((left, right) => {
+        const leftTime = new Date(getRecordDateValue(left) || 0).getTime() || 0;
+        const rightTime = new Date(getRecordDateValue(right) || 0).getTime() || 0;
+        return rightTime - leftTime;
+      });
+      const appointmentsById = new Map(
+        sortedAppointmentRows
+          .map((appointment) => [getRecordAppointmentId(appointment), appointment])
+          .filter(([id]) => id)
+      );
+      const appointmentsByPatientId = new Map(
+        sortedAppointmentRows
+          .map((appointment) => [getRecordPatientId(appointment), appointment])
+          .filter(([id]) => id)
+      );
+      const appointmentsByPhone = new Map(
+        sortedAppointmentRows
+          .map((appointment) => [normalizeText(getRecordPhoneValue(appointment)), appointment])
+          .filter(([phone]) => phone)
+      );
+      const appointmentsByName = new Map(
+        sortedAppointmentRows
+          .map((appointment) => [getRecordPatientName(appointment), appointment])
+          .filter(([name]) => name)
+      );
+      const findAppointmentFallback = (row = {}) =>
+        appointmentsById.get(getRecordAppointmentId(row)) ||
+        appointmentsByPatientId.get(getRecordPatientId(row)) ||
+        appointmentsByPhone.get(normalizeText(getRecordPhoneValue(row))) ||
+        appointmentsByName.get(getRecordPatientName(row));
       const data = type === "patients" || type === "samples" || type === "reports"
         ? [
             ...backendData,
@@ -302,6 +422,7 @@ function LabDataPage({ type }) {
         : backendData;
       const enrichedRows = type === "patients" || type === "samples" || type === "reports"
         ? dedupeBillingRows(data)
+            .map((row) => mergeAppointmentFallback(row, findAppointmentFallback(row)))
             .filter(isDiagnosticRecord)
             .filter((row) => belongsToLabScope(row, labProfile))
             .map(enrichLabPatientRow)
@@ -317,13 +438,17 @@ function LabDataPage({ type }) {
       setRows([]);
       setError(loadError.message || `Unable to load ${config.title.toLowerCase()}.`);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [config, labProfile, type, view]);
 
   useEffect(() => {
     loadRows();
   }, [loadRows]);
+
+  useEffect(() => {
+    setSearch(urlSearch);
+  }, [urlSearch]);
 
   useEffect(() => {
     if (!["patients", "samples", "reports"].includes(type)) return undefined;
@@ -348,8 +473,15 @@ function LabDataPage({ type }) {
   const filteredRows = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return rows;
-    return rows.filter((row) => JSON.stringify(row).toLowerCase().includes(term));
-  }, [rows, search]);
+    const columns = config.columns.map(([, keys]) => keys).flat();
+    return rows.filter((row) => {
+      const visibleValues = columns.map((key) => readFirst(row, [key], ""));
+      return [...visibleValues, row.__labTestNames, row.__labAmount]
+        .join(" ")
+        .toLowerCase()
+        .includes(term);
+    });
+  }, [config.columns, rows, search]);
 
   const hasActions = type === "samples" || type === "reports";
   const tableTemplate = useMemo(() => {
@@ -366,24 +498,28 @@ function LabDataPage({ type }) {
       labPath: (id) => `Lab/orders/${id}/sample-collected`,
       method: "PATCH",
       status: "Sample Collected",
+      success: "Sample marked as collected.",
       payload: { status: "Sample Collected", sampleStatus: "Collected", collectedAt: new Date().toISOString() },
     },
     start: {
       labPath: (id) => `Lab/orders/${id}/start`,
       method: "PATCH",
       status: "In Progress",
+      success: "Test processing started.",
       payload: { status: "In Progress", orderStatus: "In Progress", sampleStatus: "Processing", startedAt: new Date().toISOString() },
     },
     complete: {
       labPath: (id) => `Lab/orders/${id}/complete`,
       method: "PATCH",
       status: "Completed",
+      success: "Order completed and moved to reports.",
       payload: { status: "Completed", orderStatus: "Completed", resultStatus: "Completed", completedAt: new Date().toISOString() },
     },
     report: {
       labPath: (id) => `Lab/orders/${id}/report`,
       method: "POST",
       status: "Reported",
+      success: "Report marked as reported.",
       payload: { status: "Reported", reportStatus: "Reported", reportedAt: new Date().toISOString() },
     },
   };
@@ -393,6 +529,8 @@ function LabDataPage({ type }) {
     if (!id) return;
     const target = actionConfig[action];
     if (!target) return;
+    const actionKey = `${id}:${action}`;
+    if (processingAction) return;
 
     const patch = {
       ...target.payload,
@@ -400,30 +538,27 @@ function LabDataPage({ type }) {
       updatedAt: new Date().toISOString(),
     };
 
-    const tryBillingUpdate = () =>
-      requestJson(`Billing/lab/${id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          ...row,
-          ...patch,
-          id,
-          Id: id,
-          billingId: row.billingId || row.BillingId || row.billId || row.BillId || id,
-          BillingId: row.BillingId || row.billingId || row.BillId || row.billId || id,
-        }),
-      });
-
-    if (isBillingBackedRecord(row)) {
-      await tryBillingUpdate();
-    } else {
-      try {
-        await requestJson(target.labPath(id), { method: target.method, body: JSON.stringify(patch) });
-      } catch (error) {
-        await tryBillingUpdate();
-      }
+    setProcessingAction(actionKey);
+    setError("");
+    setMessage("");
+    try {
+      const response = await requestJson(target.labPath(id), { method: target.method, body: JSON.stringify(patch) });
+      const updatedRow = response?.data && typeof response.data === "object" ? response.data : patch;
+      setRows((currentRows) =>
+        currentRows.map((currentRow) =>
+          recordIdentifier(currentRow) === String(id)
+            ? { ...currentRow, ...updatedRow, ...patch }
+            : currentRow
+        )
+      );
+      setMessage(response?.message || target.success);
+      window.dispatchEvent(new Event("labOrderStatusUpdated"));
+      await loadRows({ silent: true });
+    } catch (actionError) {
+      setError(actionError.message || `Unable to update order status to ${target.status}.`);
+    } finally {
+      setProcessingAction("");
     }
-
-    await loadRows();
   };
 
   const downloadReport = async (row) => {
@@ -456,14 +591,15 @@ function LabDataPage({ type }) {
           <p>{config.subtitle}</p>
         </div>
         <div className="lab-page-actions">
-          <button className="rc-btn secondary" type="button" onClick={loadRows} disabled={loading}><RefreshCw size={16} /> Refresh</button>
+          <button className="rc-btn secondary" type="button" onClick={() => loadRows()} disabled={loading || Boolean(processingAction)}><RefreshCw size={16} /> Refresh</button>
         </div>
       </div>
       <label className="lab-search">
         <Search size={17} />
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={`Search ${config.title.toLowerCase()}...`} />
+        <input value={search} onChange={(event) => updateSearch(event.target.value)} placeholder={`Search ${config.title.toLowerCase()}...`} />
       </label>
       {error ? <div className="rc-error">{error}</div> : null}
+      {message ? <div className="rc-success">{message}</div> : null}
       {loading ? <div className="rc-card">Loading {config.title.toLowerCase()}...</div> : null}
       <div className="rc-card">
         <div className="rc-table compact lab-table">
@@ -486,9 +622,9 @@ function LabDataPage({ type }) {
                 <span className="lab-row-actions">
                   {type === "samples" ? (
                     <>
-                      <button className="lab-action-btn collect" type="button" title="Sample collected" onClick={() => runOrderAction(row, "collected")}><TestTube2 size={15} /></button>
-                      <button className="lab-action-btn start" type="button" title="Start processing" onClick={() => runOrderAction(row, "start")}><Play size={15} /></button>
-                      <button className="lab-action-btn complete" type="button" title="Complete order" onClick={() => runOrderAction(row, "complete")}><CheckCircle size={15} /></button>
+                      <button className="lab-action-btn collect" type="button" title="Sample collected" disabled={Boolean(processingAction)} onClick={() => runOrderAction(row, "collected")}><TestTube2 size={15} /></button>
+                      <button className="lab-action-btn start" type="button" title="Start processing" disabled={Boolean(processingAction)} onClick={() => runOrderAction(row, "start")}><Play size={15} /></button>
+                      <button className="lab-action-btn complete" type="button" title="Complete order" disabled={Boolean(processingAction)} onClick={() => runOrderAction(row, "complete")}><CheckCircle size={15} /></button>
                     </>
                   ) : null}
                   {type === "reports" ? (
